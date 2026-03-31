@@ -1,0 +1,466 @@
+[
+  {
+    "id": "1",
+    "slug": "lap-trinh-python-co-ban",
+    "title": "Lập trình Python cơ bản",
+    "shortDescription": "Khóa học Python từ zero đến hero, phù hợp cho người mới bắt đầu.",
+    "description": "Khóa học giúp bạn nắm vững nền tảng lập trình Python từ cơ bản đến nâng cao. Bạn sẽ học cách sử dụng biến, kiểu dữ liệu, hàm, vòng lặp, xử lý file, OOP và nhiều chủ đề quan trọng khác.",
+    "image": "python",
+    "instructor": "Đội Ngũ Dứa Data",
+    "price": 1500000,
+    "originalPrice": 3000000,
+    "discount": 50,
+    "totalLessons": 120,
+    "students": 350,
+    "rating": 4.8,
+    "reviews": 89,
+    "startDate": "2026-04-15",
+    "schedule": "Thứ 2, 4, 6",
+    "hours": "20:00 - 22:00",
+    "category": "Lập trình",
+    "curriculum": [
+      {
+        "phase": "Giai đoạn 1",
+        "title": "Giới thiệu Python & Cài đặt môi trường",
+        "lessons": 10,
+        "topics": [
+          "Tổng quan về Python",
+          "Cài đặt Python & IDE",
+          "Chạy chương trình đầu tiên",
+          "Sử dụng Terminal/Command Line",
+          "Cấu trúc một chương trình Python"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 2",
+        "title": "Biến, Kiểu dữ liệu & Toán tử",
+        "lessons": 15,
+        "topics": [
+          "Biến và quy tắc đặt tên",
+          "Kiểu số: int, float",
+          "Kiểu chuỗi: string",
+          "Boolean và None",
+          "Toán tử số học, so sánh, logic",
+          "Type casting"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 3",
+        "title": "Cấu trúc điều khiển & Vòng lặp",
+        "lessons": 20,
+        "topics": [
+          "Câu lệnh if/elif/else",
+          "Vòng lặp for",
+          "Vòng lặp while",
+          "break, continue, pass",
+          "List comprehension",
+          "Nested loops"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 4",
+        "title": "Hàm & Module",
+        "lessons": 20,
+        "topics": [
+          "Định nghĩa hàm",
+          "Tham số và giá trị trả về",
+          "Scope của biến",
+          "Lambda functions",
+          "Import module",
+          "Tạo module riêng"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 5",
+        "title": "Xử lý File & Ngoại lệ",
+        "lessons": 15,
+        "topics": [
+          "Đọc/ghi file text",
+          "Xử lý file CSV",
+          "Context manager (with)",
+          "Try/except/finally",
+          "Tạo custom exception"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 6",
+        "title": "Lập trình hướng đối tượng (OOP)",
+        "lessons": 25,
+        "topics": [
+          "Class và Object",
+          "Constructor __init__",
+          "Encapsulation",
+          "Inheritance",
+          "Polymorphism",
+          "Magic methods",
+          "Decorator"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 7",
+        "title": "Dự án thực tế & Ôn tập",
+        "lessons": 15,
+        "topics": [
+          "Dự án: Quản lý sinh viên",
+          "Dự án: Game đoán số",
+          "Dự án: Web scraper đơn giản",
+          "Ôn tập tổng hợp",
+          "Hướng dẫn tiếp theo"
+        ]
+      }
+    ],
+    "outcomes": [
+      "Nắm vững nền tảng lập trình Python",
+      "Xây dựng được các ứng dụng console hoàn chỉnh",
+      "Sẵn sàng học tiếp Data Science hoặc Web Development",
+      "Viết code sạch, có cấu trúc tốt"
+    ],
+    "targetAudience": [
+      "Sinh viên CNTT muốn học lập trình",
+      "Người mới bắt đầu, chưa có kinh nghiệm",
+      "Người muốn chuyển sang ngành Data",
+      "Lập trình viên muốn thêm ngôn ngữ mới"
+    ]
+  },
+  {
+    "id": "2",
+    "slug": "data-science-voi-python",
+    "title": "Data Science với Python",
+    "shortDescription": "Phân tích dữ liệu chuyên sâu với Pandas, NumPy, Matplotlib và Scikit-learn.",
+    "description": "Khóa học Data Science toàn diện giúp bạn làm chủ các công cụ phân tích dữ liệu phổ biến nhất. Từ xử lý dữ liệu với Pandas, trực quan hóa với Matplotlib đến xây dựng mô hình Machine Learning với Scikit-learn.",
+    "image": "datascience",
+    "instructor": "Đội Ngũ Dứa Data",
+    "price": 2500000,
+    "originalPrice": 5000000,
+    "discount": 50,
+    "totalLessons": 150,
+    "students": 210,
+    "rating": 4.9,
+    "reviews": 67,
+    "startDate": "2026-04-20",
+    "schedule": "Thứ 3, 5, 7",
+    "hours": "19:30 - 21:30",
+    "category": "Data Science",
+    "curriculum": [
+      {
+        "phase": "Giai đoạn 1",
+        "title": "Ôn tập Python & Jupyter Notebook",
+        "lessons": 10,
+        "topics": [
+          "Cài đặt Anaconda/Jupyter",
+          "Python cho Data Science",
+          "Jupyter Notebook tips & tricks",
+          "Markdown trong Notebook"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 2",
+        "title": "NumPy - Xử lý mảng số",
+        "lessons": 20,
+        "topics": [
+          "Tạo và thao tác array",
+          "Indexing và slicing",
+          "Broadcasting",
+          "Linear algebra với NumPy",
+          "Random và thống kê"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 3",
+        "title": "Pandas - Phân tích dữ liệu",
+        "lessons": 30,
+        "topics": [
+          "Series và DataFrame",
+          "Đọc/ghi dữ liệu (CSV, Excel, SQL)",
+          "Data cleaning",
+          "Groupby và aggregation",
+          "Merge, join, concat",
+          "Time series"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 4",
+        "title": "Matplotlib & Seaborn - Trực quan hóa",
+        "lessons": 25,
+        "topics": [
+          "Line plot, bar chart, scatter",
+          "Histogram và boxplot",
+          "Heatmap và correlation",
+          "Customization và styling",
+          "Dashboard đơn giản"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 5",
+        "title": "Thống kê & Xác suất ứng dụng",
+        "lessons": 20,
+        "topics": [
+          "Thống kê mô tả",
+          "Phân phối xác suất",
+          "Kiểm định giả thuyết",
+          "Correlation và regression",
+          "A/B Testing"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 6",
+        "title": "Machine Learning cơ bản với Scikit-learn",
+        "lessons": 30,
+        "topics": [
+          "Supervised vs Unsupervised",
+          "Linear/Logistic Regression",
+          "Decision Tree & Random Forest",
+          "K-Means Clustering",
+          "Model evaluation",
+          "Cross-validation"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 7",
+        "title": "Dự án thực tế End-to-End",
+        "lessons": 15,
+        "topics": [
+          "EDA trên dataset thực",
+          "Feature engineering",
+          "Build model pipeline",
+          "Trình bày kết quả",
+          "Portfolio project"
+        ]
+      }
+    ],
+    "outcomes": [
+      "Phân tích dữ liệu thành thạo với Python",
+      "Xây dựng dashboard và báo cáo trực quan",
+      "Hiểu và áp dụng Machine Learning cơ bản",
+      "Sẵn sàng ứng tuyển vị trí Data Analyst/Scientist"
+    ],
+    "targetAudience": [
+      "Người đã biết Python cơ bản",
+      "Sinh viên muốn theo ngành Data",
+      "Nhân viên muốn nâng cao kỹ năng phân tích",
+      "Người muốn chuyển nghề sang Data Science"
+    ]
+  },
+  {
+    "id": "3",
+    "slug": "lap-trinh-web-fullstack",
+    "title": "Lập trình Web Fullstack",
+    "shortDescription": "Xây dựng ứng dụng web hoàn chỉnh với React, Node.js và MongoDB.",
+    "description": "Khóa học Fullstack giúp bạn xây dựng ứng dụng web từ frontend đến backend. Học HTML/CSS, JavaScript, React cho frontend và Node.js, Express, MongoDB cho backend. Hoàn thành khóa học với dự án portfolio thực tế.",
+    "image": "fullstack",
+    "instructor": "Đội Ngũ Dứa Data",
+    "price": 2000000,
+    "originalPrice": 4500000,
+    "discount": 56,
+    "totalLessons": 180,
+    "students": 420,
+    "rating": 4.7,
+    "reviews": 112,
+    "startDate": "2026-05-01",
+    "schedule": "Thứ 2, 4, 6",
+    "hours": "19:00 - 21:00",
+    "category": "Lập trình",
+    "curriculum": [
+      {
+        "phase": "Giai đoạn 1",
+        "title": "HTML5 & CSS3 nền tảng",
+        "lessons": 25,
+        "topics": [
+          "Cấu trúc HTML5",
+          "Semantic elements",
+          "CSS Selectors & Box Model",
+          "Flexbox & Grid",
+          "Responsive Design",
+          "CSS Animation"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 2",
+        "title": "JavaScript từ cơ bản đến ES6+",
+        "lessons": 30,
+        "topics": [
+          "Variables & Data types",
+          "Functions & Scope",
+          "DOM Manipulation",
+          "Event handling",
+          "Async/Await & Promises",
+          "ES6+ features"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 3",
+        "title": "React.js - Xây dựng UI hiện đại",
+        "lessons": 35,
+        "topics": [
+          "JSX & Components",
+          "Props & State",
+          "Hooks (useState, useEffect)",
+          "React Router",
+          "Context API",
+          "Custom hooks"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 4",
+        "title": "Node.js & Express.js",
+        "lessons": 30,
+        "topics": [
+          "Node.js fundamentals",
+          "Express routing",
+          "Middleware",
+          "REST API design",
+          "Error handling",
+          "File upload"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 5",
+        "title": "MongoDB & Mongoose",
+        "lessons": 20,
+        "topics": [
+          "MongoDB basics",
+          "CRUD operations",
+          "Schema design",
+          "Mongoose models",
+          "Aggregation pipeline",
+          "Indexing"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 6",
+        "title": "Authentication & Deployment",
+        "lessons": 20,
+        "topics": [
+          "JWT Authentication",
+          "Password hashing",
+          "Role-based access",
+          "Docker basics",
+          "Deploy lên VPS/Cloud",
+          "CI/CD pipeline"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 7",
+        "title": "Dự án Fullstack hoàn chỉnh",
+        "lessons": 20,
+        "topics": [
+          "Planning & wireframe",
+          "Frontend development",
+          "Backend API",
+          "Database integration",
+          "Testing",
+          "Production deployment"
+        ]
+      }
+    ],
+    "outcomes": [
+      "Xây dựng website từ A đến Z",
+      "Thành thạo React và Node.js",
+      "Deploy ứng dụng lên cloud",
+      "Có portfolio ấn tượng cho nhà tuyển dụng"
+    ],
+    "targetAudience": [
+      "Người mới muốn học lập trình web",
+      "Sinh viên CNTT cần dự án thực hành",
+      "Freelancer muốn nhận dự án web",
+      "Người muốn trở thành Fullstack Developer"
+    ]
+  },
+  {
+    "id": "4",
+    "slug": "sql-va-co-so-du-lieu",
+    "title": "SQL và Cơ sở dữ liệu",
+    "shortDescription": "Thành thạo SQL từ cơ bản đến nâng cao, thiết kế database chuyên nghiệp.",
+    "description": "Khóa học SQL toàn diện từ SELECT cơ bản đến các truy vấn phức tạp, tối ưu hiệu năng và thiết kế cơ sở dữ liệu. Thực hành trên MySQL và PostgreSQL với các bài tập thực tế từ doanh nghiệp.",
+    "image": "sql",
+    "instructor": "Đội Ngũ Dứa Data",
+    "price": 1200000,
+    "originalPrice": 2500000,
+    "discount": 52,
+    "totalLessons": 90,
+    "students": 280,
+    "rating": 4.8,
+    "reviews": 74,
+    "startDate": "2026-04-10",
+    "schedule": "Thứ 3, 5",
+    "hours": "20:00 - 22:00",
+    "category": "Data Science",
+    "curriculum": [
+      {
+        "phase": "Giai đoạn 1",
+        "title": "Giới thiệu CSDL & SQL cơ bản",
+        "lessons": 15,
+        "topics": [
+          "Khái niệm cơ sở dữ liệu",
+          "Cài đặt MySQL/PostgreSQL",
+          "SQL syntax cơ bản",
+          "CREATE, INSERT, UPDATE, DELETE",
+          "Kiểu dữ liệu"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 2",
+        "title": "SELECT, WHERE, JOIN",
+        "lessons": 20,
+        "topics": [
+          "SELECT và filtering",
+          "WHERE với nhiều điều kiện",
+          "INNER JOIN",
+          "LEFT/RIGHT JOIN",
+          "FULL OUTER JOIN",
+          "Self JOIN"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 3",
+        "title": "GROUP BY, Subquery, CTE",
+        "lessons": 20,
+        "topics": [
+          "GROUP BY & HAVING",
+          "Aggregate functions",
+          "Subquery trong WHERE/FROM",
+          "Common Table Expressions",
+          "Window functions",
+          "RANK, ROW_NUMBER, LEAD/LAG"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 4",
+        "title": "Thiết kế Database & Normalization",
+        "lessons": 15,
+        "topics": [
+          "ER Diagram",
+          "1NF, 2NF, 3NF",
+          "Primary & Foreign keys",
+          "Relationship types",
+          "Denormalization khi nào"
+        ]
+      },
+      {
+        "phase": "Giai đoạn 5",
+        "title": "Index, Optimization & Stored Procedures",
+        "lessons": 20,
+        "topics": [
+          "Indexing strategies",
+          "EXPLAIN và query plan",
+          "Query optimization",
+          "Stored procedures",
+          "Triggers",
+          "Views và materialized views"
+        ]
+      }
+    ],
+    "outcomes": [
+      "Viết truy vấn SQL thành thạo",
+      "Thiết kế cơ sở dữ liệu chuẩn hóa",
+      "Tối ưu hiệu năng truy vấn",
+      "Sẵn sàng làm việc với dữ liệu thực tế"
+    ],
+    "targetAudience": [
+      "Người mới muốn học về database",
+      "Data Analyst cần nâng cao SQL",
+      "Backend developer muốn tối ưu DB",
+      "Sinh viên chuẩn bị đi thực tập"
+    ]
+  }
+]
