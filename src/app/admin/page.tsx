@@ -652,18 +652,19 @@ export default function AdminPage() {
       slug: resourceForm.slug || slugify(resourceForm.title),
     };
 
-    if (editingResource) {
-      await fetch("/api/resources", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify({ ...payload, id: editingResource.id }),
-      });
-    } else {
-      await fetch("/api/resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify(payload),
-      });
+    const method = editingResource ? "PUT" : "POST";
+    const body = editingResource ? { ...payload, id: editingResource.id } : payload;
+
+    const res = await fetch("/api/resources", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingResource ? "Sửa" : "Thêm"} thất bại: ${err.error}`);
+      return;
     }
 
     setShowResourceForm(false);
@@ -693,19 +694,21 @@ export default function AdminPage() {
   }
 
   async function handleSaveActivity() {
-    if (editingActivity) {
-      await fetch("/api/activities", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify({ ...activityForm, id: editingActivity.id }),
-      });
-    } else {
-      await fetch("/api/activities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify(activityForm),
-      });
+    const method = editingActivity ? "PUT" : "POST";
+    const body = editingActivity ? { ...activityForm, id: editingActivity.id } : activityForm;
+
+    const res = await fetch("/api/activities", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingActivity ? "Sửa" : "Thêm"} hoạt động thất bại: ${err.error}`);
+      return;
     }
+
     setShowActivityForm(false);
     setEditingActivity(null);
     setActivityForm(emptyActivity);
@@ -733,19 +736,21 @@ export default function AdminPage() {
   }
 
   async function handleSaveJob() {
-    if (editingJob) {
-      await fetch("/api/jobs", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify({ ...jobForm, id: editingJob.id }),
-      });
-    } else {
-      await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-        body: JSON.stringify(jobForm),
-      });
+    const method = editingJob ? "PUT" : "POST";
+    const body = editingJob ? { ...jobForm, id: editingJob.id } : jobForm;
+
+    const res = await fetch("/api/jobs", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingJob ? "Sửa" : "Thêm"} việc làm thất bại: ${err.error}`);
+      return;
     }
+
     setShowJobForm(false);
     setEditingJob(null);
     setJobForm(emptyJob);
@@ -775,7 +780,19 @@ export default function AdminPage() {
   async function handleSaveExpert() {
     const method = editingExpert ? "PUT" : "POST";
     const body = editingExpert ? { ...expertForm, id: editingExpert.id } : expertForm;
-    await fetch("/api/experts", { method, headers: { "Content-Type": "application/json", ...buildAuthHeader() }, body: JSON.stringify(body) });
+
+    const res = await fetch("/api/experts", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingExpert ? "Sửa" : "Thêm"} chuyên gia thất bại: ${err.error}`);
+      return;
+    }
+
     setShowExpertForm(false);
     setEditingExpert(null);
     setExpertForm(emptyExpert);
