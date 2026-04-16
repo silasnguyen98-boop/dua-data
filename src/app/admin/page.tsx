@@ -337,7 +337,7 @@ export default function AdminPage() {
   // Build auth header from session
   function buildAuthHeader(): Record<string, string> {
     if (typeof window === "undefined") return {};
-    const role = sessionStorage.getItem("admin_role");
+    const role = (sessionStorage.getItem("admin_role") || "").trim();
     if (!role) return {};
     return { Authorization: `Bearer ${role}` };
   }
