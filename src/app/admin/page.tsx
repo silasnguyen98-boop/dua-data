@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Course, CurriculumItem } from "@/types/course";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import * as XLSX from "xlsx";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ssr: false });
 
@@ -38,6 +40,7 @@ const emptyCourse: Omit<Course, "id"> = {
   rating: 0,
   reviews: 0,
   startDate: "",
+  endDate: "",
   schedule: "",
   hours: "",
   category: "",
@@ -193,8 +196,27 @@ interface LeadResource {
   createdAt: string;
 }
 
-type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "shortlinks" | "leads";
+type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "shortlinks" | "leads" | "users" | "waitlist";
+type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant";
+
+interface WaitListEntry {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  name: string;
+  phone: string;
+  email?: string;
+  registeredAt: string;
+  status: "pending" | "contacted" | "converted";
+}
 type DateFilter = "all" | "today" | "week" | "month" | "year" | "custom";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  system_admin: "Quản trị hệ thống",
+  content_manager: "Quản lý nội dung",
+  sales_executive: "Kinh doanh",
+  teaching_assistant: "Trợ giảng",
+};
 
 export default function AdminPage() {
   const router = useRouter();
@@ -214,6 +236,12 @@ export default function AdminPage() {
 
   // Course state
   const [courses, setCourses] = useState<Course[]>([]);
+
+  // Wait-list state
+  const [waitList, setWaitList] = useState<WaitListEntry[]>([]);
+  const [waitListLoading, setWaitListLoading] = useState(false);
+  const [waitListFilter, setWaitListFilter] = useState("all");
+  const [waitListCourseFilter, setWaitListCourseFilter] = useState("all");
   const [editing, setEditing] = useState<Course | null>(null);
   const [form, setForm] = useState<Omit<Course, "id">>(emptyCourse);
   const [showForm, setShowForm] = useState(false);
@@ -226,6 +254,10 @@ export default function AdminPage() {
   const [currTopics, setCurrTopics] = useState("");
   const [editingTopicsIndex, setEditingTopicsIndex] = useState<number | null>(null);
   const [editingTopicsValue, setEditingTopicsValue] = useState("");
+  const [editingCurriculumIndex, setEditingCurriculumIndex] = useState<number | null>(null);
+  const [editCurriculumPhase, setEditCurriculumPhase] = useState("");
+  const [editCurriculumTitle, setEditCurriculumTitle] = useState("");
+  const [editCurriculumLessons, setEditCurriculumLessons] = useState(0);
 
   // Outcomes / target audience
   const [newOutcome, setNewOutcome] = useState("");
@@ -294,6 +326,22 @@ export default function AdminPage() {
   const [leads, setLeads] = useState<LeadResource[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
 
+  // User management state
+  const [systemUsers, setSystemUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [userForm, setUserForm] = useState({ username: "", password: "", role: "sales_executive" as UserRole, name: "" });
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+
+  // Build auth header from session
+  function buildAuthHeader(): Record<string, string> {
+    if (typeof window === "undefined") return {};
+    const role = sessionStorage.getItem("admin_role");
+    if (!role) return {};
+    return { Authorization: `Bearer ${role}` };
+  }
+
   // Mobile sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -311,6 +359,16 @@ export default function AdminPage() {
     const data = await res.json();
     setCourses(data);
     setLoading(false);
+  }, []);
+
+  const fetchWaitList = useCallback(async () => {
+    setWaitListLoading(true);
+    const res = await fetch("/api/wait-list");
+    if (res.ok) {
+      const data = await res.json();
+      setWaitList(data);
+    }
+    setWaitListLoading(false);
   }, []);
 
   const fetchStudents = useCallback(async () => {
@@ -363,6 +421,16 @@ export default function AdminPage() {
     setLeadsLoading(false);
   }, []);
 
+  const fetchSystemUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/users", { headers: buildAuthHeader() });
+      const data = await res.json();
+      setSystemUsers(Array.isArray(data) ? data : []);
+    } catch { setSystemUsers([]); }
+    setUsersLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchCourses();
     fetchStudents();
@@ -372,7 +440,11 @@ export default function AdminPage() {
     fetchExperts();
     fetchShortlinks();
     fetchLeads();
-  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchExperts, fetchLeads]);
+    fetchWaitList();
+    if (typeof window !== "undefined" && sessionStorage.getItem("admin_role") === "system_admin") {
+      fetchSystemUsers();
+    }
+  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchExperts, fetchLeads, fetchWaitList, fetchSystemUsers]);
 
   function handleEdit(course: Course) {
     setEditing(course);
@@ -391,6 +463,20 @@ export default function AdminPage() {
     const payload = {
       ...form,
       slug: form.slug || slugify(form.title),
+      instructor: form.instructor || "Đội Ngũ Dứa Data",
+      schedule: form.schedule || "",
+      hours: form.hours || "",
+      category: form.category || "",
+      totalLessons: form.totalLessons || 0,
+      students: form.students || 0,
+      rating: form.rating || 0,
+      reviews: form.reviews || 0,
+      price: form.price || 0,
+      originalPrice: form.originalPrice || 0,
+      discount: form.discount || 0,
+      curriculum: form.curriculum || [],
+      outcomes: form.outcomes || [],
+      targetAudience: form.targetAudience || [],
     };
 
     if (editing) {
@@ -414,7 +500,7 @@ export default function AdminPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Ban co chac muon xoa khoa hoc nay?")) return;
+    if (!confirm("Bạn có chắc muốn xóa khóa học này?")) return;
     await fetch(`/api/courses?id=${id}`, { method: "DELETE" });
     fetchCourses();
   }
@@ -433,6 +519,15 @@ export default function AdminPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, comingSoon: !course.comingSoon }),
+    });
+    fetchCourses();
+  }
+
+  async function handleToggleHidden(course: Course) {
+    await fetch("/api/courses", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: course.id, isHidden: !course.isHidden }),
     });
     fetchCourses();
   }
@@ -474,6 +569,20 @@ export default function AdminPage() {
     setForm({ ...form, curriculum: form.curriculum.filter((_, i) => i !== index) });
   }
 
+  function moveCurriculumUp(index: number) {
+    if (index === 0) return;
+    const updated = [...form.curriculum];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    setForm({ ...form, curriculum: updated });
+  }
+
+  function moveCurriculumDown(index: number) {
+    if (index === form.curriculum.length - 1) return;
+    const updated = [...form.curriculum];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    setForm({ ...form, curriculum: updated });
+  }
+
   function saveTopicsEdit(index: number) {
     const topics = editingTopicsValue.split("\n").map(t => t.trim()).filter(Boolean);
     const updated = [...form.curriculum];
@@ -481,6 +590,26 @@ export default function AdminPage() {
     setForm({ ...form, curriculum: updated });
     setEditingTopicsIndex(null);
     setEditingTopicsValue("");
+  }
+
+  function startEditCurriculumItem(i: number) {
+    setEditingCurriculumIndex(i);
+    setEditCurriculumPhase(form.curriculum[i].phase);
+    setEditCurriculumTitle(form.curriculum[i].title);
+    setEditCurriculumLessons(form.curriculum[i].lessons);
+  }
+
+  function saveCurriculumItemEdit() {
+    if (editingCurriculumIndex === null) return;
+    const updated = [...form.curriculum];
+    updated[editingCurriculumIndex] = {
+      ...updated[editingCurriculumIndex],
+      phase: editCurriculumPhase,
+      title: editCurriculumTitle,
+      lessons: editCurriculumLessons,
+    };
+    setForm({ ...form, curriculum: updated });
+    setEditingCurriculumIndex(null);
   }
 
   function addOutcome() {
@@ -526,13 +655,13 @@ export default function AdminPage() {
     if (editingResource) {
       await fetch("/api/resources", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify({ ...payload, id: editingResource.id }),
       });
     } else {
       await fetch("/api/resources", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify(payload),
       });
     }
@@ -545,7 +674,7 @@ export default function AdminPage() {
 
   async function handleDeleteResource(id: string) {
     if (!confirm("Bạn có chắc muốn xóa tài nguyên này?")) return;
-    await fetch(`/api/resources?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/resources?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
     fetchResources();
   }
 
@@ -567,13 +696,13 @@ export default function AdminPage() {
     if (editingActivity) {
       await fetch("/api/activities", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify({ ...activityForm, id: editingActivity.id }),
       });
     } else {
       await fetch("/api/activities", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify(activityForm),
       });
     }
@@ -585,7 +714,7 @@ export default function AdminPage() {
 
   async function handleDeleteActivity(id: string) {
     if (!confirm("Bạn có chắc muốn xóa hoạt động này?")) return;
-    await fetch(`/api/activities?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/activities?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
     fetchActivities();
   }
 
@@ -607,13 +736,13 @@ export default function AdminPage() {
     if (editingJob) {
       await fetch("/api/jobs", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify({ ...jobForm, id: editingJob.id }),
       });
     } else {
       await fetch("/api/jobs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...buildAuthHeader() },
         body: JSON.stringify(jobForm),
       });
     }
@@ -625,7 +754,7 @@ export default function AdminPage() {
 
   async function handleDeleteJob(id: string) {
     if (!confirm("Bạn có chắc muốn xóa việc làm này?")) return;
-    await fetch(`/api/jobs?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/jobs?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
     fetchJobs();
   }
 
@@ -646,7 +775,7 @@ export default function AdminPage() {
   async function handleSaveExpert() {
     const method = editingExpert ? "PUT" : "POST";
     const body = editingExpert ? { ...expertForm, id: editingExpert.id } : expertForm;
-    await fetch("/api/experts", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    await fetch("/api/experts", { method, headers: { "Content-Type": "application/json", ...buildAuthHeader() }, body: JSON.stringify(body) });
     setShowExpertForm(false);
     setEditingExpert(null);
     setExpertForm(emptyExpert);
@@ -655,8 +784,166 @@ export default function AdminPage() {
 
   async function handleDeleteExpert(id: string) {
     if (!confirm("Bạn có chắc muốn xóa chuyên gia này?")) return;
-    await fetch(`/api/experts?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/experts?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
     fetchExperts();
+  }
+
+  // Excel export helpers
+  function downloadActivitiesExcel() {
+    const data = activities.map((a, i) => ({
+      "STT": i + 1,
+      "Tiêu đề": a.title,
+      "Cộng đồng": a.community === "student" ? "Học viên" : "GenZ Data",
+      "Link đăng ký": a.registrationLink,
+      "Hạn đăng ký": a.registrationDeadline ? new Date(a.registrationDeadline).toLocaleDateString("vi-VN") : "",
+      "Ngày sự kiện": a.eventDate ? new Date(a.eventDate).toLocaleDateString("vi-VN") : "",
+      "Tác giả": a.author,
+      "Trạng thái": a.published ? "Đã xuất bản" : "Nháp",
+      "Ngày tạo": a.createdAt ? new Date(a.createdAt).toLocaleDateString("vi-VN") : "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hoat dong");
+    XLSX.writeFile(wb, `duadata-hoatdong-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadJobsExcel() {
+    const data = jobsList.map((j, i) => ({
+      "STT": i + 1,
+      "Tiêu đề": j.title,
+      "Công ty": j.company,
+      "Hình thức": j.workType,
+      "Vị trí": j.position,
+      "Địa điểm": j.location,
+      "Lương": j.salary,
+      "Link ứng tuyển": j.applicationLink,
+      "Hạn nộp": j.applicationDeadline ? new Date(j.applicationDeadline).toLocaleDateString("vi-VN") : "",
+      "Tác giả": j.author,
+      "Trạng thái": j.published ? "Đã xuất bản" : "Nháp",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Viec lam");
+    XLSX.writeFile(wb, `duadata-vieclam-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadResourcesExcel() {
+    const data = resources.map((r, i) => ({
+      "STT": i + 1,
+      "Tiêu đề": r.title,
+      "Slug": r.slug,
+      "Tóm tắt": r.summary,
+      "Danh mục": r.category,
+      "Tác giả": r.author,
+      "Trạng thái": r.published ? "Đã xuất bản" : "Nháp",
+      "Ngày tạo": r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tai nguyen");
+    XLSX.writeFile(wb, `duadata-tailieunguon-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadExpertsExcel() {
+    const data = expertsList.map((e, i) => ({
+      "STT": i + 1,
+      "Tên": e.name,
+      "Chức vụ": e.position,
+      "Công việc trước đó": e.previousWork,
+      "LinkedIn": e.linkedin,
+      "Thứ tự": e.order,
+      "Trạng thái": e.published ? "Hiển thị" : "Ẩn",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Chuyen gia");
+    XLSX.writeFile(wb, `duadata-chuyengia-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadStudentsExcel() {
+    const data = filteredStudents.map((s, i) => ({
+      "STT": i + 1,
+      "Họ và tên": s.fullName,
+      "Số điện thoại": s.phone,
+      "Email": s.email,
+      "Facebook": s.facebook,
+      "Ngày sinh": s.birthday,
+      "Khóa học": s.courseName,
+      "Ngày đăng ký": new Date(s.registeredAt).toLocaleString("vi-VN"),
+      "Mã giới thiệu": s.referralCode,
+      "Kỳ vọng / Ghi chú": s.expectations,
+      "Trạng thái": processedStudents[s.id] ? "Đã xử lý" : "Chưa xử lý",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dang ky");
+    XLSX.writeFile(wb, `duadata-dangky-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadLeadsExcel() {
+    const data = leads.map((l, i) => ({
+      "STT": i + 1,
+      "Họ và tên": l.fullName,
+      "Email": l.email,
+      "Vai trò": l.role,
+      "Loại tài liệu": l.resourceType,
+      "Ngày đăng ký": l.createdAt ? new Date(l.createdAt).toLocaleString("vi-VN") : "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Nhan tai lieu");
+    XLSX.writeFile(wb, `duadata-tailieu-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadWaitListExcel() {
+    const data = filteredWaitList.map((w, i) => ({
+      "STT": i + 1,
+      "Họ tên": w.name,
+      "Số điện thoại": w.phone,
+      "Email": w.email || "",
+      "Khóa học": w.courseTitle,
+      "Ngày đăng ký": new Date(w.registeredAt).toLocaleDateString("vi-VN"),
+      "Giờ đăng ký": new Date(w.registeredAt).toLocaleTimeString("vi-VN"),
+      "Trạng thái": w.status === "pending" ? "Chờ liên hệ" : w.status === "contacted" ? "Đã liên hệ" : "Đã chuyển đổi",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sach cho");
+    XLSX.writeFile(wb, `duadata-danh-sach-cho-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  // User management handlers
+  function handleNewUser() {
+    setEditingUser(null);
+    setUserForm({ username: "", password: "", role: "sales_executive", name: "" });
+    setShowUserForm(true);
+  }
+  function handleEditUser(user: any) {
+    setEditingUser(user);
+    setUserForm({ username: user.username || "", password: "", role: user.role || "sales_executive", name: user.name || "" });
+    setShowUserForm(true);
+  }
+  async function handleSaveUser() {
+    if (!userForm.username || !userForm.name || (!editingUser && !userForm.password)) {
+      alert("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    const body: any = { username: userForm.username, role: userForm.role, name: userForm.name };
+    if (userForm.password) body.password = userForm.password;
+    if (editingUser) {
+      await fetch("/api/users", { method: "PUT", headers: { "Content-Type": "application/json", ...buildAuthHeader() }, body: JSON.stringify({ id: editingUser.id, ...body }) });
+    } else {
+      await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json", ...buildAuthHeader() }, body: JSON.stringify(body) });
+    }
+    setShowUserForm(false);
+    setEditingUser(null);
+    setUserForm({ username: "", password: "", role: "sales_executive", name: "" });
+    fetchSystemUsers();
+  }
+  async function handleDeleteUser(id: string) {
+    if (!confirm("Bạn có chắc muốn xóa?")) return;
+    await fetch(`/api/users?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
+    fetchSystemUsers();
   }
 
   // Student filtering
@@ -709,9 +996,16 @@ export default function AdminPage() {
 
   const filteredStudents = filterStudents();
 
+  const filteredWaitList = waitList.filter(w => {
+    const statusMatch = waitListFilter === "all" || w.status === waitListFilter;
+    const courseMatch = waitListCourseFilter === "all" || w.courseId === waitListCourseFilter;
+    return statusMatch && courseMatch;
+  });
+
   const sidebarItems = [
-    { key: "dashboard" as ActiveView, label: "Dashboard", icon: "📊", count: 0 },
+    { key: "dashboard" as ActiveView, label: "Tổng quan", icon: "📊", count: 0 },
     { key: "courses" as ActiveView, label: "Quản lý khóa học", icon: "📚", count: courses.length },
+    { key: "waitlist" as ActiveView, label: "Danh sách chờ", icon: "🔔", count: waitList.filter(w => w.status === "pending").length },
     { key: "students" as ActiveView, label: "Quản lý đăng ký", icon: "👥", count: students.length },
     { key: "resources" as ActiveView, label: "Quản lý tài nguyên", icon: "📝", count: resources.length },
     { key: "activities" as ActiveView, label: "Quản lý hoạt động", icon: "🎯", count: activities.length },
@@ -719,7 +1013,30 @@ export default function AdminPage() {
     { key: "experts" as ActiveView, label: "Đội ngũ chuyên gia", icon: "🏅", count: expertsList.length },
     { key: "shortlinks" as ActiveView, label: "Quản lý Shortlink", icon: "🔗", count: shortlinks.length },
     { key: "leads" as ActiveView, label: "Đăng ký nhận tài liệu", icon: "📩", count: leads.length },
+    { key: "users" as ActiveView, label: "Quản lý người dùng", icon: "👤", count: systemUsers.length },
   ];
+
+  // Role-based sidebar filtering
+  const currentRole = typeof window !== "undefined" ? sessionStorage.getItem("admin_role") : null;
+  const rolePermissionMap: Record<string, ActiveView[]> = {
+    content_manager: ["dashboard", "activities", "resources", "jobs", "shortlinks"],
+    sales_executive: ["dashboard", "waitlist", "students", "leads"],
+    teaching_assistant: ["dashboard", "students", "courses"],
+    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "shortlinks", "leads", "users"],
+  };
+  const allowedViews = rolePermissionMap[currentRole || ""] || rolePermissionMap["system_admin"];
+  const filteredSidebarItems = sidebarItems.filter(item => allowedViews.includes(item.key));
+  const sidebarGroups = [
+    { label: "Tổng quan", keys: ["dashboard"] as ActiveView[] },
+    { label: "Học viên", keys: ["students", "leads"] as ActiveView[] },
+    { label: "Khóa học", keys: ["courses", "waitlist", "activities", "experts"] as ActiveView[] },
+    { label: "Tài nguyên", keys: ["resources", "shortlinks"] as ActiveView[] },
+    { label: "Công việc", keys: ["jobs"] as ActiveView[] },
+    { label: "Hệ thống", keys: ["users"] as ActiveView[] },
+  ];
+  const visibleGroups = sidebarGroups
+    .map(g => ({ ...g, items: filteredSidebarItems.filter(i => g.keys.includes(i.key)) }))
+    .filter(g => g.items.length > 0);
 
   // Dashboard stats
   const totalRevenue = courses.reduce((sum, c) => sum + (c.price * c.students), 0);
@@ -728,6 +1045,26 @@ export default function AdminPage() {
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
     return new Date(s.registeredAt) >= weekAgo;
   }).length;
+
+  // Registration growth chart data (last 30 days)
+  const chartData = (() => {
+    const days: Record<string, number> = {};
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days[d.toISOString().slice(0, 10)] = 0;
+    }
+    students.forEach(s => {
+      const day = s.registeredAt.slice(0, 10);
+      if (day in days) days[day]++;
+    });
+    return Object.entries(days).map(([date, count]) => ({
+      date,
+      label: new Date(date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+      registrations: count,
+    }));
+  })();
 
   if (!authChecked) {
     return (
@@ -748,10 +1085,21 @@ export default function AdminPage() {
           <div className="flex items-center gap-4">
             <Link href="/" className="text-xl font-bold text-green-400 tracking-tight">🍍 Dứa Data</Link>
             <span className="text-xs font-bold bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1 rounded-lg">Admin Panel</span>
+            <span className={`text-xs font-bold px-3 py-1 rounded-lg border ${
+              currentRole === "content_manager" ? "bg-purple-500/10 border-purple-500/20 text-purple-400" :
+              currentRole === "sales_executive" ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
+              currentRole === "teaching_assistant" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+              "bg-red-500/10 border-red-500/20 text-red-400"
+            }`}>
+              {currentRole === "content_manager" ? "Quản lý nội dung" :
+               currentRole === "sales_executive" ? "Kinh doanh" :
+               currentRole === "teaching_assistant" ? "Trợ giảng" :
+               "Quản trị hệ thống"}
+            </span>
           </div>
           <nav className="flex items-center gap-2 md:gap-4 text-xs md:text-sm font-medium text-gray-600">
             <Link href="/" className="hover:text-gray-900 transition hidden sm:inline">Trang chu</Link>
-            <Link href="/courses" className="hover:text-gray-900 transition hidden sm:inline">Khoa hoc</Link>
+            <Link href="/courses" className="hover:text-gray-900 transition hidden sm:inline">Khóa học</Link>
             <button
               onClick={() => { sessionStorage.removeItem("admin_auth"); router.push("/admin/login"); }}
               className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition text-xs font-medium"
@@ -784,29 +1132,60 @@ export default function AdminPage() {
               </h2>
             </div>
             <nav className="p-2">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => { setActiveView(item.key); setSidebarOpen(false); }}
-                  className={`w-full text-left px-4 py-3 rounded-xl flex items-center justify-between text-sm font-medium transition-all mb-0.5 ${
-                    activeView === item.key
-                      ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent"
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </span>
-                  {item.key !== "dashboard" && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                      activeView === item.key ? "bg-green-500/20 text-green-400" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {item.count}
+              {visibleGroups.length > 1 ? (
+                visibleGroups.map(group => (
+                  <div key={group.label} className="mb-4">
+                    <div className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{group.label}</div>
+                    {group.items.map(item => (
+                      <button
+                        key={item.key}
+                        onClick={() => { setActiveView(item.key); setSidebarOpen(false); }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium transition-all mb-0.5 ${
+                          activeView === item.key
+                            ? "bg-gradient-to-r from-green-500/15 to-emerald-500/10 text-green-600 border border-green-500/30 shadow-sm"
+                            : "text-gray-500 hover:bg-gray-100 hover:text-gray-800 border border-transparent"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <span>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </span>
+                        {item.key !== "dashboard" && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            activeView === item.key ? "bg-green-500/20 text-green-600" : "bg-gray-100 text-gray-400"
+                          }`}>
+                            {item.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ))
+              ) : (
+                filteredSidebarItems.map(item => (
+                  <button
+                    key={item.key}
+                    onClick={() => { setActiveView(item.key); setSidebarOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium transition-all mb-0.5 ${
+                      activeView === item.key
+                        ? "bg-gradient-to-r from-green-500/15 to-emerald-500/10 text-green-600 border border-green-500/30 shadow-sm"
+                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-800 border border-transparent"
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
                     </span>
-                  )}
-                </button>
-              ))}
+                    {item.key !== "dashboard" && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        activeView === item.key ? "bg-green-500/20 text-green-600" : "bg-gray-100 text-gray-400"
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                ))
+              )}
             </nav>
           </div>
         </div>
@@ -816,42 +1195,107 @@ export default function AdminPage() {
           {/* === DASHBOARD VIEW === */}
           {activeView === "dashboard" && (
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Xin chào! 👋</h1>
+                  <p className="text-sm text-gray-500 mt-1">Đây là tổng quan hoạt động của Dứa Data hôm nay.</p>
+                </div>
+                <div className="hidden md:flex items-center gap-3 text-xs text-gray-500 bg-white border border-gray-200 rounded-xl px-4 py-3">
+                  <span>📅</span>
+                  <span>{new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</span>
+                </div>
+              </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">📚</span>
-                    <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Active</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="group bg-white border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all rounded-2xl p-5 cursor-pointer">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">📚</div>
+                    <span className="text-[10px] font-semibold bg-green-50 text-green-600 px-2.5 py-1 rounded-full border border-green-100">Active</span>
                   </div>
                   <p className="text-3xl font-black text-gray-900">{courses.length}</p>
-                  <p className="text-xs text-gray-500 mt-1">Khóa học</p>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Khóa học</p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">👥</span>
-                    <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">+{todayStudents} hôm nay</span>
+                <div className="group bg-white border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all rounded-2xl p-5 cursor-pointer">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">👥</div>
+                    <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full border border-blue-100">+{todayStudents} hnay</span>
                   </div>
                   <p className="text-3xl font-black text-gray-900">{students.length}</p>
-                  <p className="text-xs text-gray-500 mt-1">Tổng đăng ký</p>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Học viên đăng ký</p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">📝</span>
-                    <span className="text-[10px] font-bold bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">{resources.length} bài</span>
+                <div className="group bg-white border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all rounded-2xl p-5 cursor-pointer">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">📝</div>
+                    <span className="text-[10px] font-semibold bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full border border-purple-100">{resources.length} bài</span>
                   </div>
                   <p className="text-3xl font-black text-gray-900">{resources.length + activities.length}</p>
-                  <p className="text-xs text-gray-500 mt-1">Nội dung & Hoạt động</p>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Tài nguyên & Hoạt động</p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl">💼</span>
-                    <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">{jobsList.length} vị trí</span>
+                <div className="group bg-white border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all rounded-2xl p-5 cursor-pointer">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">💼</div>
+                    <span className="text-[10px] font-semibold bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full border border-amber-100">{jobsList.length} VT</span>
                   </div>
                   <p className="text-3xl font-black text-gray-900">{jobsList.length}</p>
-                  <p className="text-xs text-gray-500 mt-1">Việc làm đang tuyển</p>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">Việc làm tuyển dụng</p>
                 </div>
+              </div>
+
+              {/* Registration Growth Chart */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-900 text-sm">📈 Tăng trưởng đăng ký (30 ngày)</h3>
+                  <span className="text-xs text-gray-500">{students.length} tổng đăng ký</span>
+                </div>
+                {chartData.every(d => d.registrations === 0) ? (
+                  <p className="text-sm text-gray-400 text-center py-8">Chưa có dữ liệu đăng ký</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="regGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                        interval={4}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#1f2937",
+                          border: "none",
+                          borderRadius: "8px",
+                          color: "#fff",
+                          fontSize: "12px",
+                        }}
+                        labelStyle={{ color: "#9ca3af" }}
+                        formatter={(value: unknown) => [`${value} đăng ký`, "Số lượng"]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="registrations"
+                        stroke="#22c55e"
+                        strokeWidth={2}
+                        fill="url(#regGradient)"
+                        dot={false}
+                        activeDot={{ r: 4, fill: "#22c55e" }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Recent registrations */}
@@ -946,11 +1390,11 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-100 text-gray-600 text-left">
                       <tr>
-                        <th className="px-4 py-3 font-medium">Khoa hoc</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Danh muc</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Gia</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Hoc vien</th>
-                        <th className="px-4 py-3 font-medium text-right">Thao tac</th>
+                        <th className="px-4 py-3 font-medium">Khóa học</th>
+                        <th className="px-4 py-3 font-medium hidden md:table-cell">Danh mục</th>
+                        <th className="px-4 py-3 font-medium hidden md:table-cell">Giá</th>
+                        <th className="px-4 py-3 font-medium hidden md:table-cell">Học viên</th>
+                        <th className="px-4 py-3 font-medium text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -965,10 +1409,13 @@ export default function AdminPage() {
                                 <div className="font-medium text-gray-900 flex items-center gap-2">
                                   {course.title}
                                   {course.published && (
-                                    <span className="text-[10px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded-full font-bold">Da xuat ban</span>
+                                    <span className="text-[10px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded-full font-bold">Đã xuất bản</span>
                                   )}
                                   {course.comingSoon && (
                                     <span className="text-[10px] bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded-full font-bold">Coming Soon</span>
+                                  )}
+                                  {course.isHidden && (
+                                    <span className="text-[10px] bg-gray-500/10 text-gray-500 px-1.5 py-0.5 rounded-full font-bold">Đã ẩn</span>
                                   )}
                                 </div>
                                 <div className="text-xs text-gray-500 mt-0.5">{course.slug}</div>
@@ -985,17 +1432,23 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1 flex-wrap">
                               {!course.published && (
-                                <button onClick={() => handlePublish(course)} className="text-green-600 hover:text-green-800 font-medium text-xs bg-green-50 px-2 py-1 rounded-lg">Xuat ban</button>
+                                <button onClick={() => handlePublish(course)} className="text-green-600 hover:text-green-800 font-medium text-xs bg-green-50 px-2 py-1 rounded-lg">Xuất bản</button>
                               )}
                               <button
                                 onClick={() => handleToggleComingSoon(course)}
                                 className={`text-xs font-medium px-2 py-1 rounded-lg ${course.comingSoon ? "bg-amber-100 text-amber-700" : "bg-gray-50 text-gray-500 hover:bg-amber-50 hover:text-amber-600"}`}
                               >
-                                {course.comingSoon ? "Tat Coming Soon" : "Coming Soon"}
+                                {course.comingSoon ? "Tắt Sắp ra mắt" : "Sắp ra mắt"}
                               </button>
-                              <button onClick={() => handleDuplicate(course)} className="text-purple-600 hover:text-purple-800 font-medium text-xs bg-purple-50 px-2 py-1 rounded-lg">Nhan ban</button>
-                              <button onClick={() => handleEdit(course)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg">Sua</button>
-                              <button onClick={() => handleDelete(course.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xoa</button>
+                              <button
+                                onClick={() => handleToggleHidden(course)}
+                                className={`text-xs font-medium px-2 py-1 rounded-lg ${course.isHidden ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-gray-50 text-gray-500 hover:bg-gray-200"}`}
+                              >
+                                {course.isHidden ? "Hiện" : "Ẩn"}
+                              </button>
+                              <button onClick={() => handleDuplicate(course)} className="text-purple-600 hover:text-purple-800 font-medium text-xs bg-purple-50 px-2 py-1 rounded-lg">Nhân bản</button>
+                              <button onClick={() => handleEdit(course)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg">Sửa</button>
+                              <button onClick={() => handleDelete(course.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xóa</button>
                             </div>
                           </td>
                         </tr>
@@ -1013,12 +1466,17 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý đăng ký</h1>
-                <button
-                  onClick={fetchStudents}
-                  className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm"
-                >
-                  🔄 Làm mới
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadStudentsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button
+                    onClick={fetchStudents}
+                    className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm"
+                  >
+                    🔄 Làm mới
+                  </button>
+                </div>
               </div>
 
               {/* Filters */}
@@ -1211,12 +1669,17 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý tài nguyên</h1>
-                <button
-                  onClick={handleNewResource}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-gray-900 px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-medium shadow-lg shadow-green-500/30"
-                >
-                  + Thêm tài nguyên
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadResourcesExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button
+                    onClick={handleNewResource}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-gray-900 px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-medium shadow-lg shadow-green-500/30"
+                  >
+                    + Thêm tài nguyên
+                  </button>
+                </div>
               </div>
 
               {resourcesLoading ? (
@@ -1289,9 +1752,14 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý hoạt động cộng đồng</h1>
-                <button onClick={handleNewActivity} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                  + Thêm hoạt động
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadActivitiesExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button onClick={handleNewActivity} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
+                    + Thêm hoạt động
+                  </button>
+                </div>
               </div>
 
               {activitiesLoading ? (
@@ -1346,9 +1814,14 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý việc làm</h1>
-                <button onClick={handleNewJob} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                  + Thêm việc làm
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadJobsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button onClick={handleNewJob} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
+                    + Thêm việc làm
+                  </button>
+                </div>
               </div>
 
               {jobsLoading ? (
@@ -1402,9 +1875,14 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Đội ngũ chuyên gia</h1>
-                <button onClick={handleNewExpert} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                  + Thêm chuyên gia
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadExpertsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button onClick={handleNewExpert} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
+                    + Thêm chuyên gia
+                  </button>
+                </div>
               </div>
 
               {expertsLoading ? (
@@ -1445,9 +1923,27 @@ export default function AdminPage() {
 
           {activeView === "shortlinks" && (
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý Shortlink</h1>
-                <div className="text-sm text-gray-500">Tổng lượt click: {shortlinks.reduce((s, l) => s + (l.clicks || 0), 0).toLocaleString()}</div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="text-sm text-gray-500">Tổng lượt click: <span className="font-semibold text-gray-700">{shortlinks.reduce((s, l) => s + (l.clicks || 0), 0).toLocaleString()}</span></div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Xóa tất cả shortlink có 0 lượt xem?")) return;
+                      const res = await fetch("/api/cleanup", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "clean_shortlinks_zero_views" }),
+                      });
+                      const data = await res.json();
+                      alert(`Đã xóa ${data.deleted} shortlink có 0 lượt xem`);
+                      fetchShortlinks();
+                    }}
+                    className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition"
+                  >
+                    🗑️ Xóa shortlink 0 lượt xem
+                  </button>
+                </div>
               </div>
 
               {shortlinksLoading ? (
@@ -1512,13 +2008,34 @@ export default function AdminPage() {
           {activeView === "leads" && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Dang ky nhan tai lieu</h1>
-                <button
-                  onClick={fetchLeads}
-                  className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm"
-                >
-                  Lam moi
-                </button>
+                <h1 className="text-2xl font-bold text-gray-900">Đăng ký nhận tài liệu</h1>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadLeadsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button
+                    onClick={fetchLeads}
+                    className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm"
+                  >
+                    Làm mới
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Xóa tất cả đăng ký có email sample@email.tst?")) return;
+                      const res = await fetch("/api/cleanup", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "clean_test_emails" }),
+                      });
+                      const data = await res.json();
+                      alert(`Đã xóa ${data.totalDeleted} bản ghi có email test (${data.email})`);
+                      fetchLeads();
+                    }}
+                    className="bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-xl text-xs font-medium hover:bg-red-100 transition"
+                  >
+                    🗑️ Xóa email test
+                  </button>
+                </div>
               </div>
 
               {leadsLoading ? (
@@ -1564,6 +2081,223 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+          {/* === WAITLIST VIEW === */}
+          {activeView === "waitlist" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">📋 Danh sách chờ — Khóa học sắp ra mắt</h1>
+                <div className="flex items-center gap-3">
+                  <button onClick={downloadWaitListExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
+                    📥 Tải Excel
+                  </button>
+                  <button onClick={fetchWaitList} className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm">
+                    🔄 Làm mới
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Tổng đăng ký", value: waitList.length, color: "blue" },
+                  { label: "Chờ liên hệ", value: waitList.filter(w => w.status === "pending").length, color: "amber" },
+                  { label: "Đã liên hệ", value: waitList.filter(w => w.status === "contacted").length, color: "green" },
+                  { label: "Đã chuyển đổi", value: waitList.filter(w => w.status === "converted").length, color: "emerald" },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
+                    <p className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Filters */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-medium text-gray-500">Lọc theo trạng thái:</span>
+                  {[
+                    { key: "all", label: "Tất cả" },
+                    { key: "pending", label: "Chờ liên hệ" },
+                    { key: "contacted", label: "Đã liên hệ" },
+                    { key: "converted", label: "Đã chuyển đổi" },
+                  ].map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => setWaitListFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                        waitListFilter === f.key
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+
+                  <span className="ml-4 text-sm font-medium text-gray-500">Theo khóa học:</span>
+                  <select
+                    value={waitListCourseFilter}
+                    onChange={(e) => setWaitListCourseFilter(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Tất cả khóa học</option>
+                    {courses.filter(c => c.comingSoon).map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {waitListLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full" />
+                </div>
+              ) : filteredWaitList.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                  <div className="text-5xl mb-4">📋</div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có ai đăng ký chờ</h3>
+                  <p className="text-sm text-gray-400">Danh sách chờ sẽ hiển thị ở đây khi có người đăng ký nhận thông báo khóa học sắp ra mắt.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">STT</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Họ tên</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Điện thoại</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider hidden md:table-cell">Email</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Khóa học</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Ngày đăng ký</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-600 text-xs uppercase tracking-wider">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredWaitList.map((entry, i) => (
+                          <tr key={entry.id} className="hover:bg-gray-50 border-b border-gray-100">
+                            <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+                            <td className="px-4 py-3 font-medium text-gray-900">{entry.name}</td>
+                            <td className="px-4 py-3">
+                              <a href={`tel:${entry.phone}`} className="text-blue-600 hover:underline">{entry.phone}</a>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{entry.email || "—"}</td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">{entry.courseTitle}</span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">
+                              <div>{new Date(entry.registeredAt).toLocaleDateString("vi-VN")}</div>
+                              <div className="text-gray-400">{new Date(entry.registeredAt).toLocaleTimeString("vi-VN")}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={entry.status}
+                                onChange={async (e) => {
+                                  await fetch("/api/wait-list", {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ courseId: entry.courseId, entryId: entry.id, status: e.target.value }),
+                                  });
+                                  fetchWaitList();
+                                }}
+                                className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none ${
+                                  entry.status === "pending" ? "bg-amber-100 text-amber-700" :
+                                  entry.status === "contacted" ? "bg-green-100 text-green-700" :
+                                  "bg-emerald-100 text-emerald-700"
+                                }`}
+                              >
+                                <option value="pending">Chờ liên hệ</option>
+                                <option value="contacted">Đã liên hệ</option>
+                                <option value="converted">Đã chuyển đổi</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1">
+                                <a
+                                  href={`tel:${entry.phone}`}
+                                  className="text-green-600 hover:text-green-800 font-medium text-xs bg-green-50 px-2 py-1 rounded-lg"
+                                  title="Gọi điện"
+                                >
+                                  📞 Gọi
+                                </a>
+                                <a
+                                  href={`https://zalo.me/${entry.phone.replace(/^0/, "84")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg"
+                                  title="Nhắn Zalo"
+                                >
+                                  💬 Zalo
+                                </a>
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm(`Xóa đăng ký của "${entry.name}"?`)) return;
+                                    await fetch(`/api/wait-list?courseId=${entry.courseId}&entryId=${entry.id}`, { method: "DELETE" });
+                                    fetchWaitList();
+                                  }}
+                                  className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg"
+                                  title="Xóa"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === USERS VIEW === */}
+          {activeView === "users" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng hệ thống</h1>
+                <button onClick={handleNewUser} className="bg-gradient-to-r from-green-500 to-emerald-500 text-gray-900 px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-medium shadow-lg shadow-green-500/30">
+                  + Thêm người dùng
+                </button>
+              </div>
+              {usersLoading ? (
+                <div className="text-center py-20 text-gray-600">Đang tải...</div>
+              ) : (
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <input type="text" className="border rounded-lg px-3 py-2 text-sm flex-1 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" placeholder="Tìm theo tên hoặc username..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+                    <button onClick={fetchSystemUsers} className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition font-medium text-sm">🔄 Làm mới</button>
+                  </div>
+                  {systemUsers.length === 0 ? (
+                    <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200"><p className="text-lg">Chưa có người dùng nào</p></div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-100 text-gray-600 text-left">
+                            <tr><th className="px-4 py-3 font-medium">Tên</th><th className="px-4 py-3 font-medium">Username</th><th className="px-4 py-3 font-medium">Vai trò</th><th className="px-4 py-3 font-medium hidden md:table-cell">Ngày tạo</th><th className="px-4 py-3 font-medium text-right">Thao tác</th></tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {systemUsers.filter(u => !userSearch || (u.name?.toLowerCase().includes(userSearch.toLowerCase())) || (u.username?.toLowerCase().includes(userSearch.toLowerCase()))).map((user) => (
+                              <tr key={user.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || "?"}</div><span className="font-medium text-gray-900">{user.name}</span></div></td>
+                                <td className="px-4 py-3 text-gray-500">{user.username}</td>
+                                <td className="px-4 py-3"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${user.role === "system_admin" ? "bg-red-500/10 text-red-600" : user.role === "content_manager" ? "bg-purple-500/10 text-purple-600" : user.role === "sales_executive" ? "bg-blue-500/10 text-blue-600" : "bg-amber-500/10 text-amber-600"}`}>{ROLE_LABELS[user.role as UserRole] || user.role}</span></td>
+                                <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
+                                <td className="px-4 py-3 text-right"><button onClick={() => handleEditUser(user)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg mr-2">Sửa</button><button onClick={() => handleDeleteUser(user.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xóa</button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1851,6 +2585,15 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc</label>
+                  <input
+                    type="date"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={form.endDate}
+                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Lịch học</label>
                   <input
                     className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
@@ -1875,22 +2618,69 @@ export default function AdminPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Lộ trình học</label>
                 {form.curriculum.map((item, i) => (
                   <div key={i} className="mb-3 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-green-600">{item.phase}:</span>
-                      <span className="flex-1 font-medium">{item.title}</span>
-                      <span className="text-gray-600">{item.lessons} bài</span>
-                      <button
-                        onClick={() => {
-                          setEditingTopicsIndex(editingTopicsIndex === i ? null : i);
-                          setEditingTopicsValue((item.topics || []).join("\n"));
-                        }}
-                        className="text-blue-500 hover:text-blue-700 text-xs font-medium"
-                      >
-                        {editingTopicsIndex === i ? "Đóng" : "Sửa nội dung"}
-                      </button>
-                      <button onClick={() => removeCurriculumItem(i)} className="text-red-400 hover:text-red-600">✕</button>
-                    </div>
-                    {item.topics && item.topics.length > 0 && editingTopicsIndex !== i && (
+                    {/* Edit form for phase/title/lessons */}
+                    {editingCurriculumIndex === i ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            className="border rounded px-2 py-1.5 text-sm w-28"
+                            placeholder="Giai đoạn"
+                            value={editCurriculumPhase}
+                            onChange={(e) => setEditCurriculumPhase(e.target.value)}
+                          />
+                          <input
+                            className="border rounded px-2 py-1.5 text-sm flex-1"
+                            placeholder="Tên chương"
+                            value={editCurriculumTitle}
+                            onChange={(e) => setEditCurriculumTitle(e.target.value)}
+                          />
+                          <input
+                            type="number"
+                            className="border rounded px-2 py-1.5 text-sm w-20"
+                            placeholder="Số bài"
+                            value={editCurriculumLessons}
+                            onChange={(e) => setEditCurriculumLessons(Number(e.target.value))}
+                          />
+                          <button
+                            onClick={saveCurriculumItemEdit}
+                            className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-green-700"
+                          >
+                            Lưu
+                          </button>
+                          <button
+                            onClick={() => setEditingCurriculumIndex(null)}
+                            className="bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs font-medium hover:bg-gray-300"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="font-medium text-green-600">{item.phase}:</span>
+                        <span className="flex-1 font-medium">{item.title}</span>
+                        <span className="text-gray-600">{item.lessons} bài</span>
+                        <button onClick={() => moveCurriculumUp(i)} className="text-gray-400 hover:text-gray-700 text-xs px-1" title="Lên">▲</button>
+                        <button onClick={() => moveCurriculumDown(i)} className="text-gray-400 hover:text-gray-700 text-xs px-1" title="Xuống">▼</button>
+                        <button
+                          onClick={() => {
+                            setEditingTopicsIndex(editingTopicsIndex === i ? null : i);
+                            setEditingTopicsValue((item.topics || []).join("\n"));
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs font-medium px-1"
+                        >
+                          {editingTopicsIndex === i ? "Đóng ND" : "Sửa ND"}
+                        </button>
+                        <button
+                          onClick={() => startEditCurriculumItem(i)}
+                          className="text-purple-500 hover:text-purple-700 text-xs font-medium px-1"
+                        >
+                          Sửa
+                        </button>
+                        <button onClick={() => removeCurriculumItem(i)} className="text-red-400 hover:text-red-600 text-xs px-1">✕</button>
+                      </div>
+                    )}
+                    {item.topics && item.topics.length > 0 && editingTopicsIndex !== i && editingCurriculumIndex !== i && (
                       <div className="mt-2 pl-4 border-l-2 border-green-200 space-y-0.5">
                         {item.topics.map((topic, j) => (
                           <p key={j} className="text-xs text-gray-500">• {topic}</p>
@@ -1986,7 +2776,7 @@ export default function AdminPage() {
                     onClick={() => setForm({ ...form, published: !form.published })}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition ${form.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}
                   >
-                    {form.published ? "Da xuat ban" : "Nhap"}
+                    {form.published ? "Đã xuất bản" : "Nháp"}
                   </button>
                 </div>
               )}
@@ -2376,6 +3166,26 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* User Form Modal */}
+      {showUserForm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center pt-10 overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 mb-10">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-gray-800">{editingUser ? "Sửa người dùng" : "Thêm người dùng mới"}</h2>
+              <button onClick={() => setShowUserForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
+            </div>
+            <div className="space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Tên hiển thị *</label><input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} placeholder="VD: Nguyễn Văn A" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Username *</label><input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} placeholder="VD: nguyenvana" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu {editingUser ? "(bỏ trống nếu không đổi)" : "*"}</label><input type="password" className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} placeholder={editingUser ? "Để trống giữ mật khẩu cũ" : "Nhập mật khẩu mới"} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Vai trò *</label><select className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as UserRole })}><option value="system_admin">Quản trị hệ thống</option><option value="content_manager">Quản lý nội dung</option><option value="sales_executive">Kinh doanh</option><option value="teaching_assistant">Trợ giảng</option></select></div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t"><button onClick={() => setShowUserForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button><button onClick={handleSaveUser} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">{editingUser ? "Cập nhật" : "Tạo người dùng"}</button></div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
