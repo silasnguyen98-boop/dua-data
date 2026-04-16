@@ -12,7 +12,7 @@ function getRoleFromHeader(req: NextRequest): UserRole | null {
   if (!auth.startsWith("Bearer ")) return null;
   try {
     const decoded = Buffer.from(auth.slice(7), "base64").toString("utf-8");
-    return decoded.split(":")[1] as UserRole;
+    return (decoded.split(":")[1] || decoded) as UserRole;
   } catch {
     return null;
   }

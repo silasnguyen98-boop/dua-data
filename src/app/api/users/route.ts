@@ -11,7 +11,8 @@ function getRoleFromHeader(req: NextRequest): UserRole | null {
   const auth = req.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
   try {
-    return Buffer.from(auth.slice(7), "base64").toString("utf-8").split(":")[1] as UserRole;
+    const decoded = Buffer.from(auth.slice(7), "base64").toString("utf-8");
+    return (decoded.split(":")[1] || decoded) as UserRole;
   } catch {
     return null;
   }

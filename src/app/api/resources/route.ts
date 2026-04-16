@@ -15,7 +15,8 @@ function getRoleFromHeader(req: NextRequest): UserRole | null {
   try {
     const decoded = Buffer.from(auth.slice(7), "base64").toString("utf-8");
     const parts = decoded.split(":");
-    return parts[1] as UserRole;
+    // Support both "username:role" format and plain "role" string
+    return (parts[1] || parts[0]) as UserRole;
   } catch {
     return null;
   }
