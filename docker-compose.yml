@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: duadata-app
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BIND_HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      # Sử dụng CMD-SHELL để chạy lệnh ổn định hơn trong môi trường Linux
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      # Tăng thời gian chờ khởi động lên 60s để đảm bảo app đã sẵn sàng
+      start_period: 60s
+    networks:
+      - duadata-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: duadata-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/html:/etc/nginx/html:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - duadata-net
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/html:/usr/share/nginx/html
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $!; done;'"
+    networks:
+      - duadata-net
+
+networks:
+  duadata-net:
+    driver: bridge

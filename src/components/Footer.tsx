@@ -13,7 +13,7 @@ export default function Footer() {
             <p className="text-sm text-green-200/80">Học Data để làm được việc. Dứa Data giúp bạn không chỉ học Data, mà dùng dữ liệu để hiểu vấn đề và tạo ra quyết định có giá trị.</p>
           </div>
           <div>
-            <h4 className="font-semibold text-white mb-4 font-poppins">Liên kết</h4>
+            <h4 className="font-semibold text-white mb-4">Liên kết</h4>
             <div className="space-y-2">
               <Link href="/#courses" className="block text-sm hover:text-green-400 transition">Khóa học</Link>
               <Link href="/roadmap" className="block text-sm hover:text-green-400 transition">Lộ trình</Link>
@@ -22,7 +22,7 @@ export default function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="font-semibold text-white mb-4 font-poppins">Cộng đồng</h4>
+            <h4 className="font-semibold text-white mb-4">Cộng đồng</h4>
             <div className="space-y-3">
               <a href="https://www.facebook.com/duadata" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-green-400 transition text-sm">
                 <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs">f</span>

@@ -12,6 +12,7 @@ interface Course {
   originalPrice: number;
   discount: number;
   startDate: string;
+  endDate?: string;
   imageUrl?: string;
   image?: string;
   category: string;
@@ -28,13 +29,21 @@ interface Course {
   comingSoon?: boolean;
 }
 
-function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed" {
+function getCourseStatus(startDate: string, endDate?: string): "upcoming" | "ongoing" | "completed" {
   if (!startDate) return "upcoming";
   try {
     const now = new Date();
     const start = new Date(startDate);
     if (isNaN(start.getTime())) return "upcoming";
     if (start > now) return "upcoming";
+    // Use explicit endDate if set
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime())) {
+        return now <= end ? "ongoing" : "completed";
+      }
+    }
+    // Fallback: estimate 3 months from start
     const endEstimate = new Date(start);
     endEstimate.setMonth(endEstimate.getMonth() + 3);
     if (now <= endEstimate) return "ongoing";
@@ -48,12 +57,12 @@ function sortCourses(courses: Course[]): Course[] {
   if (!courses || !Array.isArray(courses)) return [];
   return courses
     .filter((c) => c.published !== false)
-    .filter((c) => getCourseStatus(c.startDate) !== "completed" || c.comingSoon)
+    .filter((c) => getCourseStatus(c.startDate, c.endDate) !== "completed" || c.comingSoon)
     .sort((a, b) => {
       if (a.comingSoon && !b.comingSoon) return 1;
       if (!a.comingSoon && b.comingSoon) return -1;
-      const statusA = getCourseStatus(a.startDate);
-      const statusB = getCourseStatus(b.startDate);
+      const statusA = getCourseStatus(a.startDate, a.endDate);
+      const statusB = getCourseStatus(b.startDate, b.endDate);
       if (statusA === "upcoming" && statusB !== "upcoming") return -1;
       if (statusA !== "upcoming" && statusB === "upcoming") return 1;
       return 0;

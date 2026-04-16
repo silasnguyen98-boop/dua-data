@@ -10,24 +10,29 @@ async function getCourses(): Promise<Course[]> {
   return res.json();
 }
 
-function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed" {
+function getCourseStatus(startDate: string, endDate?: string, registrationDeadline?: string): "expired" | "ended" | "upcoming" | "ongoing" {
   const now = new Date();
+  if (registrationDeadline) {
+    const deadline = new Date(registrationDeadline);
+    if (!isNaN(deadline.getTime()) && deadline < now) return "expired";
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    if (!isNaN(end.getTime()) && end < now) return "ended";
+  }
   const start = new Date(startDate);
-  if (start > now) return "upcoming";
-  const endEstimate = new Date(start);
-  endEstimate.setMonth(endEstimate.getMonth() + 3);
-  if (now <= endEstimate) return "ongoing";
-  return "completed";
+  if (isNaN(start.getTime()) || start > now) return "upcoming";
+  return "ongoing";
 }
 
 function sortCourses(courses: Course[]): Course[] {
   if (!courses || courses.length === 0) return [];
-  const statusOrder = { upcoming: 0, ongoing: 1, completed: 2 };
+  const statusOrder: Record<string, number> = { upcoming: 0, ongoing: 1, expired: 2, ended: 2 };
   return courses
-    .filter(c => c && c.published !== false && c.startDate)
+    .filter(c => c && c.published !== false && !c.isHidden && !c.comingSoon && c.startDate)
     .sort((a, b) => {
-      const sa = statusOrder[getCourseStatus(a.startDate)];
-      const sb = statusOrder[getCourseStatus(b.startDate)];
+      const sa = statusOrder[getCourseStatus(a.startDate, a.endDate, a.registrationDeadline)] ?? 3;
+      const sb = statusOrder[getCourseStatus(b.startDate, b.endDate, b.registrationDeadline)] ?? 3;
       if (sa !== sb) return sa - sb;
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });

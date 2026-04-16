@@ -51,9 +51,9 @@ export default function CurriculumAccordion({ items }: { items: CurriculumItem[]
               {item.topics && item.topics.length > 0 && (
                 <div className="px-4 pb-4 pt-0">
                   <div className="border-t border-gray-100 pt-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
                       {item.topics.map((topic, j) => (
-                        <div key={j} className="flex items-center gap-2 text-sm text-gray-600">
+                        <div key={j} className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-100">
                           <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
                           </svg>

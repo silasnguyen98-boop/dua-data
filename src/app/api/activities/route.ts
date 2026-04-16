@@ -4,6 +4,20 @@ import { ref, get, set, push, update, remove } from "firebase/database";
 
 export const dynamic = "force-dynamic";
 
+type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant";
+const ALLOWED_ROLES: UserRole[] = ["system_admin", "content_manager"];
+
+function getRoleFromHeader(req: NextRequest): UserRole | null {
+  const auth = req.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  try {
+    const decoded = Buffer.from(auth.slice(7), "base64").toString("utf-8");
+    return decoded.split(":")[1] as UserRole;
+  } catch {
+    return null;
+  }
+}
+
 export interface Activity {
   id: string;
   title: string;
@@ -36,6 +50,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const role = getRoleFromHeader(req);
+  if (!role || !ALLOWED_ROLES.includes(role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const body = await req.json();
   const newRef = push(ref(db, "Activity"));
   const now = new Date().toISOString();
@@ -59,6 +77,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const role = getRoleFromHeader(req);
+  if (!role || !ALLOWED_ROLES.includes(role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const body = await req.json();
   const { id, ...data } = body;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
@@ -73,6 +95,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const role = getRoleFromHeader(req);
+  if (!role || !ALLOWED_ROLES.includes(role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

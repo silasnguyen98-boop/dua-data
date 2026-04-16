@@ -59,7 +59,7 @@ export default function Navbar() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
               </span>
-              <span className="font-semibold font-poppins">Sắp khai giảng!</span>
+              <span className="font-semibold">Sắp khai giảng!</span>
             </span>
             <span className="hidden sm:inline">
               <strong>{upcoming.title}</strong> — khai giảng trong{" "}
@@ -97,7 +97,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-medium transition-colors font-poppins ${
+                  className={`text-sm font-medium transition-colors ${
                     isActive(link.href)
                       ? "text-green-700 border-b-2 border-green-600 pb-1"
                       : "text-gray-600 hover:text-green-700"
@@ -131,7 +131,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`block py-3 px-4 text-sm font-medium font-poppins ${
+                  className={`block py-3 px-4 text-sm font-medium ${
                     isActive(link.href) ? "text-green-700 bg-green-50" : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >

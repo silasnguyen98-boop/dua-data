@@ -5,6 +5,15 @@ export interface CurriculumItem {
   topics?: string[];
 }
 
+export interface WaitListEntry {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  registeredAt: string;
+  status: "pending" | "contacted" | "converted";
+}
+
 export interface Course {
   id: string;
   slug: string;
@@ -22,6 +31,8 @@ export interface Course {
   rating: number;
   reviews: number;
   startDate: string;
+  endDate?: string;
+  registrationDeadline?: string;
   schedule: string;
   hours: string;
   category: string;
@@ -30,4 +41,16 @@ export interface Course {
   targetAudience: string[];
   published?: boolean;
   comingSoon?: boolean;
+  isHidden?: boolean;
+  waitList?: WaitListEntry[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant";
+
+export interface AdminUser {
+  username: string;
+  role: UserRole;
+  name: string;
 }

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { rtdb } from "@/lib/firebase";
+import { ref, get } from "firebase/database";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -10,20 +12,39 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Simple auth check
-    if (
-      username === process.env.NEXT_PUBLIC_ADMIN_USERNAME &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
+    try {
+      const snapshot = await get(ref(rtdb, "users/_system"));
+      if (!snapshot.exists()) {
+        setError("Không tìm thấy người dùng nào. Vui lòng liên hệ quản trị viên.");
+        setLoading(false);
+        return;
+      }
+
+      const allUsers = snapshot.val() as Record<string, any>;
+      const matchedKey = Object.keys(allUsers).find(
+        (k) => allUsers[k].username === username && allUsers[k].password === password
+      );
+
+      if (!matchedKey) {
+        setError("Sai tài khoản hoặc mật khẩu");
+        setLoading(false);
+        return;
+      }
+
+      const matchedUser = allUsers[matchedKey];
       sessionStorage.setItem("admin_auth", "true");
+      sessionStorage.setItem("admin_role", matchedUser.role);
+      sessionStorage.setItem("admin_id", matchedKey);
+      sessionStorage.setItem("admin_name", matchedUser.name || matchedUser.role);
+      sessionStorage.setItem("admin_username", username);
       router.push("/admin");
-    } else {
-      setError("Sai tài khoản hoặc mật khẩu");
+    } catch {
+      setError("Lỗi kết nối. Vui lòng thử lại.");
       setLoading(false);
     }
   };

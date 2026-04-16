@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
     rating: Number(body.rating) || 0,
     reviews: Number(body.reviews) || 0,
     startDate: body.startDate || "",
+    endDate: body.endDate || "",
+    registrationDeadline: body.registrationDeadline || "",
     schedule: body.schedule || "",
     hours: body.hours || "",
     category: body.category || "",
@@ -48,6 +50,7 @@ export async function POST(req: NextRequest) {
     targetAudience: body.targetAudience || [],
     published: body.published !== undefined ? body.published : false,
     comingSoon: body.comingSoon || false,
+    isHidden: body.isHidden || false,
   };
 
   await set(newRef, newCourse);

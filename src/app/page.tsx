@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CourseImage from "@/components/CourseImage";
 import CourseCard from "@/components/CourseCard";
+import RegistrationCountdown from "@/components/RegistrationCountdown";
 
 interface Expert {
   id: string;
@@ -128,11 +129,12 @@ function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed
   return "completed";
 }
 
-function sortCourses(courses: Course[]): Course[] {
-  if (!courses || courses.length === 0) return [];
+function sortCourses(courses: Course[]): { main: Course[]; comingSoon: Course | null } {
+  if (!courses || courses.length === 0) return { main: [], comingSoon: null };
   const statusOrder = { upcoming: 0, ongoing: 1, completed: 2 };
-  return courses
-    .filter(c => c && c.published !== false && c.startDate)
+
+  const main = courses
+    .filter(c => c && c.published !== false && !c.isHidden && !c.comingSoon && c.startDate)
     .filter(c => getCourseStatus(c.startDate) !== "completed")
     .sort((a, b) => {
       const sa = statusOrder[getCourseStatus(a.startDate)];
@@ -140,11 +142,17 @@ function sortCourses(courses: Course[]): Course[] {
       if (sa !== sb) return sa - sb;
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
+
+  const comingSoonCourses = courses
+    .filter(c => c && c.published !== false && !c.isHidden && c.comingSoon)
+    .sort((a, b) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
+
+  return { main, comingSoon: comingSoonCourses[0] || null };
 }
 
 export default async function HomePage() {
   const allCourses = await getCourses();
-  const courses = sortCourses(allCourses);
+  const { main: courses, comingSoon } = sortCourses(allCourses);
   const experts = await getExperts();
 
   return (
@@ -312,8 +320,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 3. Featured Courses */}
-      <section id="courses" className="max-w-7xl mx-auto px-4 py-20">
+      {/* 3. Registration Countdown */}
+      <section className="max-w-7xl mx-auto px-4 pt-12 pb-4">
+        <RegistrationCountdown courses={allCourses} />
+      </section>
+
+      {/* 4. Featured Courses */}
+      <section id="courses" className="max-w-7xl mx-auto px-4 pb-20">
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2">Courses</p>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Khóa học nổi bật</h2>
@@ -329,6 +342,27 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
+
+        {/* Coming Soon — latest one at bottom */}
+        {comingSoon && (
+          <div className="mt-8 max-w-6xl mx-auto">
+            <div className="border-2 border-dashed border-amber-300 bg-amber-50 rounded-2xl p-6 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-2xl">🚀</span>
+                <span className="text-sm font-bold text-amber-600 uppercase tracking-wider">Sắp ra mắt</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">{comingSoon.title}</h3>
+              <p className="text-sm text-gray-500 mb-4">{comingSoon.shortDescription}</p>
+              <Link
+                href={`/courses/${comingSoon.slug}`}
+                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md"
+              >
+                Xem chi tiết
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {courses.length === 0 && (
           <div className="text-center py-20 text-gray-400">
@@ -347,7 +381,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 4. About Dứa Data — Dynamic Illustrated Layout */}
+      {/* 5. About Dứa Data — Dynamic Illustrated Layout */}
       <section id="about" className="relative py-24 overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 bg-gradient-to-b from-white via-green-50/60 to-white" />

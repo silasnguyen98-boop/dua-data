@@ -13,6 +13,8 @@ interface Course {
   originalPrice: number;
   discount: number;
   startDate: string;
+  endDate?: string;
+  registrationDeadline?: string;
   imageUrl?: string;
   image?: string;
   category: string;
@@ -33,17 +35,22 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat("vi-VN").format(price) + "đ";
 }
 
-function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed" {
+function getCourseStatus(startDate: string, endDate?: string, registrationDeadline?: string): "expired" | "ended" | "upcoming" | "ongoing" {
   if (!startDate) return "upcoming";
   try {
     const now = new Date();
+    if (registrationDeadline) {
+      const deadline = new Date(registrationDeadline);
+      if (!isNaN(deadline.getTime()) && deadline < now) return "expired";
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime()) && end < now) return "ended";
+    }
     const start = new Date(startDate);
     if (isNaN(start.getTime())) return "upcoming";
     if (start > now) return "upcoming";
-    const endEstimate = new Date(start);
-    endEstimate.setMonth(endEstimate.getMonth() + 3);
-    if (now <= endEstimate) return "ongoing";
-    return "completed";
+    return "ongoing";
   } catch {
     return "upcoming";
   }
@@ -81,8 +88,10 @@ export default function CourseCard({ course, index }: { course: Course; index: n
     );
   }
 
-  const status = getCourseStatus(course.startDate || "");
+  const status = getCourseStatus(course.startDate || "", course.endDate, course.registrationDeadline);
   const isUpcoming = status === "upcoming";
+  const isEnded = status === "ended";
+  const isExpired = status === "expired";
   const isFree = (course.price || 0) === 0;
 
   return (
@@ -101,6 +110,16 @@ export default function CourseCard({ course, index }: { course: Course; index: n
 
         {/* Status badge */}
         <div className="absolute top-3 left-3 z-10">
+          {isExpired && (
+            <span className="text-xs font-bold bg-gradient-to-r from-red-500 to-rose-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+              Hết hạn đăng ký
+            </span>
+          )}
+          {isEnded && (
+            <span className="text-xs font-bold bg-gray-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+              Đã kết thúc
+            </span>
+          )}
           {isUpcoming && (
             <span className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -113,11 +132,6 @@ export default function CourseCard({ course, index }: { course: Course; index: n
           {status === "ongoing" && (
             <span className="text-xs font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-1.5 rounded-full shadow-lg">
               Đang diễn ra
-            </span>
-          )}
-          {status === "completed" && (
-            <span className="text-xs font-bold bg-gray-500 text-white px-3 py-1.5 rounded-full shadow-lg">
-              Đã kết thúc
             </span>
           )}
         </div>

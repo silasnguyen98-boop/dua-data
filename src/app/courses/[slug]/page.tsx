@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import CourseImage from "@/components/CourseImage";
 import CurriculumAccordion from "@/components/CurriculumAccordion";
 import RegisterButton from "@/components/RegisterButton";
+import WaitListRegister from "@/components/WaitListRegister";
 
 async function getCourse(slug: string): Promise<Course | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -21,7 +22,7 @@ function formatPrice(price: number) {
 
 export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
   const course = await getCourse(params.slug);
-  if (!course || course.published === false) notFound();
+  if (!course || course.published === false || course.isHidden === true) notFound();
 
   const totalTopics = course.curriculum.reduce((sum, item) => sum + (item.topics?.length || 0), 0);
 
@@ -49,8 +50,18 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
 
         <div className="relative max-w-6xl mx-auto px-4 py-14 md:py-20">
           <div className="text-white">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <span className="text-sm bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full font-medium">{course.category}</span>
+              {(() => {
+                const now = new Date();
+                if (course.registrationDeadline && new Date(course.registrationDeadline) < now) {
+                  return <span className="text-sm bg-red-500/80 backdrop-blur-sm px-4 py-1.5 rounded-full font-medium">Đã hết hạn đăng ký</span>;
+                }
+                if (course.endDate && new Date(course.endDate) < now) {
+                  return <span className="text-sm bg-gray-500/80 backdrop-blur-sm px-4 py-1.5 rounded-full font-medium">Đã kết thúc</span>;
+                }
+                return null;
+              })()}
             </div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">{course.title}</h1>
             <p className="text-lg text-green-100 max-w-3xl mb-6 leading-relaxed">{course.description}</p>
@@ -148,38 +159,61 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 p-6 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%221%22%20fill%3D%22white%22%20opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')]" />
               <div className="relative">
-                {course.discount > 0 && (
-                  <span className="inline-block bg-red-500 text-white text-sm font-bold px-4 py-1.5 rounded-full mb-3 shadow-lg animate-pulse">
-                    Giảm {course.discount}%
-                  </span>
-                )}
-                <div className="text-4xl font-extrabold text-white drop-shadow-lg">{formatPrice(course.price)}</div>
-                {course.originalPrice > course.price && (
-                  <div className="text-green-200 line-through text-lg mt-1">{formatPrice(course.originalPrice)}</div>
-                )}
-                {course.discount > 0 && (
-                  <div className="inline-block bg-white/20 backdrop-blur-sm text-white text-sm mt-2 px-3 py-1 rounded-full font-medium">
-                    Tiết kiệm {formatPrice(course.originalPrice - course.price)}
+                {course.comingSoon ? (
+                  <div>
+                    <span className="inline-block bg-yellow-400 text-yellow-900 text-sm font-bold px-4 py-1.5 rounded-full mb-3 shadow-lg animate-pulse">
+                      🔔 Sắp ra mắt
+                    </span>
+                    <div className="text-2xl font-extrabold text-white drop-shadow-lg">Sắp có mặt</div>
+                    <p className="text-green-200 text-sm mt-2">Đăng ký để nhận thông báo ngay khi mở bán</p>
                   </div>
+                ) : (
+                  <>
+                    {course.discount > 0 && (
+                      <span className="inline-block bg-red-500 text-white text-sm font-bold px-4 py-1.5 rounded-full mb-3 shadow-lg animate-pulse">
+                        Giảm {course.discount}%
+                      </span>
+                    )}
+                    <div className="text-4xl font-extrabold text-white drop-shadow-lg">{formatPrice(course.price)}</div>
+                    {course.originalPrice > course.price && (
+                      <div className="text-green-200 line-through text-lg mt-1">{formatPrice(course.originalPrice)}</div>
+                    )}
+                    {course.discount > 0 && (
+                      <div className="inline-block bg-white/20 backdrop-blur-sm text-white text-sm mt-2 px-3 py-1 rounded-full font-medium">
+                        Tiết kiệm {formatPrice(course.originalPrice - course.price)}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
 
             <div className="p-7">
               {/* CTA Button - right below price */}
-              <RegisterButton courseId={course.id} courseTitle={course.title} />
+              {course.comingSoon ? (
+                <WaitListRegister courseId={course.id} courseTitle={course.title} />
+              ) : (
+                <RegisterButton
+                  courseId={course.id}
+                  courseTitle={course.title}
+                  endDate={course.endDate}
+                  registrationDeadline={course.registrationDeadline}
+                />
+              )}
 
               {/* Course Info */}
               <div className="space-y-0 text-sm text-gray-600 mt-6 mb-6 bg-green-50/50 rounded-2xl p-4">
                 {[
-                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>, label: "Khai giảng", value: new Date(course.startDate).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" }) },
-                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>, label: "Lịch học", value: course.schedule },
-                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>, label: "Giờ học", value: course.hours },
+                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>, label: "Khai giảng", value: course.startDate ? new Date(course.startDate).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" }) : "—" },
+                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>, label: "Kết thúc", value: course.endDate ? new Date(course.endDate).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" }) : "—" },
+                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>, label: "Hạn đăng ký", value: course.registrationDeadline ? new Date(course.registrationDeadline).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" }) : "—" },
+                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>, label: "Lịch học", value: course.schedule || "—" },
+                  { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>, label: "Giờ học", value: course.hours || "—" },
                   { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>, label: "Số bài học", value: course.totalLessons.toString() },
                   { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>, label: "Giai đoạn", value: course.curriculum.length.toString() },
                   { svg: <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>, label: "Giảng viên", value: course.instructor },
                 ].map((info, i) => (
-                  <div key={i} className={`flex justify-between py-3 ${i < 5 ? "border-b border-gray-100" : ""}`}>
+                  <div key={i} className={`flex justify-between py-3 ${i < 7 ? "border-b border-gray-100" : ""}`}>
                     <span className="flex items-center gap-2">
                       <span className="w-7 h-7 bg-green-50 rounded-lg flex items-center justify-center">{info.svg}</span>
                       <span className="text-gray-500">{info.label}</span>
