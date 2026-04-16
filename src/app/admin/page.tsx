@@ -337,8 +337,15 @@ export default function AdminPage() {
   // Build auth header from session
   function buildAuthHeader(): Record<string, string> {
     if (typeof window === "undefined") return {};
-    const role = (sessionStorage.getItem("admin_role") || "").trim();
-    if (!role) return {};
+    const stored = sessionStorage.getItem("admin_role");
+    if (!stored) return {};
+    let role = stored.trim();
+    // Try to decode base64 (new sessions), fall back to plain string (old sessions)
+    try {
+      role = atob(stored).trim();
+    } catch {
+      // Old session with plain role string
+    }
     return { Authorization: `Bearer ${role}` };
   }
 

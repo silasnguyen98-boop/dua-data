@@ -37,10 +37,13 @@ export default function AdminLoginPage() {
       }
 
       const matchedUser = allUsers[matchedKey];
+      const role = (matchedUser.role || "").trim();
+      // Encode role as base64 so API can decode reliably
+      const encodedRole = btoa(role);
       sessionStorage.setItem("admin_auth", "true");
-      sessionStorage.setItem("admin_role", matchedUser.role);
+      sessionStorage.setItem("admin_role", encodedRole);
       sessionStorage.setItem("admin_id", matchedKey);
-      sessionStorage.setItem("admin_name", matchedUser.name || matchedUser.role);
+      sessionStorage.setItem("admin_name", (matchedUser.name || role || "").trim());
       sessionStorage.setItem("admin_username", username);
       router.push("/admin");
     } catch {
