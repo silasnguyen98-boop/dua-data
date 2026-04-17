@@ -655,6 +655,15 @@ export default function AdminPage() {
   }
 
   async function handleSaveResource() {
+    if (!resourceForm.title.trim()) {
+      alert("Vui lòng nhập tiêu đề");
+      return;
+    }
+    if (!resourceForm.content.trim()) {
+      alert("Vui lòng nhập nội dung");
+      return;
+    }
+
     const payload = {
       ...resourceForm,
       slug: resourceForm.slug || slugify(resourceForm.title),
@@ -665,11 +674,13 @@ export default function AdminPage() {
 
     const res = await fetch("/api/resources", {
       method,
-      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingResource ? "Sửa" : "Thêm"} thất bại: ${err.error}`);
       return;
     }
 
