@@ -339,13 +339,12 @@ export default function AdminPage() {
     if (typeof window === "undefined") return {};
     const stored = sessionStorage.getItem("admin_role");
     if (!stored) return {};
-    // If stored value is plain text role (old sessions), use as-is
-    if (stored.includes("admin") || stored.includes("manager") || stored.includes("_")) {
-      return { Authorization: `Bearer ${stored.trim()}` };
-    }
-    // Otherwise decode base64 (new sessions after login fix)
+    // Always try to decode as base64 first; if it fails, use raw value
     try {
-      return { Authorization: `Bearer ${atob(stored).trim()}` };
+      const decoded = atob(stored.trim());
+      const parts = decoded.split(":");
+      const role = (parts[1] || parts[0] || decoded).trim();
+      return { Authorization: `Bearer ${role}` };
     } catch {
       return { Authorization: `Bearer ${stored.trim()}` };
     }
