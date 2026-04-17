@@ -670,8 +670,6 @@ export default function AdminPage() {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
-      alert(`${editingResource ? "Sửa" : "Thêm"} thất bại: ${err.error}`);
       return;
     }
 
