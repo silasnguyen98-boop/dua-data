@@ -40,6 +40,7 @@ export default function Navbar() {
     { href: "/roadmap", label: "Lộ trình" },
     { href: "/resource", label: "Tài nguyên" },
     { href: "/community", label: "Cộng đồng" },
+    { href: "/job", label: "Việc làm" },
   ];
 
   const isActive = (href: string) => {
