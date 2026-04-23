@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { courseId, fullName, facebook, birthday, phone, email, referralCode, expectations } = body;
 
-    if (!fullName || !facebook || !birthday || !phone || !email) {
+    if (!fullName || !birthday || !phone || !email) {
       return NextResponse.json({ error: "Vui long dien day du thong tin bat buoc" }, { status: 400 });
     }
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Save student
     const newStudent = {
       fullName,
-      facebook,
+      facebook: facebook || "",
       birthday,
       phone,
       email,

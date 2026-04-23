@@ -10,6 +10,7 @@ export async function POST() {
   try {
     const USERS_REF = "users/_system";
     const ADMIN_KEY = "system_admin";
+    const TEACHER_KEY = "teacher";
 
     const snapshot = await get(ref(rtdb, USERS_REF));
     let alreadyExists = false;
@@ -45,6 +46,14 @@ export async function POST() {
       password: "sales123",
       role: "sales_executive",
       name: "Nhân viên kinh doanh",
+      createdAt: new Date().toISOString(),
+    });
+
+    await set(ref(rtdb, `${USERS_REF}/${TEACHER_KEY}`), {
+      username: "teacher",
+      password: "teacher1234@",
+      role: "teacher",
+      name: "Teacher",
       createdAt: new Date().toISOString(),
     });
 

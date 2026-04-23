@@ -16,6 +16,7 @@ const db = getDatabase(app);
 
 async function seed() {
   const USERS_REF = "users/_system";
+  const TEACHER_KEY = "teacher";
 
   // Check if duadata already exists
   const snapshot = await get(ref(db, USERS_REF));
@@ -65,6 +66,19 @@ async function seed() {
       createdAt: new Date().toISOString(),
     });
     console.log("Created demo sales_executive user 'sales'");
+  }
+
+  const teacherRef = ref(db, `${USERS_REF}/${TEACHER_KEY}`);
+  const teacherSnap = await get(teacherRef);
+  if (!teacherSnap.exists()) {
+    await set(teacherRef, {
+      username: "teacher",
+      password: "teacher1234@",
+      role: "teacher",
+      name: "Teacher",
+      createdAt: new Date().toISOString(),
+    });
+    console.log("Created teacher user 'teacher'");
   }
 
   console.log("Done!");

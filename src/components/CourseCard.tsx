@@ -65,7 +65,7 @@ export default function CourseCard({ course, index }: { course: Course; index: n
         style={{ animationDelay: `${index * 0.1}s` }}
       >
         {/* Image section */}
-        <div className="aspect-[4/3] relative overflow-hidden">
+        <div className="aspect-video relative overflow-hidden">
           {course.imageUrl ? (
             <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover grayscale" />
           ) : (
@@ -100,7 +100,7 @@ export default function CourseCard({ course, index }: { course: Course; index: n
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {/* Image section */}
-      <div className="aspect-[4/3] relative overflow-hidden">
+      <div className="aspect-video relative overflow-hidden">
         {course.imageUrl ? (
           <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
         ) : (

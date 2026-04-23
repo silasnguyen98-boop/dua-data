@@ -26,13 +26,13 @@ export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
         <div className="relative max-w-7xl mx-auto px-4 py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 text-sm font-bold px-4 py-1.5 rounded-full mb-6">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            Học viên Dứa Data
+            Học viên DUA Edu
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 font-display">
             Cộng đồng <span className="bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Alumni</span>
           </h1>
           <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
-            Những câu chuyện thật từ học viên đã tin tưởng và chinh phục mục tiêu cùng Dứa Data
+            Những câu chuyện thật từ học viên đã tin tưởng và chinh phục mục tiêu cùng DUA Edu
           </p>
         </div>
       </section>
@@ -156,7 +156,7 @@ export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
       <section className="bg-gradient-to-r from-green-600 to-emerald-500 py-16">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-extrabold text-white mb-4">Bạn muốn trở thành Alumni tiếp theo?</h2>
-          <p className="text-green-100 text-lg mb-8">Tham gia khóa học của Dứa Data và bắt đầu hành trình của bạn ngay hôm nay</p>
+          <p className="text-green-100 text-lg mb-8">Tham gia khóa học của DUA Edu và bắt đầu hành trình của bạn ngay hôm nay</p>
           <a
             href="/courses"
             className="inline-flex items-center gap-2 bg-white text-green-700 font-bold px-8 py-4 rounded-full shadow-xl hover:bg-green-50 hover:shadow-2xl hover:scale-105 transition-all duration-300"

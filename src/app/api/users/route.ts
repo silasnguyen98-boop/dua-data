@@ -4,7 +4,7 @@ import { ref, get, set, push, update, remove } from "firebase/database";
 
 const USERS_REF = "users/_system";
 
-type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant";
+type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant" | "teacher";
 const ALLOWED_ROLES: UserRole[] = ["system_admin"];
 
 function getRoleFromHeader(req: NextRequest): UserRole | null {

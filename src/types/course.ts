@@ -42,6 +42,7 @@ export interface Course {
   published?: boolean;
   comingSoon?: boolean;
   isHidden?: boolean;
+  hidePrice?: boolean;
   waitList?: WaitListEntry[];
   createdAt?: string;
   updatedAt?: string;

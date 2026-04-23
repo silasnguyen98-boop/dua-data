@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     description: body.description || "",
     image: body.image || "",
     imageUrl: body.imageUrl || "",
-    instructor: body.instructor || "Đội Ngũ Dứa Data",
+    instructor: body.instructor || "Đội Ngũ DUA Edu",
     price: Number(body.price) || 0,
     originalPrice: Number(body.originalPrice) || 0,
     discount: Number(body.discount) || 0,

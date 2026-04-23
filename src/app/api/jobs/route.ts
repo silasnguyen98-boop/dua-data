@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     applicationLink: body.applicationLink || "",
     applicationDeadline: body.applicationDeadline || "",
     salary: body.salary || "",
-    author: body.author || "Dứa Data",
+    author: body.author || "DUA Edu",
     published: body.published !== false,
     createdAt: now,
     updatedAt: now,

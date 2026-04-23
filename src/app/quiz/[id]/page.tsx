@@ -1,11 +1,14 @@
-import { Quiz } from "@/types/quiz";
+import { cookies } from "next/headers";
+import { Quiz, QuizAttemptRecord } from "@/types/quiz";
+import { db } from "@/lib/firebase";
+import { ref, get } from "firebase/database";
 import QuizTakePage from "./QuizTakePage";
+import QuizPasswordGate from "./QuizPasswordGate";
 
 async function getQuiz(id: string): Promise<Quiz | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/quiz/${id}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return res.json();
+  const snapshot = await get(ref(db, `quiz/${id}`));
+  if (!snapshot.exists()) return null;
+  return { id, ...snapshot.val() } as Quiz;
 }
 
 export const dynamic = "force-dynamic";
@@ -24,5 +27,33 @@ export default async function QuizPage({ params }: { params: { id: string } }) {
     );
   }
 
-  return <QuizTakePage quiz={quiz} />;
+  const cookieStore = cookies();
+  const accessCookie = cookieStore.get(`quiz_access_${params.id}`)?.value;
+  const isUnlocked = !quiz.password || accessCookie === quiz.password;
+  const attemptCookie = cookieStore.get(`quiz_attempt_${params.id}`)?.value;
+  let initialAttempt: QuizAttemptRecord | null = null;
+  if (attemptCookie) {
+    try {
+      initialAttempt = JSON.parse(decodeURIComponent(attemptCookie)) as QuizAttemptRecord;
+    } catch {
+      initialAttempt = null;
+    }
+  }
+
+  if (!isUnlocked) {
+    return (
+      <QuizPasswordGate
+        quiz={{
+          id: quiz.id,
+          title: quiz.title,
+          description: quiz.description,
+          imageUrl: quiz.imageUrl,
+          durationMinutes: quiz.durationMinutes,
+        }}
+      />
+    );
+  }
+
+  const { password, ...safeQuiz } = quiz;
+  return <QuizTakePage quiz={safeQuiz as Quiz} initialAttempt={initialAttempt} />;
 }

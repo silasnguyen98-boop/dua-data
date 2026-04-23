@@ -46,7 +46,7 @@ export default function WaitListRegister({ courseId, courseTitle }: Props) {
       }
 
       setStatus("success");
-      setMessage("Đăng ký thành công! Dứa sẽ thông báo ngay khi khóa học khai giảng.");
+      setMessage("Đăng ký thành công! DUA sẽ thông báo ngay khi khóa học khai giảng.");
       setName("");
       setPhone("");
       setEmail("");

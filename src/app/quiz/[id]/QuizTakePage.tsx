@@ -1,23 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Quiz, QuizQuestion } from "@/types/quiz";
+import { Quiz, QuizAttemptRecord, QuizLeaderboardEntry } from "@/types/quiz";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 type QuizState = "not-started" | "in-progress" | "completed";
 
-interface Answer {
-  questionId: string;
-  selectedIndex: number;
-  correct: boolean;
-}
-
 const difficultyColors: Record<string, string> = {
-  easy: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  hard: "bg-red-100 text-red-700",
+  easy: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  medium: "bg-lime-50 text-lime-700 border border-lime-100",
+  hard: "bg-amber-50 text-amber-700 border border-amber-100",
 };
 const difficultyLabels: Record<string, string> = {
   easy: "Dễ",
@@ -25,13 +19,92 @@ const difficultyLabels: Record<string, string> = {
   hard: "Khó",
 };
 
-export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
-  const [state, setState] = useState<QuizState>("not-started");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [submitted, setSubmitted] = useState(false);
+function normalizeOptions(options: unknown): string[] {
+  if (Array.isArray(options)) {
+    return options.map((opt) => String(opt));
+  }
+  if (options && typeof options === "object") {
+    return Object.values(options as Record<string, unknown>).map((opt) => String(opt));
+  }
+  return [];
+}
 
-  const questions = quiz.questions || [];
+function normalizeQuestions(rawQuestions: unknown): Quiz["questions"] {
+  const list = Array.isArray(rawQuestions)
+    ? rawQuestions
+    : rawQuestions && typeof rawQuestions === "object"
+    ? Object.values(rawQuestions as Record<string, unknown>)
+    : [];
+
+  return list.map((q: any, index: number) => ({
+    id: String(q?.id || `q${index + 1}`),
+    question: String(q?.question || ""),
+    options: normalizeOptions(q?.options),
+    correctIndex: Number(q?.correctIndex ?? -1),
+    explanation: q?.explanation ? String(q.explanation) : undefined,
+  }));
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function toRenderableHtml(value?: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  // Preserve existing rich HTML authored in the editor. Plain text gets paragraphs and line breaks.
+  if (/<\/?[a-z][\s\S]*>/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return trimmed
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
+function RichContent({ content, className }: { content?: string; className: string }) {
+  const html = toRenderableHtml(content);
+  if (!html) return null;
+  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+export default function QuizTakePage({
+  quiz,
+  initialAttempt,
+}: {
+  quiz: Quiz;
+  initialAttempt?: QuizAttemptRecord | null;
+}) {
+  const [state, setState] = useState<QuizState>(initialAttempt ? "completed" : "not-started");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>(initialAttempt?.answers ?? {});
+  const [submitted, setSubmitted] = useState(Boolean(initialAttempt));
+  const [submittedByTimeout, setSubmittedByTimeout] = useState(Boolean(initialAttempt?.submittedByTimeout));
+  const [submittedAt, setSubmittedAt] = useState(initialAttempt?.submittedAt ?? "");
+  const [viewerName, setViewerName] = useState(initialAttempt?.participantName ?? "");
+  const [resultsVisible, setResultsVisible] = useState(Boolean(initialAttempt?.participantName?.trim()));
+  const [nameError, setNameError] = useState("");
+  const [savingAttempt, setSavingAttempt] = useState(false);
+  const [attemptElapsedSeconds, setAttemptElapsedSeconds] = useState(initialAttempt?.elapsedSeconds ?? 0);
+  const [leaderboard, setLeaderboard] = useState<QuizLeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState("");
+  const timeoutHandledRef = useRef(false);
+  const leaderboardLoadedRef = useRef(false);
+  const startedAtRef = useRef<number | null>(null);
+  const hasTimeLimit = Number(quiz.durationMinutes || 0) > 0;
+  const initialTimeLeft = hasTimeLimit ? Number(quiz.durationMinutes || 0) * 60 : 0;
+  const [timeLeft, setTimeLeft] = useState(initialTimeLeft);
+
+  const questions = normalizeQuestions(quiz.questions);
   const total = questions.length;
   const currentQ = questions[currentIndex];
 
@@ -52,37 +125,208 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
     }
   }
 
-  function handleSubmit() {
+  function handleStartQuiz() {
+    if (submitted) return;
+    if (total === 0) return;
+    setState("in-progress");
+    setCurrentIndex(0);
+    setAnswers({});
+    setSubmitted(false);
+    setSubmittedByTimeout(false);
+    timeoutHandledRef.current = false;
+    startedAtRef.current = Date.now();
+    if (hasTimeLimit) {
+      setTimeLeft(initialTimeLeft);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleSubmit(byTimeout = false) {
+    if (submitted) return;
+    const now = new Date().toISOString();
+    const elapsedSeconds = startedAtRef.current ? Math.max(0, Math.floor((Date.now() - startedAtRef.current) / 1000)) : 0;
+    const attemptRecord: QuizAttemptRecord = {
+      answers,
+      submittedByTimeout: byTimeout,
+      submittedAt: now,
+      participantName: "",
+      elapsedSeconds,
+    };
+    try {
+      persistAttempt(attemptRecord);
+    } catch {
+      // Persisting the attempt should never block the UI.
+    }
+    setSubmittedAt(now);
+    setAttemptElapsedSeconds(elapsedSeconds);
     setSubmitted(true);
+    setSubmittedByTimeout(byTimeout);
+    setViewerName("");
+    setNameError("");
+    setResultsVisible(false);
     setState("completed");
   }
+
+  function persistAttempt(nextAttempt: QuizAttemptRecord) {
+    const cookieValue = encodeURIComponent(JSON.stringify(nextAttempt));
+    const cookieParts = [
+      `quiz_attempt_${quiz.id}=${cookieValue}`,
+      `path=/quiz/${quiz.id}`,
+      "max-age=31536000",
+      "samesite=lax",
+    ];
+    if (window.location.protocol === "https:") {
+      cookieParts.push("secure");
+    }
+    document.cookie = cookieParts.join("; ");
+  }
+
+  function handleRevealResults() {
+    const trimmedName = viewerName.trim();
+    if (!trimmedName) {
+      setNameError("Vui lòng nhập tên để xem kết quả");
+      return;
+    }
+
+    setSavingAttempt(true);
+    setLeaderboardError("");
+
+    const nextAttempt: QuizAttemptRecord = {
+      answers,
+      submittedByTimeout,
+      submittedAt: submittedAt || new Date().toISOString(),
+      participantName: trimmedName,
+      elapsedSeconds: attemptElapsedSeconds,
+    };
+
+    fetch(`/api/quiz/${quiz.id}/attempts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        participantName: trimmedName,
+        answers,
+        submittedByTimeout,
+        submittedAt: nextAttempt.submittedAt,
+        elapsedSeconds: attemptElapsedSeconds,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Không thể lưu kết quả");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        persistAttempt(nextAttempt);
+        setSubmittedAt(nextAttempt.submittedAt);
+        setAttemptElapsedSeconds(nextAttempt.elapsedSeconds || 0);
+        setViewerName(trimmedName);
+        setNameError("");
+        setLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+        leaderboardLoadedRef.current = true;
+        setResultsVisible(true);
+      })
+      .catch((err: Error) => {
+        setNameError(err.message || "Không thể lưu kết quả");
+      })
+      .finally(() => {
+        setSavingAttempt(false);
+      });
+  }
+
+  async function loadLeaderboard() {
+    setLeaderboardLoading(true);
+    setLeaderboardError("");
+    try {
+      const res = await fetch(`/api/quiz/${quiz.id}/attempts`, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error("Không thể tải bảng xếp hạng");
+      }
+      const data = await res.json();
+      setLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+    } catch (err) {
+      setLeaderboardError(err instanceof Error ? err.message : "Không thể tải bảng xếp hạng");
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }
+
+  function formatTime(seconds: number) {
+    const safe = Math.max(0, seconds);
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  useEffect(() => {
+    if (state !== "in-progress" || !hasTimeLimit || submitted) return;
+
+    const timer = window.setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [state, hasTimeLimit, submitted]);
+
+  useEffect(() => {
+    if (state !== "in-progress" || !hasTimeLimit || submitted) return;
+    if (timeLeft > 0 || timeoutHandledRef.current) return;
+    timeoutHandledRef.current = true;
+    handleSubmit(true);
+  }, [state, hasTimeLimit, submitted, timeLeft]);
+
+  useEffect(() => {
+    if (state !== "completed" || !resultsVisible) return;
+    if (leaderboardLoadedRef.current) return;
+    leaderboardLoadedRef.current = true;
+    void loadLeaderboard();
+  }, [state, resultsVisible]);
 
   const score = questions.reduce((acc, q, i) => {
     return acc + (answers[i] === q.correctIndex ? 1 : 0);
   }, 0);
   const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  const scoreOutOf10 = total > 0 ? Math.round((score / total) * 10) : 0;
 
-  const scoreColor = percentage >= 80 ? "text-green-600" : percentage >= 50 ? "text-yellow-600" : "text-red-600";
-  const scoreBg = percentage >= 80 ? "bg-green-50 border-green-200" : percentage >= 50 ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200";
+  const scoreColor = scoreOutOf10 >= 8 ? "text-emerald-700" : scoreOutOf10 >= 5 ? "text-lime-700" : "text-amber-700";
+  const scoreBg = scoreOutOf10 >= 8 ? "bg-emerald-50 border-emerald-200" : scoreOutOf10 >= 5 ? "bg-lime-50 border-emerald-200" : "bg-amber-50 border-emerald-200";
+
+  if (state !== "not-started" && total === 0) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <section className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <div className="text-6xl mb-4">📝</div>
+          <h1 className="text-3xl font-extrabold text-emerald-950 mb-3">Quiz chưa có câu hỏi</h1>
+          <p className="text-emerald-900/70 mb-8">Không thể bắt đầu làm bài vì bộ quiz này chưa được nhập câu hỏi hợp lệ.</p>
+          <Link href="/quiz" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-800 transition-colors">
+            ← Quay lại danh sách quiz
+          </Link>
+        </section>
+        <Footer />
+      </div>
+    );
+  }
 
   if (state === "not-started") {
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50" />
-          <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-200/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-100/40 rounded-full blur-3xl" />
-          <div className="relative max-w-3xl mx-auto px-4 py-24 text-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-lime-50 pointer-events-none" />
+          <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-lime-100/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 max-w-3xl mx-auto px-4 py-24 text-center">
             {quiz.imageUrl && (
-              <div className="w-full h-52 rounded-2xl overflow-hidden mb-8 mx-auto max-w-lg shadow-lg">
+              <div className="aspect-video w-full rounded-2xl overflow-hidden mb-8 mx-auto max-w-2xl shadow-lg border border-emerald-100 bg-gray-50">
                 <img src={quiz.imageUrl} alt={quiz.title} className="w-full h-full object-cover" />
               </div>
             )}
 
             <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
               {quiz.category && (
-                <span className="bg-indigo-100 text-indigo-700 text-sm font-bold px-3 py-1 rounded-full">{quiz.category}</span>
+                <span className="bg-emerald-100 text-emerald-800 text-sm font-bold px-3 py-1 rounded-full border border-emerald-200">{quiz.category}</span>
               )}
               {quiz.difficulty && (
                 <span className={`text-sm font-bold px-3 py-1 rounded-full ${difficultyColors[quiz.difficulty] || "bg-gray-100 text-gray-600"}`}>
@@ -91,41 +335,53 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
               )}
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 font-display">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-emerald-950 mb-4 font-display">
               {quiz.title}
             </h1>
-            <p className="text-gray-500 text-lg mb-8">{quiz.description}</p>
+            <p className="text-emerald-900/70 text-lg mb-10">{quiz.description}</p>
 
-            <div className="inline-flex items-center gap-6 bg-white border border-gray-200 rounded-2xl px-8 py-4 shadow-sm mb-10">
-              <div className="text-center">
-                <div className="text-2xl font-extrabold text-indigo-600">{total}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Câu hỏi</div>
-              </div>
-              <div className="w-px h-10 bg-gray-200" />
-              <div className="text-center">
-                <div className="text-2xl font-extrabold text-indigo-600">{quiz.difficulty ? (difficultyLabels[quiz.difficulty] || quiz.difficulty) : "—"}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Độ khó</div>
-              </div>
-              <div className="w-px h-10 bg-gray-200" />
-              <div className="text-center">
-                <div className="text-2xl font-extrabold text-indigo-600">{quiz.category || "—"}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Chủ đề</div>
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="rounded-3xl border border-emerald-200 bg-white/95 shadow-lg shadow-emerald-100/60 px-5 py-5">
+                <p className="text-sm font-semibold text-emerald-900/70 mb-4">
+                  Nếu bạn đã sẵn sàng thì bắt đầu làm bài ngay thôi!
+                </p>
+                <button
+                  onClick={handleStartQuiz}
+                  disabled={total === 0}
+                  className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 hover:-translate-y-0.5 transition-all ring-1 ring-emerald-500/10"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {total === 0 ? "Quiz chưa có câu hỏi" : "Bắt đầu làm bài"}
+                </button>
               </div>
             </div>
 
-            <button
-              onClick={() => setState("in-progress")}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-500 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Bắt đầu làm bài
-            </button>
+            <div className="grid grid-cols-3 gap-3 bg-white border border-emerald-100 rounded-3xl px-4 py-4 shadow-sm mb-6 max-w-2xl mx-auto">
+              <div className="text-center px-2">
+                <div className="text-2xl font-extrabold text-emerald-700">{total}</div>
+                <div className="text-[11px] font-semibold text-emerald-900/60 mt-0.5 uppercase tracking-wide">Câu hỏi</div>
+              </div>
+              <div className="text-center px-2 border-l border-r border-emerald-100">
+                <div className="text-2xl font-extrabold text-emerald-700">{quiz.difficulty ? (difficultyLabels[quiz.difficulty] || quiz.difficulty) : "—"}</div>
+                <div className="text-[11px] font-semibold text-emerald-900/60 mt-0.5 uppercase tracking-wide">Độ khó</div>
+              </div>
+              <div className="text-center px-2">
+                <div className="text-2xl font-extrabold text-emerald-700">{quiz.category || "—"}</div>
+                <div className="text-[11px] font-semibold text-emerald-900/60 mt-0.5 uppercase tracking-wide">Chủ đề</div>
+              </div>
+            </div>
+
+            {hasTimeLimit && (
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 text-sm font-bold px-4 py-2 rounded-full border border-emerald-100 mb-6">
+                ⏱ Thời gian làm bài: {quiz.durationMinutes} phút
+              </div>
+            )}
 
             <div className="mt-6">
-              <Link href="/quiz" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
+              <Link href="/quiz" className="text-emerald-700 hover:text-emerald-900 text-sm font-semibold transition-colors">
                 ← Quay lại danh sách quiz
               </Link>
             </div>
@@ -143,78 +399,145 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
         <section className="max-w-3xl mx-auto px-4 py-16">
           {/* Score card */}
           <div className={`text-center rounded-3xl border-2 p-10 mb-10 ${scoreBg}`}>
-            <div className="text-7xl mb-4">
-              {percentage >= 80 ? "🎉" : percentage >= 50 ? "🤔" : "📚"}
-            </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
-              {percentage >= 80 ? "Xuất sắc!" : percentage >= 50 ? "Khá tốt!" : "Cần cố gắng thêm!"}
+            <h2 className="text-3xl font-extrabold text-emerald-950 mb-2">
+              {resultsVisible ? (percentage >= 80 ? "Xuất sắc!" : percentage >= 50 ? "Khá tốt!" : "Cần cố gắng thêm!") : "Nhập tên để xem kết quả"}
             </h2>
-            <div className={`text-7xl font-extrabold mb-2 ${scoreColor}`}>{percentage}%</div>
-            <p className="text-gray-600 text-lg">
-              Bạn trả lời đúng <span className="font-bold">{score}</span> / {total} câu
+            <p className="text-emerald-900/70 text-sm mb-4">
+              {resultsVisible
+                ? `Bạn đã hoàn thành bài quiz.`
+                : "Sau khi nhập tên, điểm số và chi tiết đáp án sẽ hiện ra ở bên dưới."}
             </p>
+            {submittedByTimeout && hasTimeLimit && (
+              <div className="inline-flex items-center gap-2 bg-red-50 text-red-700 text-sm font-bold px-4 py-2 rounded-full border border-red-100 mb-4">
+                Hết giờ, bài làm đã được nộp tự động
+              </div>
+            )}
+            {!resultsVisible ? (
+              <div className="max-w-xl mx-auto">
+                <div className="rounded-3xl border border-emerald-100 bg-white/90 shadow-sm p-6 text-left">
+                  <p className="text-sm font-semibold text-emerald-900/70 mb-4">
+                    Nhập Họ Tên của bạn để xem kết quả.
+                  </p>
+                  {nameError && (
+                    <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-100 mb-4">
+                      {nameError}
+                    </div>
+                  )}
+                  <form
+                    className="space-y-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleRevealResults();
+                    }}
+                  >
+                    <label className="block text-sm font-semibold text-emerald-900/80">
+                      Họ tên
+                    </label>
+                    <input
+                      type="text"
+                      value={viewerName}
+                      onChange={(e) => setViewerName(e.target.value)}
+                      placeholder="Nhập Họ Tên của bạn để xem kết quả"
+                      disabled={savingAttempt}
+                      className="w-full rounded-2xl border border-emerald-200 px-4 py-3 text-base text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingAttempt}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-bold px-6 py-3 rounded-2xl hover:from-emerald-800 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                    >
+                      {savingAttempt ? "Đang lưu..." : "Xem kết quả"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-3xl border border-emerald-100 shadow-lg shadow-emerald-100/50 p-8">
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="text-2xl font-extrabold text-emerald-950">
+                          Kết quả của {viewerName.trim()}
+                        </h3>
+                      </div>
+                      {submittedByTimeout && hasTimeLimit && (
+                        <span className="inline-flex items-center gap-2 bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full border border-red-100">
+                          Hết giờ
+                        </span>
+                      )}
+                    </div>
 
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <button
-                onClick={() => {
-                  setState("in-progress");
-                  setCurrentIndex(0);
-                  setAnswers({});
-                  setSubmitted(false);
-                }}
-                className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Làm lại
-              </button>
-              <Link
-                href="/quiz"
-                className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                ← Danh sách quiz
-              </Link>
-            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-5 text-center">
+                        <div className={`text-5xl font-extrabold ${scoreColor}`}>{scoreOutOf10}/10</div>
+                        <div className="text-xs font-semibold text-emerald-900/55 uppercase tracking-wide mt-2">Điểm số</div>
+                      </div>
+                      <div className="rounded-2xl bg-white border border-emerald-100 px-4 py-5 text-center">
+                        <div className="text-3xl font-extrabold text-emerald-950">{score}/{total}</div>
+                        <div className="text-xs font-semibold text-emerald-900/55 uppercase tracking-wide mt-2">Câu đúng</div>
+                      </div>
+                      <div className="rounded-2xl bg-white border border-emerald-100 px-4 py-5 text-center">
+                        <div className="text-3xl font-extrabold text-emerald-950">
+                          {score >= Math.ceil(total * 0.8) ? "A" : score >= Math.ceil(total * 0.5) ? "B" : "C"}
+                        </div>
+                        <div className="text-xs font-semibold text-emerald-900/55 uppercase tracking-wide mt-2">Xếp loại</div>
+                      </div>
+                    </div>
+
+                    <p className="text-emerald-900/70 text-sm mt-6">
+                      Tên đã nhập sẽ được lưu cùng bài làm trên trình duyệt này.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-10 max-w-3xl mx-auto">
+                  <h3 className="text-xl font-bold text-emerald-950 mb-4">Chi tiết đáp án</h3>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Question review */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Chi tiết đáp án</h3>
-          <div className="space-y-6">
+          {resultsVisible && (
+            <div className="space-y-6">
             {questions.map((q, i) => {
               const selected = answers[i];
               const correct = selected === q.correctIndex;
+              const reviewOptions = Array.isArray(q.options) ? q.options : [];
               return (
-                <div key={q.id} className={`rounded-2xl border-2 p-6 ${correct ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${correct ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                <div key={q.id} className={`rounded-2xl border-2 p-6 ${correct ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+                <div className="flex items-start gap-3 mb-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${correct ? "bg-emerald-700 text-white" : "bg-red-500 text-white"}`}>
                       {correct ? "✓" : "✗"}
                     </div>
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 mb-1">Câu {i + 1}</div>
-                      <div className="text-base font-bold text-gray-900">{q.question}</div>
+                      <div className="text-xs font-semibold text-emerald-900/55 mb-1">Câu {i + 1}</div>
+                      <RichContent
+                        content={q.question}
+                        className="text-base font-semibold text-emerald-950 leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_img]:max-w-full [&_img]:rounded-2xl [&_img]:my-3 [&_img]:shadow-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-emerald-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-emerald-900/70"
+                      />
                     </div>
                   </div>
 
                   <div className="space-y-2 ml-11">
-                    {q.options.map((opt, oi) => {
+                    {reviewOptions.map((opt, oi) => {
                       const isCorrect = oi === q.correctIndex;
                       const isSelected = oi === selected;
                       return (
                         <div key={oi} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${
                           isCorrect
-                            ? "bg-green-100 text-green-800 font-semibold border border-green-300"
+                            ? "bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300"
                             : isSelected && !correct
                             ? "bg-red-100 text-red-800 font-semibold border border-red-300"
-                            : "bg-white text-gray-600 border border-gray-200"
+                            : "bg-white text-emerald-900/70 border border-emerald-100"
                         }`}>
                           <span className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0"
-                            style={{ borderColor: isCorrect ? "#16a34a" : isSelected ? "#dc2626" : "#d1d5db", background: isCorrect ? "#16a34a" : isSelected ? "#dc2626" : "transparent", color: isCorrect || isSelected ? "white" : "#6b7280" }}
+                            style={{ borderColor: isCorrect ? "#047857" : isSelected ? "#dc2626" : "#d1fae5", background: isCorrect ? "#047857" : isSelected ? "#dc2626" : "transparent", color: isCorrect || isSelected ? "white" : "#047857" }}
                           >
                             {String.fromCharCode(65 + oi)}
                           </span>
                           {opt}
-                          {isCorrect && <span className="ml-auto text-green-600 font-bold text-xs">✓ Đáp án đúng</span>}
+                          {isCorrect && <span className="ml-auto text-emerald-700 font-bold text-xs">✓ Đáp án đúng</span>}
                           {!isCorrect && isSelected && <span className="ml-auto text-red-600 font-bold text-xs">✗ Bạn chọn sai</span>}
                         </div>
                       );
@@ -222,13 +545,98 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
                   </div>
 
                   {q.explanation && (
-                    <div className="ml-11 mt-3 bg-white/70 rounded-xl px-4 py-3 text-sm text-gray-600 border border-gray-200">
-                      <span className="font-semibold text-indigo-600">Giải thích: </span>{q.explanation}
+                    <div className="ml-11 mt-3 bg-white/80 rounded-xl px-4 py-3 text-sm text-emerald-900/70 border border-emerald-100">
+                      <div className="font-semibold text-emerald-700 mb-1">Giải thích</div>
+                      <RichContent
+                        content={q.explanation}
+                        className="text-sm leading-relaxed text-emerald-900/70 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_img]:max-w-full [&_img]:rounded-xl [&_img]:my-3 [&_img]:shadow-sm [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+                      />
                     </div>
                   )}
                 </div>
               );
             })}
+            </div>
+          )}
+          {resultsVisible && (
+            <div className="mt-12 max-w-3xl mx-auto">
+              <div className="rounded-3xl border border-emerald-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-white">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 mb-1">Bảng xếp hạng</p>
+                    <h3 className="text-2xl font-extrabold text-emerald-950">Top quiz</h3>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-emerald-900/55">Ưu tiên điểm đúng</p>
+                    <p className="text-xs font-semibold text-emerald-900/55">Nếu bằng điểm, ai làm nhanh hơn sẽ đứng trên</p>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {leaderboardLoading ? (
+                    <div className="text-center py-10 text-emerald-900/60">
+                      Đang tải bảng xếp hạng...
+                    </div>
+                  ) : leaderboardError ? (
+                    <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-2xl border border-red-100">
+                      {leaderboardError}
+                    </div>
+                  ) : leaderboard.length === 0 ? (
+                    <div className="text-center py-10">
+                      <div className="text-3xl mb-3">🏁</div>
+                      <p className="text-emerald-900/70 font-medium">Chưa có ai xuất hiện trên bảng xếp hạng.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {leaderboard.map((entry, index) => {
+                        const isCurrentUser = entry.participantName.trim() === viewerName.trim();
+                        return (
+                          <div
+                            key={`${entry.id}-${index}`}
+                            className={`flex items-center gap-4 rounded-2xl border px-4 py-4 ${
+                              isCurrentUser
+                                ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                                : "border-emerald-100 bg-white"
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center font-extrabold flex-shrink-0">
+                              {index + 1}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-emerald-950 truncate">{entry.participantName}</p>
+                                {isCurrentUser && (
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Bạn
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-emerald-900/55 mt-0.5">
+                                {entry.score}/{entry.totalQuestions} câu đúng • {formatTime(entry.elapsedSeconds)}
+                              </p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-2xl font-extrabold text-emerald-700">{Math.round(entry.percentage / 10)}/10</div>
+                              <div className="text-[11px] font-semibold text-emerald-900/55 uppercase tracking-wide">
+                                {entry.submittedByTimeout ? "Hết giờ" : "Hoàn thành"}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="mt-10 text-center">
+            <Link
+              href="/quiz"
+              className="inline-flex items-center gap-2 bg-white border border-emerald-200 text-emerald-800 font-bold px-6 py-3 rounded-xl hover:bg-emerald-50 transition-colors"
+            >
+              ← Danh sách quiz
+            </Link>
           </div>
         </section>
         <Footer />
@@ -238,33 +646,61 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
 
   // In progress
   const answered = Object.keys(answers).length;
+  if (!currentQ) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <section className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-3xl font-extrabold text-emerald-950 mb-3">Dữ liệu quiz không hợp lệ</h1>
+          <p className="text-emerald-900/70 mb-8">Mình không tìm thấy câu hỏi hiện tại để hiển thị. Vui lòng quay lại danh sách và thử lại.</p>
+          <Link href="/quiz" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-800 transition-colors">
+            ← Quay lại danh sách quiz
+          </Link>
+        </section>
+        <Footer />
+      </div>
+    );
+  }
+  const currentOptions = Array.isArray(currentQ.options) ? currentQ.options : [];
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
       {/* Progress bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white border-b border-emerald-100 shadow-sm">
         <div className="max-w-3xl mx-auto px-4">
           <div className="flex items-center gap-4 py-3">
-            <Link href="/quiz" className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-gray-500">
-                  Câu {currentIndex + 1} / {total}
-                </span>
-                <span className="text-xs font-semibold text-indigo-600">
-                  {answered} đã trả lời
-                </span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full transition-all duration-500"
-                  style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
+              <Link href="/quiz" className="text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-emerald-900/55">
+                    Câu {currentIndex + 1} / {total}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-emerald-700">
+                      {answered} đã trả lời
+                    </span>
+                    {hasTimeLimit && (
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                        timeLeft <= 60
+                          ? "bg-red-50 text-red-700 border-red-100"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                      }`}>
+                        ⏱ {formatTime(timeLeft)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-2 bg-emerald-50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-600 to-lime-500 rounded-full transition-all duration-500"
+                    style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
                 />
               </div>
             </div>
@@ -275,17 +711,18 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
       {/* Question */}
       <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full mb-4 border border-emerald-100">
             Câu hỏi {currentIndex + 1}
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-relaxed">
-            {currentQ.question}
-          </h2>
+          <RichContent
+            content={currentQ.question}
+            className="text-2xl md:text-3xl font-semibold text-emerald-950 leading-relaxed [&_p]:mb-4 [&_p:last-child]:mb-0 [&_img]:max-w-full [&_img]:rounded-2xl [&_img]:my-4 [&_img]:shadow-md [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-emerald-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-emerald-900/70"
+          />
         </div>
 
         {/* Options */}
         <div className="space-y-3">
-          {currentQ.options.map((opt, oi) => {
+          {currentOptions.map((opt, oi) => {
             const selected = answers[currentIndex] === oi;
             return (
               <button
@@ -293,22 +730,22 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
                 onClick={() => handleSelectAnswer(oi)}
                 className={`w-full text-left flex items-center gap-4 px-6 py-5 rounded-2xl border-2 transition-all duration-200 ${
                   selected
-                    ? "border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100 ring-2 ring-indigo-300"
-                    : "border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50 shadow-sm"
+                    ? "border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-100 ring-2 ring-emerald-300"
+                    : "border-emerald-100 bg-white hover:border-emerald-300 hover:bg-emerald-50/50 shadow-sm"
                 }`}
               >
                 <span className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-base font-bold flex-shrink-0 transition-all ${
                   selected
-                    ? "bg-indigo-600 border-indigo-600 text-white"
-                    : "bg-gray-50 border-gray-300 text-gray-600"
+                    ? "bg-emerald-700 border-emerald-700 text-white"
+                    : "bg-emerald-50 border-emerald-200 text-emerald-700"
                 }`}>
                   {String.fromCharCode(65 + oi)}
                 </span>
-                <span className={`text-base font-medium ${selected ? "text-indigo-900" : "text-gray-700"}`}>
+                <span className={`text-base font-medium ${selected ? "text-emerald-950" : "text-emerald-900/80"}`}>
                   {opt}
                 </span>
                 {selected && (
-                  <span className="ml-auto text-indigo-600">
+                  <span className="ml-auto text-emerald-700">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
@@ -324,7 +761,7 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-emerald-200 text-emerald-800 font-medium hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -336,7 +773,7 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
             <button
               onClick={handleNext}
               disabled={answers[currentIndex] === undefined}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-indigo-200"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-emerald-200"
             >
               Câu tiếp
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,9 +782,9 @@ export default function QuizTakePage({ quiz }: { quiz: Quiz }) {
             </button>
           ) : (
             <button
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               disabled={answered < total}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold hover:from-green-700 hover:to-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-green-200"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-700 to-lime-600 text-white font-bold hover:from-emerald-800 hover:to-lime-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-emerald-200"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

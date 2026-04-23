@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { rtdb } from "@/lib/firebase";
 import { ref, get } from "firebase/database";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -56,7 +57,12 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-700 mb-2">🍍 Dứa Data</h1>
+          <BrandLogo
+            href="/"
+            className="justify-center mb-2"
+            showText={false}
+            imageClassName="h-12 w-12"
+          />
           <p className="text-gray-500">Đăng nhập trang quản trị</p>
         </div>
 

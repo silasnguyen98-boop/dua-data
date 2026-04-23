@@ -146,11 +146,11 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
           <div className="bg-white rounded-3xl shadow-[0_8px_40px_-4px_rgba(22,163,74,0.25)] border-2 border-green-200 p-0 sticky top-20 overflow-hidden ring-1 ring-green-100">
             {/* Course Image in card */}
             {course.imageUrl ? (
-              <div className="w-full h-56 overflow-hidden">
+              <div className="w-full aspect-video overflow-hidden">
                 <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-full h-56 overflow-hidden">
+              <div className="w-full aspect-video overflow-hidden">
                 <CourseImage type={course.image || "python"} size="lg" />
               </div>
             )}

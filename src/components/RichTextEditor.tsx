@@ -6,9 +6,19 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  minHeight?: string;
+  maxHeight?: string;
+  editorClassName?: string;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  minHeight = "300px",
+  maxHeight = "500px",
+  editorClassName = "",
+}: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -152,7 +162,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         suppressContentEditableWarning
         onInput={handleInput}
         onPaste={handlePaste}
-        className="min-h-[300px] max-h-[500px] overflow-y-auto px-4 py-3 text-sm text-gray-900 focus:outline-none prose prose-sm max-w-none
+        className={`overflow-y-auto px-4 py-3 text-sm text-gray-900 focus:outline-none prose prose-sm max-w-none ${editorClassName}
           [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-2 [&_h2]:mt-4
           [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3
           [&_p]:mb-2
@@ -160,9 +170,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2
           [&_blockquote]:border-l-4 [&_blockquote]:border-green-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-2
           [&_a]:text-green-600 [&_a]:underline
-          [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2"
+          [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2`}
         data-placeholder={placeholder || "Nhập nội dung bài viết..."}
-        style={{ minHeight: "300px" }}
+        style={{ minHeight, maxHeight }}
       />
 
       <style jsx>{`

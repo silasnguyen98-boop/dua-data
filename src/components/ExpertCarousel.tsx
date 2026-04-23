@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 
-interface Expert {
+export interface Expert {
   id: string;
   name: string;
   position: string;

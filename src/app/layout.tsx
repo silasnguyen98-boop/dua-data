@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+const BRAND_LOGO = "https://i.ibb.co/3yKrstMS/Thie-t-ke-chu-a-co-te-n-20.png";
+
 const inter = Inter({
   subsets: ["latin", "vietnamese"],
   variable: "--font-inter",
@@ -21,16 +23,18 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dứa Data - Học Data để làm được việc",
-  description: "Dứa Data giúp bạn không chỉ học Data, mà dùng dữ liệu để hiểu vấn đề và tạo ra quyết định có giá trị. Khóa học thực chiến, cộng đồng hỗ trợ.",
+  title: "DUA Edu - Nâng cấp năng lực bằng Dữ liệu",
+  description: "DUA Edu giúp bạn không chỉ học Data, mà dùng dữ liệu để hiểu vấn đề, nâng cấp năng lực và tạo ra quyết định có giá trị.",
+  icons: {
+    icon: BRAND_LOGO,
+    shortcut: BRAND_LOGO,
+    apple: BRAND_LOGO,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
-      <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍍</text></svg>" />
-      </head>
       <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]">{children}</body>
     </html>
   );

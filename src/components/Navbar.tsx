@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandLogo from "@/components/BrandLogo";
 
 interface UpcomingCourse {
   slug: string;
@@ -36,16 +37,15 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { href: "/khoahoc", label: "Khóa học" },
+    { href: "/", label: "Trang chủ" },
+    { href: "/courses", label: "Khóa học" },
     { href: "/roadmap", label: "Lộ trình" },
     { href: "/resource", label: "Tài nguyên" },
-    { href: "/community", label: "Cộng đồng" },
-    { href: "/job", label: "Việc làm" },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/khoahoc") return pathname === "/khoahoc" || pathname.startsWith("/courses");
-    return pathname.startsWith(href);
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
@@ -87,10 +87,11 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100 shadow-sm">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl">🍍</span>
-              <span className="text-xl font-bold text-green-700 font-display">Dứa Data</span>
-            </Link>
+            <BrandLogo
+              href="/"
+              showText={false}
+              imageClassName="h-20 w-20"
+            />
 
             {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-8">

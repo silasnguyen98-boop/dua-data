@@ -18,8 +18,13 @@ async function readQuizzes(): Promise<Quiz[]> {
 export async function GET() {
   try {
     const quizzes = await readQuizzes();
-    // Strip questions from list view for performance
-    const list = quizzes.map(({ questions, ...rest }) => rest);
+    // Strip questions from list view for performance, but keep count for admin UI.
+    const list = quizzes.map(({ questions, password, durationMinutes, ...rest }) => ({
+      ...rest,
+      questionCount: Array.isArray(questions) ? questions.length : 0,
+      hasPassword: Boolean(password),
+      durationMinutes: Number(durationMinutes) || 0,
+    }));
     return NextResponse.json(list);
   } catch (err) {
     console.error("GET /api/quiz error:", err);
@@ -43,8 +48,12 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
     const newRef = push(ref(db, "quiz"));
+    const password = typeof rest.password === "string" ? rest.password.trim() : "";
+    const durationMinutes = Number(rest.durationMinutes) || 0;
     const quiz: Quiz = {
       ...rest,
+      password,
+      durationMinutes,
       questions,
       id: newRef.key!,
       createdAt: now,
@@ -74,7 +83,11 @@ export async function PUT(req: NextRequest) {
     }));
 
     const now = new Date().toISOString();
-    await update(ref(db, `quiz/${id}`), { ...rest, questions, updatedAt: now });
+    const currentSnapshot = await get(ref(db, `quiz/${id}`));
+    const current = currentSnapshot.exists() ? currentSnapshot.val() : {};
+    const password = typeof rest.password === "string" ? rest.password.trim() : (current.password || "");
+    const durationMinutes = Number(rest.durationMinutes ?? current.durationMinutes) || 0;
+    await update(ref(db, `quiz/${id}`), { ...rest, password, durationMinutes, questions, updatedAt: now });
     const snapshot = await get(ref(db, `quiz/${id}`));
     return NextResponse.json({ ...snapshot.val(), id });
   } catch (err) {

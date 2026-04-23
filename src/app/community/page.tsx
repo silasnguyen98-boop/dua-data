@@ -87,7 +87,7 @@ export default function CommunityPage() {
   }, []);
 
   const tabs = [
-    { key: "student" as Tab, label: "Cộng đồng học viên", icon: "🎓", desc: "Hoạt động dành cho học viên Dứa Data", color: "green" },
+    { key: "student" as Tab, label: "Cộng đồng học viên", icon: "🎓", desc: "Hoạt động dành cho học viên DUA Edu", color: "green" },
     { key: "genz" as Tab, label: "GenZ làm Data", icon: "🚀", desc: "Cộng đồng GenZ đam mê Data", color: "blue" },
     { key: "jobs" as Tab, label: "GenZ tìm việc Data", icon: "💼", desc: "Cơ hội việc làm trong ngành Data", color: "purple" },
   ];

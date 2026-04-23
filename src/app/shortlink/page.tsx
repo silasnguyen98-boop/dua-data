@@ -58,7 +58,7 @@ export default function ShortlinkPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Rút gọn đường link <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">nhanh chóng</span>
           </h1>
-          <p className="text-gray-500 text-lg">Tạo link rút gọn với theo dõi lượt truy cập từ Dứa Data</p>
+          <p className="text-gray-500 text-lg">Tạo link rút gọn với theo dõi lượt truy cập từ DUA Edu</p>
         </div>
 
         {/* Form */}

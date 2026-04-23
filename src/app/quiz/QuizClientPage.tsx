@@ -9,9 +9,9 @@ import Footer from "@/components/Footer";
 const PAGE_SIZE = 8;
 
 const difficultyColors: Record<string, string> = {
-  easy: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  hard: "bg-red-100 text-red-700",
+  easy: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  medium: "bg-lime-50 text-lime-700 border border-lime-100",
+  hard: "bg-amber-50 text-amber-700 border border-amber-100",
 };
 
 const difficultyLabels: Record<string, string> = {
@@ -32,18 +32,18 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50" />
-        <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-200/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-100/40 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-lime-50" />
+        <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-200/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-lime-100/40 rounded-full blur-3xl" />
         <div className="relative max-w-7xl mx-auto px-4 py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 text-sm font-bold px-4 py-1.5 rounded-full mb-6">
-            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-sm font-bold px-4 py-1.5 rounded-full mb-6">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             Kiểm tra kiến thức
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 font-display">
-            Bài Quiz <span className="bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-transparent">Trắc nghiệm</span>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-emerald-950 mb-6 font-display">
+            Bài Quiz <span className="bg-gradient-to-r from-emerald-700 to-lime-600 bg-clip-text text-transparent">Trắc nghiệm</span>
           </h1>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
+          <p className="text-emerald-900/70 max-w-2xl mx-auto text-lg leading-relaxed">
             Ôn luyện và kiểm tra kiến thức với các bài quiz trắc nghiệm từ cơ bản đến nâng cao
           </p>
         </div>
@@ -64,15 +64,15 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                 <Link
                   key={quiz.id}
                   href={`/quiz/${quiz.id}`}
-                  className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-indigo-100/60 hover:-translate-y-2 transition-all duration-500 overflow-hidden block"
+                  className="group bg-white rounded-2xl border border-emerald-100 shadow-sm hover:shadow-xl hover:shadow-emerald-100/60 hover:-translate-y-2 transition-all duration-500 overflow-hidden block"
                 >
                   {/* Top gradient bar */}
-                  <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-400 group-hover:h-1.5 transition-all duration-500" />
+                  <div className="h-1 bg-gradient-to-r from-emerald-600 to-lime-500 group-hover:h-1.5 transition-all duration-500" />
 
                   <div className="p-5">
                     {/* Image */}
                     {quiz.imageUrl && (
-                      <div className="w-full h-36 rounded-xl overflow-hidden mb-4 bg-gray-50">
+                      <div className="aspect-video w-full rounded-xl overflow-hidden mb-4 bg-gray-50 border border-emerald-50">
                         <img
                           src={quiz.imageUrl}
                           alt={quiz.title}
@@ -84,7 +84,7 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                     {/* Badges */}
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {quiz.category && (
-                        <span className="text-xs font-semibold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full">
+                        <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-100">
                           {quiz.category}
                         </span>
                       )}
@@ -93,25 +93,35 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                           {difficultyLabels[quiz.difficulty] || quiz.difficulty}
                         </span>
                       )}
+                      {quiz.hasPassword && (
+                        <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-100">
+                          🔒 Mật khẩu
+                        </span>
+                      )}
+                      {quiz.durationMinutes && quiz.durationMinutes > 0 && (
+                        <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-100">
+                          ⏱ {quiz.durationMinutes} phút
+                        </span>
+                      )}
                     </div>
 
                     {/* Title & description */}
-                    <h3 className="font-bold text-gray-900 text-base mb-2 group-hover:text-indigo-700 transition-colors leading-snug">
+                    <h3 className="font-bold text-emerald-950 text-base mb-2 group-hover:text-emerald-700 transition-colors leading-snug">
                       {quiz.title}
                     </h3>
-                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">
+                    <p className="text-emerald-900/65 text-xs leading-relaxed line-clamp-2">
                       {quiz.description}
                     </p>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-                      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 font-semibold">
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-emerald-50">
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-semibold">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                         Quiz
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 font-semibold group-hover:gap-2 transition-all">
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-semibold group-hover:gap-2 transition-all">
                         Bắt đầu
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -129,7 +139,7 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="w-10 h-10 rounded-xl border border-emerald-200 flex items-center justify-center text-sm font-medium text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -142,8 +152,8 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                     onClick={() => setPage(p)}
                     className={`w-10 h-10 rounded-xl text-sm font-medium transition ${
                       p === page
-                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
-                        : "border border-gray-200 text-gray-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600"
+                        ? "bg-emerald-700 text-white shadow-lg shadow-emerald-200"
+                        : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800"
                     }`}
                   >
                     {p}
@@ -153,7 +163,7 @@ export default function QuizClientPage({ quizzes }: { quizzes: Quiz[] }) {
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="w-10 h-10 rounded-xl border border-emerald-200 flex items-center justify-center text-sm font-medium text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

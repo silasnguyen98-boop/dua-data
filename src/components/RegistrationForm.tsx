@@ -26,7 +26,7 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
     e.preventDefault();
     setError("");
 
-    if (!form.fullName || !form.facebook || !form.birthday || !form.phone || !form.email) {
+    if (!form.fullName || !form.birthday || !form.phone || !form.email) {
       setError("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
@@ -61,7 +61,7 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Chúc mừng!</h3>
           <p className="text-gray-600 leading-relaxed mb-6">
-            Chúc mừng bạn đã đăng ký thành công khóa học <span className="font-semibold text-green-600">{courseTitle}</span>, Dứa sẽ sớm liên hệ lại bạn!
+            Chúc mừng bạn đã đăng ký thành công khóa học <span className="font-semibold text-green-600">{courseTitle}</span>, DUA sẽ sớm liên hệ lại bạn!
           </p>
           <button
             onClick={onClose}
@@ -124,12 +124,12 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Link Facebook của bạn <span className="text-red-500">*</span>
+              Link Facebook của bạn <span className="text-gray-400 text-xs">(không bắt buộc)</span>
             </label>
             <input
               type="url"
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-              placeholder="https://facebook.com/username"
+              placeholder="https://facebook.com/username (tuỳ chọn)"
               value={form.facebook}
               onChange={e => setForm({ ...form, facebook: e.target.value })}
             />

@@ -64,10 +64,10 @@ export default async function ResourcePage() {
             Resource Hub
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-display">
-            Tài nguyên <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Dứa Data</span>
+            Tài nguyên <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">DUA Edu</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Tổng hợp các bài viết, template, công cụ và hướng dẫn miễn phí từ cộng đồng Dứa Data
+            Tổng hợp các bài viết, template, công cụ và hướng dẫn miễn phí từ cộng đồng DUA Edu
           </p>
           <LeadResourceModal />
         </div>
@@ -82,7 +82,7 @@ export default async function ResourcePage() {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Sắp ra mắt!</h3>
             <p className="text-gray-500 max-w-md mx-auto">
-              Đội ngũ Dứa Data đang chuẩn bị những tài nguyên chất lượng. Hãy quay lại sau nhé!
+              Đội ngũ DUA Edu đang chuẩn bị những tài nguyên chất lượng. Hãy quay lại sau nhé!
             </p>
           </div>
         ) : (

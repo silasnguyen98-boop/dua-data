@@ -30,8 +30,8 @@ export default function CourseImage({ type, size = "lg" }: { type: string; size?
   return (
     <div className={`relative w-full h-full bg-gradient-to-br ${config.gradient} flex items-center justify-center overflow-hidden`}>
       {/* Decorative circles */}
-      <div className={`absolute top-2 right-2 w-${size === "lg" ? 20 : 10} h-${size === "lg" ? 20 : 10} ${config.accent} rounded-full blur-xl`} />
-      <div className={`absolute bottom-2 left-2 w-${size === "lg" ? 16 : 8} h-${size === "lg" ? 16 : 8} ${config.accent} rounded-full blur-lg`} />
+      <div className={`absolute top-2 right-2 ${size === "lg" ? "w-20 h-20" : "w-10 h-10"} ${config.accent} rounded-full blur-xl`} />
+      <div className={`absolute bottom-2 left-2 ${size === "lg" ? "w-16 h-16" : "w-8 h-8"} ${config.accent} rounded-full blur-lg`} />
 
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-10" style={{

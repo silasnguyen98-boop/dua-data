@@ -90,7 +90,7 @@ export default function LeadResourceModal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xl font-bold text-white">Nhận tài nguyên miễn phí</h3>
-                      <p className="text-green-100 text-sm mt-1">Điền thông tin để nhận tài liệu từ Dứa Data</p>
+                      <p className="text-green-100 text-sm mt-1">Điền thông tin để nhận tài liệu từ DUA Edu</p>
                     </div>
                     <button onClick={handleClose} className="text-white/70 hover:text-white text-2xl font-light">×</button>
                   </div>

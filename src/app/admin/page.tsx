@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { Course, CurriculumItem } from "@/types/course";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import * as XLSX from "xlsx";
+import BrandLogo from "@/components/BrandLogo";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ssr: false });
 
@@ -31,7 +32,7 @@ const emptyCourse: Omit<Course, "id"> = {
   description: "",
   image: "",
   imageUrl: "",
-  instructor: "Đội Ngũ Dứa Data",
+  instructor: "Đội Ngũ DUA Edu",
   price: 0,
   originalPrice: 0,
   discount: 0,
@@ -49,6 +50,7 @@ const emptyCourse: Omit<Course, "id"> = {
   targetAudience: [],
   published: false,
   comingSoon: false,
+  hidePrice: false,
 };
 
 function slugify(text: string): string {
@@ -87,7 +89,7 @@ const emptyResource: Omit<Resource, "id" | "createdAt" | "updatedAt"> = {
   content: "",
   category: "Article",
   imageUrl: "",
-  author: "Dứa Data",
+  author: "DUA Edu",
   published: true,
 };
 
@@ -116,7 +118,7 @@ const emptyActivity: Omit<Activity, "id" | "createdAt" | "updatedAt"> = {
   registrationLink: "",
   registrationDeadline: "",
   eventDate: "",
-  author: "Dứa Data",
+  author: "DUA Edu",
   published: true,
 };
 
@@ -151,7 +153,7 @@ const emptyJob: Omit<Job, "id" | "createdAt" | "updatedAt"> = {
   applicationLink: "",
   applicationDeadline: "",
   salary: "",
-  author: "Dứa Data",
+  author: "DUA Edu",
   published: true,
 };
 
@@ -178,6 +180,62 @@ const emptyExpert: Omit<Expert, "id" | "createdAt" | "updatedAt"> = {
   published: true,
 };
 
+interface Alumni {
+  id: string;
+  name: string;
+  job: string;
+  linkedin?: string;
+  imageUrl?: string;
+  coverImage?: string;
+  content: string;
+  order?: number;
+  published?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  category?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  password?: string;
+  hasPassword?: boolean;
+  durationMinutes?: number;
+  questionCount?: number;
+  questions: { id: string; question: string; options: string[]; correctIndex: number; explanation?: string }[];
+  published?: boolean;
+  order?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const emptyAlumni: Omit<Alumni, "id" | "createdAt" | "updatedAt"> = {
+  name: "",
+  job: "",
+  linkedin: "",
+  imageUrl: "",
+  coverImage: "",
+  content: "",
+  order: 0,
+  published: true,
+};
+
+const emptyQuiz = {
+  title: "",
+  description: "",
+  imageUrl: "",
+  category: "",
+  difficulty: "medium" as const,
+  password: "",
+  durationMinutes: 0,
+  questions: [] as Quiz["questions"],
+  published: true,
+  order: 0,
+};
+
 interface Shortlink {
   id: string;
   url: string;
@@ -196,8 +254,8 @@ interface LeadResource {
   createdAt: string;
 }
 
-type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "shortlinks" | "leads" | "users" | "waitlist";
-type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant";
+type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "alumni" | "shortlinks" | "leads" | "users" | "waitlist" | "quiz";
+type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant" | "teacher";
 
 interface WaitListEntry {
   id: string;
@@ -216,7 +274,22 @@ const ROLE_LABELS: Record<UserRole, string> = {
   content_manager: "Quản lý nội dung",
   sales_executive: "Kinh doanh",
   teaching_assistant: "Trợ giảng",
+  teacher: "Teacher",
 };
+
+function decodeStoredRole(stored: string | null): string | null {
+  if (!stored) return null;
+  const raw = stored.trim();
+  if (!raw) return null;
+
+  try {
+    const decoded = atob(raw).trim();
+    if (!decoded) return null;
+    return decoded.includes(":") ? (decoded.split(":")[1] || decoded.split(":")[0] || decoded).trim() : decoded;
+  } catch {
+    return raw.includes(":") ? (raw.split(":")[1] || raw.split(":")[0] || raw).trim() : raw;
+  }
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -318,6 +391,22 @@ export default function AdminPage() {
   const [expertForm, setExpertForm] = useState<Omit<Expert, "id" | "createdAt" | "updatedAt">>(emptyExpert);
   const [showExpertForm, setShowExpertForm] = useState(false);
 
+  // Alumni state
+  const [alumniList, setAlumniList] = useState<Alumni[]>([]);
+  const [alumniLoading, setAlumniLoading] = useState(false);
+  const [editingAlumni, setEditingAlumni] = useState<Alumni | null>(null);
+  const [alumniForm, setAlumniForm] = useState<Omit<Alumni, "id" | "createdAt" | "updatedAt">>(emptyAlumni);
+  const [showAlumniForm, setShowAlumniForm] = useState(false);
+
+  // Quiz state
+  const [quizzesList, setQuizzesList] = useState<Quiz[]>([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [quizForm, setQuizForm] = useState<Omit<Quiz, "id" | "createdAt" | "updatedAt">>(emptyQuiz);
+  const [quizPasswordEnabled, setQuizPasswordEnabled] = useState(false);
+  const [quizDurationEnabled, setQuizDurationEnabled] = useState(false);
+  const [showQuizForm, setShowQuizForm] = useState(false);
+
   // Shortlink state
   const [shortlinks, setShortlinks] = useState<Shortlink[]>([]);
   const [shortlinksLoading, setShortlinksLoading] = useState(false);
@@ -339,15 +428,7 @@ export default function AdminPage() {
     if (typeof window === "undefined") return {};
     const stored = sessionStorage.getItem("admin_role");
     if (!stored) return {};
-    // Always try to decode as base64 first; if it fails, use raw value
-    try {
-      const decoded = atob(stored.trim());
-      const parts = decoded.split(":");
-      const role = (parts[1] || parts[0] || decoded).trim();
-      return { Authorization: `Bearer ${role}` };
-    } catch {
-      return { Authorization: `Bearer ${stored.trim()}` };
-    }
+    return { Authorization: `Bearer ${decodeStoredRole(stored) || stored.trim()}` };
   }
 
   // Mobile sidebar
@@ -411,6 +492,26 @@ export default function AdminPage() {
     setExpertsLoading(false);
   }, []);
 
+  const fetchAlumni = useCallback(async () => {
+    setAlumniLoading(true);
+    const res = await fetch("/api/alumni");
+    const data = await res.json();
+    setAlumniList(data);
+    setAlumniLoading(false);
+  }, []);
+
+  const fetchQuizzes = useCallback(async () => {
+    setQuizzesLoading(true);
+    try {
+      const res = await fetch("/api/quiz");
+      const data = await res.json();
+      setQuizzesList(Array.isArray(data) ? data : []);
+    } catch {
+      setQuizzesList([]);
+    }
+    setQuizzesLoading(false);
+  }, []);
+
   const fetchShortlinks = useCallback(async () => {
     setShortlinksLoading(true);
     const res = await fetch("/api/shortlinks");
@@ -446,13 +547,15 @@ export default function AdminPage() {
     fetchActivities();
     fetchJobs();
     fetchExperts();
+    fetchAlumni();
+    fetchQuizzes();
     fetchShortlinks();
     fetchLeads();
     fetchWaitList();
-    if (typeof window !== "undefined" && sessionStorage.getItem("admin_role") === "system_admin") {
+    if (typeof window !== "undefined" && decodeStoredRole(sessionStorage.getItem("admin_role")) === "system_admin") {
       fetchSystemUsers();
     }
-  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchExperts, fetchLeads, fetchWaitList, fetchSystemUsers]);
+  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchExperts, fetchAlumni, fetchQuizzes, fetchLeads, fetchWaitList, fetchSystemUsers]);
 
   function handleEdit(course: Course) {
     setEditing(course);
@@ -471,7 +574,7 @@ export default function AdminPage() {
     const payload = {
       ...form,
       slug: form.slug || slugify(form.title),
-      instructor: form.instructor || "Đội Ngũ Dứa Data",
+      instructor: form.instructor || "Đội Ngũ DUA Edu",
       schedule: form.schedule || "",
       hours: form.hours || "",
       category: form.category || "",
@@ -482,6 +585,7 @@ export default function AdminPage() {
       price: form.price || 0,
       originalPrice: form.originalPrice || 0,
       discount: form.discount || 0,
+      hidePrice: form.hidePrice || false,
       curriculum: form.curriculum || [],
       outcomes: form.outcomes || [],
       targetAudience: form.targetAudience || [],
@@ -536,6 +640,15 @@ export default function AdminPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, isHidden: !course.isHidden }),
+    });
+    fetchCourses();
+  }
+
+  async function handleToggleHidePrice(course: Course) {
+    await fetch("/api/courses", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: course.id, hidePrice: !course.hidePrice }),
     });
     fetchCourses();
   }
@@ -822,6 +935,126 @@ export default function AdminPage() {
     fetchExperts();
   }
 
+  function handleNewAlumni() {
+    setEditingAlumni(null);
+    setAlumniForm(emptyAlumni);
+    setShowAlumniForm(true);
+  }
+
+  function handleEditAlumni(alumni: Alumni) {
+    setEditingAlumni(alumni);
+    const { id, createdAt, updatedAt, ...rest } = alumni;
+    setAlumniForm(rest);
+    setShowAlumniForm(true);
+  }
+
+  async function handleSaveAlumni() {
+    if (!alumniForm.name || !alumniForm.job) {
+      alert("Vui lòng nhập Tên và Nghề nghiệp");
+      return;
+    }
+    const method = editingAlumni ? "PUT" : "POST";
+    const body = editingAlumni ? { ...alumniForm, id: editingAlumni.id } : alumniForm;
+
+    const res = await fetch("/api/alumni", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+      alert(`${editingAlumni ? "Sửa" : "Thêm"} alumni thất bại: ${err.error}`);
+      return;
+    }
+
+    setShowAlumniForm(false);
+    setEditingAlumni(null);
+    setAlumniForm(emptyAlumni);
+    fetchAlumni();
+  }
+
+  async function handleDeleteAlumni(id: string) {
+    if (!confirm("Bạn có chắc muốn xóa alumni này?")) return;
+    await fetch(`/api/alumni?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
+    fetchAlumni();
+  }
+
+  function handleNewQuiz() {
+    setEditingQuiz(null);
+    setQuizForm(emptyQuiz);
+    setQuizPasswordEnabled(false);
+    setQuizDurationEnabled(false);
+    setShowQuizForm(true);
+  }
+
+  async function handleEditQuiz(quiz: Quiz) {
+    try {
+      const res = await fetch(`/api/quiz/${quiz.id}`, {
+        headers: { "x-admin-preview": "1" },
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const fullQuiz = await res.json();
+      setEditingQuiz(fullQuiz);
+      const { id, createdAt, updatedAt, ...rest } = fullQuiz;
+      setQuizForm({
+        ...emptyQuiz,
+        ...rest,
+        questions: Array.isArray(rest.questions) ? rest.questions : [],
+      });
+      setQuizPasswordEnabled(Boolean(fullQuiz.password));
+      setQuizDurationEnabled(Boolean(fullQuiz.durationMinutes && Number(fullQuiz.durationMinutes) > 0));
+      setShowQuizForm(true);
+    } catch {
+      alert("Không tải được dữ liệu quiz để chỉnh sửa");
+    }
+  }
+
+  async function handleSaveQuiz() {
+    if (!quizForm.title || !quizForm.description) {
+      alert("Vui lòng nhập tiêu đề và mô tả!");
+      return;
+    }
+    if (quizPasswordEnabled && !quizForm.password?.trim()) {
+      alert("Vui lòng nhập mật khẩu hoặc chọn 'Không mật khẩu'");
+      return;
+    }
+    if (quizDurationEnabled && !(Number(quizForm.durationMinutes) > 0)) {
+      alert("Vui lòng nhập thời gian làm bài lớn hơn 0 phút hoặc chọn 'Không giới hạn'");
+      return;
+    }
+    const method = editingQuiz ? "PUT" : "POST";
+    const body = editingQuiz
+      ? {
+          ...quizForm,
+          id: editingQuiz.id,
+          password: quizPasswordEnabled ? quizForm.password : "",
+          durationMinutes: quizDurationEnabled ? Number(quizForm.durationMinutes) || 0 : 0,
+        }
+      : {
+          ...quizForm,
+          password: quizPasswordEnabled ? quizForm.password : "",
+          durationMinutes: quizDurationEnabled ? Number(quizForm.durationMinutes) || 0 : 0,
+        };
+    const res = await fetch("/api/quiz", {
+      method,
+      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      setShowQuizForm(false);
+      fetchQuizzes();
+    }
+  }
+
+  async function handleDeleteQuiz(id: string) {
+    if (!confirm("Bạn có chắc muốn xóa quiz này?")) return;
+    await fetch(`/api/quiz?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
+    fetchQuizzes();
+  }
+
   // Excel export helpers
   function downloadActivitiesExcel() {
     const data = activities.map((a, i) => ({
@@ -1045,25 +1278,34 @@ export default function AdminPage() {
     { key: "activities" as ActiveView, label: "Quản lý hoạt động", icon: "🎯", count: activities.length },
     { key: "jobs" as ActiveView, label: "Quản lý việc làm", icon: "💼", count: jobsList.length },
     { key: "experts" as ActiveView, label: "Đội ngũ chuyên gia", icon: "🏅", count: expertsList.length },
+    { key: "alumni" as ActiveView, label: "Alumni", icon: "🎓", count: alumniList.length },
+    { key: "quiz" as ActiveView, label: "Quiz", icon: "📝", count: quizzesList.length },
     { key: "shortlinks" as ActiveView, label: "Quản lý Shortlink", icon: "🔗", count: shortlinks.length },
     { key: "leads" as ActiveView, label: "Đăng ký nhận tài liệu", icon: "📩", count: leads.length },
     { key: "users" as ActiveView, label: "Quản lý người dùng", icon: "👤", count: systemUsers.length },
   ];
 
   // Role-based sidebar filtering
-  const currentRole = typeof window !== "undefined" ? sessionStorage.getItem("admin_role") : null;
+  const currentRole = typeof window !== "undefined" ? decodeStoredRole(sessionStorage.getItem("admin_role")) : null;
   const rolePermissionMap: Record<string, ActiveView[]> = {
     content_manager: ["dashboard", "activities", "resources", "jobs", "shortlinks"],
     sales_executive: ["dashboard", "waitlist", "students", "leads"],
     teaching_assistant: ["dashboard", "students", "courses"],
-    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "shortlinks", "leads", "users"],
+    teacher: ["alumni", "quiz", "resources", "activities"],
+    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "alumni", "quiz", "shortlinks", "leads", "users"],
   };
   const allowedViews = rolePermissionMap[currentRole || ""] || rolePermissionMap["system_admin"];
+  useEffect(() => {
+    if (allowedViews.length > 0 && !allowedViews.includes(activeView)) {
+      setActiveView(allowedViews[0]);
+    }
+  }, [activeView, allowedViews]);
   const filteredSidebarItems = sidebarItems.filter(item => allowedViews.includes(item.key));
   const sidebarGroups = [
     { label: "Tổng quan", keys: ["dashboard"] as ActiveView[] },
-    { label: "Học viên", keys: ["students", "leads"] as ActiveView[] },
+    { label: "Học viên", keys: ["students", "leads", "alumni"] as ActiveView[] },
     { label: "Khóa học", keys: ["courses", "waitlist", "activities", "experts"] as ActiveView[] },
+    { label: "Kiểm tra", keys: ["quiz"] as ActiveView[] },
     { label: "Tài nguyên", keys: ["resources", "shortlinks"] as ActiveView[] },
     { label: "Công việc", keys: ["jobs"] as ActiveView[] },
     { label: "Hệ thống", keys: ["users"] as ActiveView[] },
@@ -1117,22 +1359,28 @@ export default function AdminPage() {
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold text-green-400 tracking-tight">🍍 Dứa Data</Link>
+            <BrandLogo
+              href="/"
+              showText={false}
+              imageClassName="h-9 w-9"
+            />
             <span className="text-xs font-bold bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1 rounded-lg">Admin Panel</span>
             <span className={`text-xs font-bold px-3 py-1 rounded-lg border ${
               currentRole === "content_manager" ? "bg-purple-500/10 border-purple-500/20 text-purple-400" :
               currentRole === "sales_executive" ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
               currentRole === "teaching_assistant" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+              currentRole === "teacher" ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" :
               "bg-red-500/10 border-red-500/20 text-red-400"
             }`}>
               {currentRole === "content_manager" ? "Quản lý nội dung" :
                currentRole === "sales_executive" ? "Kinh doanh" :
                currentRole === "teaching_assistant" ? "Trợ giảng" :
+               currentRole === "teacher" ? "Teacher" :
                "Quản trị hệ thống"}
             </span>
           </div>
           <nav className="flex items-center gap-2 md:gap-4 text-xs md:text-sm font-medium text-gray-600">
-            <Link href="/" className="hover:text-gray-900 transition hidden sm:inline">Trang chu</Link>
+            <Link href="/" className="hover:text-gray-900 transition hidden sm:inline">Trang chủ</Link>
             <Link href="/courses" className="hover:text-gray-900 transition hidden sm:inline">Khóa học</Link>
             <button
               onClick={() => { sessionStorage.removeItem("admin_auth"); router.push("/admin/login"); }}
@@ -1232,7 +1480,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Xin chào! 👋</h1>
-                  <p className="text-sm text-gray-500 mt-1">Đây là tổng quan hoạt động của Dứa Data hôm nay.</p>
+                  <p className="text-sm text-gray-500 mt-1">Đây là tổng quan hoạt động của DUA Edu hôm nay.</p>
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-xs text-gray-500 bg-white border border-gray-200 rounded-xl px-4 py-3">
                   <span>📅</span>
@@ -1451,6 +1699,9 @@ export default function AdminPage() {
                                   {course.isHidden && (
                                     <span className="text-[10px] bg-gray-500/10 text-gray-500 px-1.5 py-0.5 rounded-full font-bold">Đã ẩn</span>
                                   )}
+                                  {course.hidePrice && (
+                                    <span className="text-[10px] bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded-full font-bold">Đã ẩn giá</span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-gray-500 mt-0.5">{course.slug}</div>
                               </div>
@@ -1479,6 +1730,12 @@ export default function AdminPage() {
                                 className={`text-xs font-medium px-2 py-1 rounded-lg ${course.isHidden ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-gray-50 text-gray-500 hover:bg-gray-200"}`}
                               >
                                 {course.isHidden ? "Hiện" : "Ẩn"}
+                              </button>
+                              <button
+                                onClick={() => handleToggleHidePrice(course)}
+                                className={`text-xs font-medium px-2 py-1 rounded-lg ${course.hidePrice ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-gray-50 text-gray-500 hover:bg-gray-200"}`}
+                              >
+                                {course.hidePrice ? "Hiện giá" : "Ẩn giá"}
                               </button>
                               <button onClick={() => handleDuplicate(course)} className="text-purple-600 hover:text-purple-800 font-medium text-xs bg-purple-50 px-2 py-1 rounded-lg">Nhân bản</button>
                               <button onClick={() => handleEdit(course)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg">Sửa</button>
@@ -1954,6 +2211,121 @@ export default function AdminPage() {
               )}
             </div>
           )}
+          {/* === ALUMNI VIEW === */}
+          {activeView === "alumni" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Quản lý Alumni</h1>
+                <div className="flex items-center gap-3">
+                  <button onClick={handleNewAlumni} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
+                    + Thêm Alumni
+                  </button>
+                </div>
+              </div>
+
+              {alumniLoading ? (
+                <div className="text-center py-10 text-gray-600">Đang tải...</div>
+              ) : alumniList.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
+                  <p className="text-lg">Chưa có alumni nào</p>
+                  <p className="text-sm mt-1">Nhấn &quot;+ Thêm Alumni&quot; để tạo mới</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {alumniList.sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(alumni => (
+                    <div key={alumni.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-center text-center">
+                      {alumni.imageUrl ? (
+                        <img src={alumni.imageUrl} alt={alumni.name} className="w-20 h-20 rounded-full object-cover mb-3 border-2 border-green-500/30" />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl mb-3 text-white font-bold">
+                          {alumni.name.charAt(0)}
+                        </div>
+                      )}
+                      <h3 className="text-gray-900 font-bold">{alumni.name}</h3>
+                      <p className="text-green-600 text-sm">{alumni.job}</p>
+                      {alumni.linkedin && (
+                        <a href={alumni.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs mt-1 hover:text-blue-800">
+                          LinkedIn ↗
+                        </a>
+                      )}
+                      <p className="text-gray-500 text-xs mt-1">Thứ tự: {alumni.order ?? 0}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full mt-2 ${alumni.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                        {alumni.published !== false ? "Hiển thị" : "Ẩn"}
+                      </span>
+                      <div className="flex gap-3 mt-3">
+                        <button onClick={() => handleEditAlumni(alumni)} className="text-blue-500 hover:text-blue-400 text-xs font-medium">Sửa</button>
+                        <button onClick={() => handleDeleteAlumni(alumni.id)} className="text-red-500 hover:text-red-400 text-xs font-medium">Xóa</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeView === "quiz" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Quản lý Quiz</h1>
+                <button onClick={handleNewQuiz} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition shadow">
+                  + Thêm Quiz
+                </button>
+              </div>
+
+              {quizzesLoading ? (
+                <div className="text-center py-10 text-gray-600">Đang tải...</div>
+              ) : quizzesList.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
+                  <p className="text-lg">Chưa có quiz nào</p>
+                  <p className="text-sm mt-1">Nhấn "+ Thêm Quiz" để tạo mới</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...quizzesList].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(quiz => (
+                    <div key={quiz.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                      {quiz.imageUrl && (
+                        <div className="aspect-video w-full overflow-hidden rounded-xl mb-4 bg-gray-100 border border-gray-100">
+                          <img src={quiz.imageUrl} alt={quiz.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <h3 className="font-bold text-gray-900 mb-2">{quiz.title}</h3>
+                      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{quiz.description}</p>
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                      {quiz.category && (
+                        <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">{quiz.category}</span>
+                      )}
+                      {quiz.difficulty && (
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${quiz.difficulty === "easy" ? "bg-green-100 text-green-700" : quiz.difficulty === "medium" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
+                          {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "medium" ? "Trung bình" : "Khó"}
+                        </span>
+                      )}
+                      {quiz.hasPassword && (
+                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium border border-emerald-100">
+                          🔒 Có mật khẩu
+                        </span>
+                      )}
+                      {quiz.durationMinutes && quiz.durationMinutes > 0 && (
+                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium border border-emerald-100">
+                          ⏱ {quiz.durationMinutes} phút
+                        </span>
+                      )}
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                          {quiz.questionCount ?? (Array.isArray((quiz as any).questions) ? (quiz as any).questions.length : 0)} câu
+                        </span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${quiz.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                        {quiz.published !== false ? "Hiển thị" : "Ẩn"}
+                      </span>
+                      <div className="flex gap-3 mt-3">
+                        <button onClick={() => handleEditQuiz(quiz)} className="text-blue-500 hover:text-blue-400 text-xs font-medium">Sửa</button>
+                        <button onClick={() => handleDeleteQuiz(quiz.id)} className="text-red-500 hover:text-red-400 text-xs font-medium">Xóa</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {activeView === "shortlinks" && (
             <div>
@@ -2322,7 +2694,7 @@ export default function AdminPage() {
                               <tr key={user.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || "?"}</div><span className="font-medium text-gray-900">{user.name}</span></div></td>
                                 <td className="px-4 py-3 text-gray-500">{user.username}</td>
-                                <td className="px-4 py-3"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${user.role === "system_admin" ? "bg-red-500/10 text-red-600" : user.role === "content_manager" ? "bg-purple-500/10 text-purple-600" : user.role === "sales_executive" ? "bg-blue-500/10 text-blue-600" : "bg-amber-500/10 text-amber-600"}`}>{ROLE_LABELS[user.role as UserRole] || user.role}</span></td>
+                                <td className="px-4 py-3"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${user.role === "system_admin" ? "bg-red-500/10 text-red-600" : user.role === "content_manager" ? "bg-purple-500/10 text-purple-600" : user.role === "sales_executive" ? "bg-blue-500/10 text-blue-600" : user.role === "teacher" ? "bg-cyan-500/10 text-cyan-600" : "bg-amber-500/10 text-amber-600"}`}>{ROLE_LABELS[user.role as UserRole] || user.role}</span></td>
                                 <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
                                 <td className="px-4 py-3 text-right"><button onClick={() => handleEditUser(user)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg mr-2">Sửa</button><button onClick={() => handleDeleteUser(user.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xóa</button></td>
                               </tr>
@@ -2823,6 +3195,15 @@ export default function AdminPage() {
                   {form.comingSoon ? "Bat" : "Tat"}
                 </button>
               </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700">An gia:</label>
+                <button
+                  onClick={() => setForm({ ...form, hidePrice: !form.hidePrice })}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${form.hidePrice ? "bg-red-500/10 text-red-600" : "bg-gray-100 text-gray-500"}`}
+                >
+                  {form.hidePrice ? "Bat" : "Tat"}
+                </button>
+              </div>
             </div>
 
             {/* Actions */}
@@ -3201,6 +3582,387 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Alumni Form Modal */}
+      {showAlumniForm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 mb-10">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingAlumni ? "Sửa Alumni" : "Thêm Alumni mới"}
+              </h2>
+              <button onClick={() => setShowAlumniForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên *</label>
+                  <input
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={alumniForm.name}
+                    onChange={(e) => setAlumniForm({ ...alumniForm, name: e.target.value })}
+                    placeholder="VD: Nguyễn Văn A"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nghề nghiệp *</label>
+                  <input
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={alumniForm.job}
+                    onChange={(e) => setAlumniForm({ ...alumniForm, job: e.target.value })}
+                    placeholder="VD: Data Analyst @ FPT"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                <input
+                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                  value={alumniForm.linkedin ?? ""}
+                  onChange={(e) => setAlumniForm({ ...alumniForm, linkedin: e.target.value })}
+                  placeholder="https://linkedin.com/in/..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar (URL)</label>
+                  <input
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={alumniForm.imageUrl ?? ""}
+                    onChange={(e) => setAlumniForm({ ...alumniForm, imageUrl: e.target.value })}
+                    placeholder="https://... (hình tròn)"
+                  />
+                  {alumniForm.imageUrl && (
+                    <img src={alumniForm.imageUrl} alt="avatar preview" className="mt-2 w-16 h-16 rounded-full object-cover border-2 border-green-200" />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh bìa 4x6 (URL)</label>
+                  <input
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={alumniForm.coverImage ?? ""}
+                    onChange={(e) => setAlumniForm({ ...alumniForm, coverImage: e.target.value })}
+                    placeholder="https://... (hình chữ nhật 4x6)"
+                  />
+                  {alumniForm.coverImage && (
+                    <img src={alumniForm.coverImage} alt="cover preview" className="mt-2 h-16 w-auto rounded-lg border-2 border-green-200 object-cover" />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung chia sẻ</label>
+                <RichTextEditor
+                  value={alumniForm.content}
+                  onChange={(val: string) => setAlumniForm({ ...alumniForm, content: val })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
+                  <input
+                    type="number"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
+                    value={alumniForm.order ?? 0}
+                    onChange={(e) => setAlumniForm({ ...alumniForm, order: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-700">Hiển thị:</label>
+                    <button
+                      type="button"
+                      onClick={() => setAlumniForm({ ...alumniForm, published: !alumniForm.published })}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${alumniForm.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}
+                    >
+                      {alumniForm.published !== false ? "Hiển thị" : "Ẩn"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+              <button onClick={() => setShowAlumniForm(false)} className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">Hủy</button>
+              <button onClick={handleSaveAlumni} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
+                {editingAlumni ? "Cập nhật" : "Thêm Alumni"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quiz Form Modal */}
+      {showQuizForm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 mb-10 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingQuiz ? "Sửa Quiz" : "Thêm Quiz mới"}
+              </h2>
+              <button onClick={() => setShowQuizForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề Quiz *</label>
+                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} placeholder="VD: Kiến thức Data cơ bản" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chủ đề (category)</label>
+                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.category ?? ""} onChange={(e) => setQuizForm({ ...quizForm, category: e.target.value })} placeholder="VD: Data Analytics" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bảo vệ quiz</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuizPasswordEnabled(false);
+                        setQuizForm({ ...quizForm, password: "" });
+                      }}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
+                        !quizPasswordEnabled
+                          ? "bg-emerald-700 text-white border-emerald-700"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      Không mật khẩu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuizPasswordEnabled(true)}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
+                        quizPasswordEnabled
+                          ? "bg-emerald-700 text-white border-emerald-700"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      Có mật khẩu
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-end">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Chọn "Có mật khẩu" để yêu cầu người học nhập đúng mật khẩu trước khi vào quiz.
+                  </p>
+                </div>
+              </div>
+
+              {quizPasswordEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu truy cập</label>
+                  <input
+                    type="password"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.password ?? ""}
+                    onChange={(e) => setQuizForm({ ...quizForm, password: e.target.value })}
+                    placeholder="Nhập mật khẩu cho quiz"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian làm bài</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuizDurationEnabled(false);
+                        setQuizForm({ ...quizForm, durationMinutes: 0 });
+                      }}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
+                        !quizDurationEnabled
+                          ? "bg-emerald-700 text-white border-emerald-700"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      Không giới hạn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuizDurationEnabled(true)}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
+                        quizDurationEnabled
+                          ? "bg-emerald-700 text-white border-emerald-700"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      Có thời gian
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-end">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Chọn "Có thời gian" để người học thấy đếm ngược và hệ thống tự nộp khi hết giờ.
+                  </p>
+                </div>
+              </div>
+
+              {quizDurationEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Số phút làm bài</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.durationMinutes ?? 0}
+                    onChange={(e) => setQuizForm({ ...quizForm, durationMinutes: parseInt(e.target.value) || 0 })}
+                    placeholder="VD: 15"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả *</label>
+                <textarea className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none resize-none"
+                  rows={2}
+                  value={quizForm.description} onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })} placeholder="Mô tả ngắn về quiz..." />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh bìa (URL)</label>
+                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.imageUrl ?? ""} onChange={(e) => setQuizForm({ ...quizForm, imageUrl: e.target.value })} placeholder="https://..." />
+                  {quizForm.imageUrl && (
+                    <div className="mt-2 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                      <img src={quizForm.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Độ khó</label>
+                  <select className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.difficulty ?? "medium"} onChange={(e) => setQuizForm({ ...quizForm, difficulty: e.target.value as "easy" | "medium" | "hard" })}>
+                    <option value="easy">Dễ</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="hard">Khó</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
+                  <input type="number" className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                    value={quizForm.order ?? 0} onChange={(e) => setQuizForm({ ...quizForm, order: parseInt(e.target.value) || 0 })} />
+                </div>
+              </div>
+
+              {/* Questions */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">Câu hỏi ({quizForm.questions.length})</label>
+                  <button
+                    type="button"
+                    onClick={() => setQuizForm({
+                      ...quizForm,
+                      questions: [...quizForm.questions, { id: `q${quizForm.questions.length + 1}`, question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]
+                    })}
+                    className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100 transition"
+                  >
+                    + Thêm câu hỏi
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {quizForm.questions.map((q, qi) => (
+                    <div key={qi} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-indigo-600">Câu {qi + 1}</span>
+                        <button type="button" onClick={() => {
+                          const qs = [...quizForm.questions];
+                          qs.splice(qi, 1);
+                          setQuizForm({ ...quizForm, questions: qs });
+                        }} className="text-red-400 hover:text-red-600 text-xs font-medium">Xóa</button>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Nội dung câu hỏi *</label>
+                        <RichTextEditor
+                          value={q.question}
+                          onChange={(content) => {
+                            const qs = [...quizForm.questions];
+                            qs[qi] = { ...qs[qi], question: content };
+                            setQuizForm({ ...quizForm, questions: qs });
+                          }}
+                          placeholder="Nhập nội dung câu hỏi... Có thể xuống dòng, tạo đoạn và chèn ảnh link."
+                          minHeight="180px"
+                          maxHeight="260px"
+                          editorClassName="bg-white"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                        {q.options.map((opt, oi) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            <input type="radio" name={`correct-${qi}`} checked={q.correctIndex === oi}
+                              onChange={() => {
+                                const qs = [...quizForm.questions];
+                                qs[qi] = { ...qs[qi], correctIndex: oi };
+                                setQuizForm({ ...quizForm, questions: qs });
+                              }}
+                              className="accent-indigo-600" title="Đáp án đúng" />
+                            <input className="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                              value={opt} onChange={(e) => {
+                                const qs = [...quizForm.questions];
+                                const opts = [...qs[qi].options];
+                                opts[oi] = e.target.value;
+                                qs[qi] = { ...qs[qi], options: opts };
+                                setQuizForm({ ...quizForm, questions: qs });
+                              }} placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Giải thích (tùy chọn)</label>
+                        <RichTextEditor
+                          value={q.explanation ?? ""}
+                          onChange={(content) => {
+                            const qs = [...quizForm.questions];
+                            qs[qi] = { ...qs[qi], explanation: content };
+                            setQuizForm({ ...quizForm, questions: qs });
+                          }}
+                          placeholder="Giải thích đáp án, có thể kèm ảnh minh họa bằng link."
+                          minHeight="140px"
+                          maxHeight="220px"
+                          editorClassName="bg-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {quizForm.questions.length === 0 && (
+                    <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-xl">
+                      Chưa có câu hỏi nào. Nhấn "+ Thêm câu hỏi" để bắt đầu.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <label className="text-sm font-medium text-gray-700">Hiển thị:</label>
+                <button type="button" onClick={() => setQuizForm({ ...quizForm, published: !quizForm.published })}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${quizForm.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                  {quizForm.published !== false ? "Hiển thị" : "Ẩn"}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+              <button onClick={() => setShowQuizForm(false)} className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">Hủy</button>
+              <button onClick={handleSaveQuiz} className="px-5 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition shadow">
+                {editingQuiz ? "Cập nhật" : "Thêm Quiz"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Form Modal */}
       {showUserForm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center pt-10 overflow-y-auto">
@@ -3213,7 +3975,7 @@ export default function AdminPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Tên hiển thị *</label><input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} placeholder="VD: Nguyễn Văn A" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Username *</label><input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} placeholder="VD: nguyenvana" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu {editingUser ? "(bỏ trống nếu không đổi)" : "*"}</label><input type="password" className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} placeholder={editingUser ? "Để trống giữ mật khẩu cũ" : "Nhập mật khẩu mới"} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Vai trò *</label><select className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as UserRole })}><option value="system_admin">Quản trị hệ thống</option><option value="content_manager">Quản lý nội dung</option><option value="sales_executive">Kinh doanh</option><option value="teaching_assistant">Trợ giảng</option></select></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Vai trò *</label><select className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none" value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as UserRole })}><option value="system_admin">Quản trị hệ thống</option><option value="content_manager">Quản lý nội dung</option><option value="sales_executive">Kinh doanh</option><option value="teaching_assistant">Trợ giảng</option><option value="teacher">Teacher</option></select></div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t"><button onClick={() => setShowUserForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button><button onClick={handleSaveUser} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">{editingUser ? "Cập nhật" : "Tạo người dùng"}</button></div>
           </div>

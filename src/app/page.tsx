@@ -6,18 +6,7 @@ import Footer from "@/components/Footer";
 import CourseImage from "@/components/CourseImage";
 import CourseCard from "@/components/CourseCard";
 import RegistrationCountdown from "@/components/RegistrationCountdown";
-import ExpertCarousel from "@/components/ExpertCarousel";
-
-interface Expert {
-  id: string;
-  name: string;
-  position: string;
-  previousWork: string;
-  avatarUrl: string;
-  linkedin: string;
-  order: number;
-  published: boolean;
-}
+import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
 
 async function getCourses(): Promise<Course[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -100,15 +89,6 @@ const testimonials = [
     initials: "Y",
     gradient: "from-orange-400 to-red-500",
   },
-];
-
-const expertColors = [
-  "from-green-400 to-emerald-500",
-  "from-blue-400 to-cyan-500",
-  "from-purple-400 to-pink-500",
-  "from-orange-400 to-red-500",
-  "from-teal-400 to-green-500",
-  "from-indigo-400 to-blue-500",
 ];
 
 const valueBlocks = [
@@ -206,8 +186,8 @@ export default async function HomePage() {
 
             {/* Right — Data Analyst Dashboard SVG */}
             <div className="hidden lg:flex items-center justify-center animate-fade-in-right">
-              <div className="relative w-[460px] h-[380px]">
-                <svg viewBox="0 0 460 380" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <div className="relative w-full max-w-[540px] h-auto aspect-[540/446]">
+                <svg viewBox="0 0 460 380" className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   {/* Dashboard background */}
                   <rect x="20" y="20" width="420" height="340" rx="16" fill="white" stroke="#16a34a" strokeWidth="1" strokeOpacity="0.2"/>
                   <rect x="20" y="20" width="420" height="40" rx="16" fill="#f0fdf4"/>

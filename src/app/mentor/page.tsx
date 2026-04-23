@@ -46,7 +46,7 @@ const BENEFITS = [
   {
     icon: "🤝",
     title: "Kết nối cộng đồng",
-    desc: "Tham gia cộng đồng học viên Dứa Data, mở rộng network và cơ hội nghề nghiệp.",
+    desc: "Tham gia cộng đồng học viên DUA Edu, mở rộng network và cơ hội nghề nghiệp.",
   },
 ];
 
@@ -112,7 +112,7 @@ export default function MentorPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">Đăng ký thành công!</h2>
             <p className="text-gray-600 mb-2">
-              Cảm ơn <strong>{form.name}</strong> đã tin tưởng Dứa Data.
+              Cảm ơn <strong>{form.name}</strong> đã tin tưởng DUA Edu.
             </p>
             <p className="text-gray-500 text-sm mb-8">
               Đội ngũ của chúng tôi đang tìm mentor phù hợp với bạn. Bạn sẽ nhận được thông báo qua <strong>{form.phone}</strong> trong thời gian sớm nhất.
@@ -143,7 +143,7 @@ export default function MentorPage() {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-1.5 mb-6">
               <span className="text-sm font-semibold text-green-700">🎓</span>
-              <span className="text-sm font-semibold text-green-700">Mentoring Dứa Data</span>
+              <span className="text-sm font-semibold text-green-700">Mentoring DUA Edu</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-5 leading-tight">
               Tìm Mentor phù hợp<br />
@@ -184,7 +184,7 @@ export default function MentorPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { step: "1", title: "Đăng ký", desc: "Điền thông tin về mục tiêu, trình độ và nhu cầu học tập của bạn." },
-              { step: "2", title: "Match Mentor", desc: "Đội ngũ Dứa Data sẽ chọn và gán mentor phù hợp nhất cho bạn." },
+              { step: "2", title: "Match Mentor", desc: "Đội ngũ DUA Edu sẽ chọn và gán mentor phù hợp nhất cho bạn." },
               { step: "3", title: "Bắt đầu học", desc: "Nhận thông tin mentor, kết nối và bắt đầu hành trình học tập." },
             ].map((item) => (
               <div key={item.step} className="text-center">

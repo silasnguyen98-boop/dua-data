@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     content: body.content || "",
     category: body.category || "General",
     imageUrl: body.imageUrl || "",
-    author: body.author || "Dứa Data",
+    author: body.author || "DUA Edu",
     published: body.published !== false,
     createdAt: now,
     updatedAt: now,
