@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import CourseImage from "@/components/CourseImage";
 import CourseCard from "@/components/CourseCard";
 import RegistrationCountdown from "@/components/RegistrationCountdown";
+import ExpertCarousel from "@/components/ExpertCarousel";
 
 interface Expert {
   id: string;
@@ -509,58 +510,7 @@ export default async function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Đội ngũ chuyên gia</h2>
             <p className="text-gray-500 max-w-xl mx-auto">Những người đồng hành cùng bạn trên hành trình Data — giàu kinh nghiệm thực chiến và đam mê chia sẻ.</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-8">
-            {experts.map((expert, i) => (
-              <div
-                key={expert.id}
-                className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 text-center border border-gray-100 w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)]"
-              >
-                {/* Avatar with verification badge */}
-                <div className="relative inline-block mb-5">
-                  {expert.avatarUrl ? (
-                    <img
-                      src={expert.avatarUrl}
-                      alt={expert.name}
-                      className="w-24 h-24 rounded-full object-cover shadow-lg group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${expertColors[i % expertColors.length]} flex items-center justify-center text-4xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      {expert.name.charAt(0)}
-                    </div>
-                  )}
-                  {/* Verification badge */}
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shadow-md border-3 border-white">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                {/* Info */}
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{expert.name}</h3>
-                <p className="text-green-600 font-medium text-sm mb-2">{expert.position}</p>
-                {expert.previousWork && <p className="text-gray-400 text-xs mb-4">{expert.previousWork}</p>}
-                {/* LinkedIn button */}
-                {expert.linkedin && (
-                  <a
-                    href={expert.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                    </svg>
-                    LinkedIn
-                  </a>
-                )}
-              </div>
-            ))}
-            {experts.length === 0 && (
-              <div className="col-span-full text-center text-gray-400 py-8">
-                Đang cập nhật đội ngũ chuyên gia...
-              </div>
-            )}
-          </div>
+          <ExpertCarousel experts={experts} />
         </div>
       </section>
 
