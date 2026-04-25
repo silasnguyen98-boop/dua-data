@@ -189,7 +189,7 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
               onChange={e => setForm({ ...form, expectations: e.target.value })}
             />
           </div>
-
+          <p><i>*Dứa sẽ ưu tiên liên hiệ với bạn qua zalo/facebook</i></p>
           <button
             type="submit"
             disabled={submitting}
