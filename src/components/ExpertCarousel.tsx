@@ -1,156 +1,158 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 
 export interface Expert {
   id: string;
   name: string;
   position: string;
-  previousWork: string;
-  avatarUrl: string;
-  linkedin: string;
-  order: number;
-  published: boolean;
+  previousWork?: string;
+  avatarUrl?: string;
+  linkedin?: string;
+  order?: number;
+  published?: boolean;
 }
 
-const expertColors = [
-  "from-green-400 to-emerald-500",
-  "from-blue-400 to-cyan-500",
-  "from-purple-400 to-pink-500",
-  "from-orange-400 to-red-500",
-  "from-teal-400 to-green-500",
-  "from-indigo-400 to-blue-500",
-];
+function chunkExperts(experts: Expert[], size: number) {
+  const chunks: Expert[][] = [];
 
-function ExpertCard({ expert, index }: { expert: Expert; index: number }) {
-  return (
-    <div className="flex-shrink-0 w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] group bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 text-center border border-gray-100 flex flex-col items-center">
-      {/* Avatar with verification badge */}
-      <div className="relative inline-block mb-5">
-        {expert.avatarUrl ? (
-          <img
-            src={expert.avatarUrl}
-            alt={expert.name}
-            className="w-24 h-24 rounded-full object-cover shadow-lg group-hover:scale-110 transition-transform duration-300"
-          />
-        ) : (
-          <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${expertColors[index % expertColors.length]} flex items-center justify-center text-4xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-            {expert.name.charAt(0)}
-          </div>
-        )}
-        {/* Verification badge */}
-        <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shadow-md border-[3px] border-white">
-          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-      </div>
-      {/* Info */}
-      <h3 className="text-lg font-bold text-gray-900 mb-1">{expert.name}</h3>
-      <p className="text-green-600 font-medium text-sm mb-2">{expert.position}</p>
-      {expert.previousWork && <p className="text-gray-400 text-xs mb-4">{expert.previousWork}</p>}
-      {/* LinkedIn button */}
-      {expert.linkedin && (
-        <a
-          href={expert.linkedin}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-auto inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-          </svg>
-          LinkedIn
-        </a>
-      )}
-    </div>
-  );
+  for (let i = 0; i < experts.length; i += size) {
+    chunks.push(experts.slice(i, i + size));
+  }
+
+  return chunks;
 }
 
 export default function ExpertCarousel({ experts }: { experts: Expert[] }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  const cardsPerView = experts.length === 1 ? 1 : 1; // default
+  const sortedExperts = useMemo(() => {
+    return [...experts].sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [experts]);
 
-  const prev = useCallback(() => {
-    setCurrentIndex((i) => Math.max(0, i - 1));
-  }, []);
+  const slides = useMemo(() => chunkExperts(sortedExperts, 4), [sortedExperts]);
 
-  const next = useCallback(() => {
-    setCurrentIndex((i) => Math.min(experts.length - 1, i + 1));
-  }, [experts.length]);
-
-  if (experts.length === 0) {
-    return (
-      <div className="text-center text-gray-400 py-8">
-        Đang cập nhật đội ngũ chuyên gia...
-      </div>
-    );
+  if (!sortedExperts.length) {
+    return null;
   }
 
-  const showArrows = experts.length > 1;
-  const totalDots = experts.length;
+  const goPrev = () => {
+    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+  };
+
+  const goNext = () => {
+    setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <div className="relative">
-      {/* Carousel track */}
       <div className="overflow-hidden">
         <div
-          className="flex gap-6 transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentIndex * (100 / 1)}%)` }}
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
         >
-          {experts.map((expert, i) => (
-            <div key={expert.id} className="w-full flex-shrink-0">
-              <ExpertCard expert={expert} index={i} />
+          {slides.map((slide, slideIndex) => (
+            <div key={slideIndex} className="w-full flex-shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center max-w-6xl mx-auto">
+                {slide.map((expert) => (
+                  <div
+                    key={expert.id}
+className="w-full max-w-[260px] min-h-[330px] bg-white rounded-2xl border border-green-100 shadow-lg shadow-green-100/40 p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col"
+               >
+                    <div className="flex justify-center mb-4">
+                      {expert.avatarUrl ? (
+                        <img
+                          src={expert.avatarUrl}
+                          alt={expert.name}
+                          className="w-24 h-24 rounded-full object-cover border-4 border-green-100 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-green-100 shadow-md">
+                          {expert.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
+                      {expert.name}
+                    </h3>
+
+                    <p className="text-sm font-medium text-green-600 mt-1 line-clamp-2">
+                      {expert.position}
+                    </p>
+
+                    {expert.previousWork && (
+                      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                        {expert.previousWork}
+                      </p>
+                    )}
+
+                    <div className="mt-auto pt-4">
+  {expert.linkedin ? (
+    <a
+      href={expert.linkedin}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-green-200/60 transition hover:bg-green-700 hover:shadow-lg"
+    >
+      LinkedIn
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H8M17 7v9" />
+      </svg>
+    </a>
+  ) : (
+    <div className="h-10" />
+  )}
+</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Navigation arrows */}
-      {showArrows && (
+      {slides.length > 1 && (
         <>
           <button
-            onClick={prev}
-            disabled={currentIndex === 0}
-            className="absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center hover:bg-green-50 hover:border-green-300 transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
-            aria-label="Previous"
+            type="button"
+            onClick={goPrev}
+            className="absolute left-0 top-1/2 -translate-y-1/2 hidden md:flex w-10 h-10 items-center justify-center rounded-full bg-white border border-green-100 shadow-lg text-green-700 hover:bg-green-50 transition"
+            aria-label="Chuyên gia trước"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
+
           <button
-            onClick={next}
-            disabled={currentIndex === experts.length - 1}
-            className="absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center hover:bg-green-50 hover:border-green-300 transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
-            aria-label="Next"
+            type="button"
+            onClick={goNext}
+            className="absolute right-0 top-1/2 -translate-y-1/2 hidden md:flex w-10 h-10 items-center justify-center rounded-full bg-white border border-green-100 shadow-lg text-green-700 hover:bg-green-50 transition"
+            aria-label="Chuyên gia tiếp theo"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setCurrentSlide(index)}
+                className={`h-2.5 rounded-full transition-all ${
+                  currentSlide === index
+                    ? "w-8 bg-green-600"
+                    : "w-2.5 bg-green-200 hover:bg-green-300"
+                }`}
+                aria-label={`Đi tới slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </>
       )}
-
-      {/* Dot indicators + count */}
-      <div className="flex items-center justify-center gap-3 mt-6">
-        {Array.from({ length: totalDots }).map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrentIndex(i)}
-            className={`rounded-full transition-all duration-300 ${
-              i === currentIndex
-                ? "w-6 h-2 bg-green-600"
-                : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
-            }`}
-            aria-label={`Go to expert ${i + 1}`}
-          />
-        ))}
-        <span className="ml-2 text-sm text-gray-400 font-medium">
-          {currentIndex + 1}/{experts.length}
-        </span>
-      </div>
     </div>
   );
 }

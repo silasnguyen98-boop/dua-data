@@ -49,9 +49,8 @@ export default function RegisterButton({ courseId, courseTitle, endDate, registr
         onClick={() => setShowForm(true)}
         className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white font-extrabold py-5 px-8 rounded-2xl hover:from-green-700 hover:to-emerald-600 transition-all duration-300 shadow-xl shadow-green-300/60 hover:shadow-2xl hover:shadow-green-400/80 hover:-translate-y-1 text-xl tracking-wide flex items-center justify-center gap-3"
       >
-        <span>📋</span>
         Đăng ký ngay
-        <span className="inline-block animate-bounce">→</span>
+        
       </button>
       {showForm && (
         <RegistrationForm

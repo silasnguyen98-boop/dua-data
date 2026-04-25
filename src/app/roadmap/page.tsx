@@ -10,7 +10,6 @@ const roadmapSteps = [
     description: "Hiểu bản chất trước khi học tool",
     topics: ["Data types (structured / unstructured)", "Data lifecycle (Collect → Clean → Analyze → Present)", "Data-driven mindset"],
     note: "Đây là nền tảng tư duy của một Data Analyst",
-    icon: "🧠",
     color: "from-green-500 to-emerald-600",
     bgLight: "bg-green-50",
     borderColor: "border-green-200",

@@ -2866,14 +2866,19 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả chi tiết</label>
-                <textarea
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Mô tả chi tiết
+  </label>
+  <RichTextEditor
+    value={form.description || ""}
+    onChange={(description) => setForm({ ...form, description })}
+    placeholder="Nhập mô tả chi tiết khóa học..."
+    minHeight="180px"
+    maxHeight="320px"
+    editorClassName="bg-white"
+  />
+</div>
+
 
               {/* Image URL */}
               <div>

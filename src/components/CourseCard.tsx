@@ -218,7 +218,7 @@ export default function CourseCard({
           </div>
         </div>
 
-        <div className="pt-3 border-t border-gray-100">
+        <div className="mt-auto pt-3 border-t border-gray-100">
           <div className="flex items-end justify-between">
             <div>
               {hasDiscount && (
@@ -257,8 +257,9 @@ export default function CourseCard({
         </div>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-green-900/95 via-green-800/95 to-emerald-900/95 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col p-4 z-20 overflow-y-auto">
-        <div className="space-y-1.5 text-sm text-green-100">
+      <div className="absolute inset-0 z-30 flex h-full w-full flex-col bg-gradient-to-b from-green-900/95 via-green-800/95 to-emerald-900/95 p-6 opacity-0 transition-all duration-500 group-hover:opacity-100">
+        <div className="flex-1 overflow-y-auto pr-1">
+          <div className="space-y-2 text-sm text-green-100">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-green-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -313,8 +314,8 @@ export default function CourseCard({
             </div>
 
             {course.targetAudience && course.targetAudience.length > 0 && (
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span>
@@ -326,11 +327,12 @@ export default function CourseCard({
               </div>
             )}
           </div>
+        </div>
 
-        <div className="mt-auto pt-3 space-y-2">
-          <div className="text-center">
+        <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
+          <div className="text-center mb-4">
             <span
-              className={`text-xl font-extrabold ${
+              className={`text-2xl font-extrabold ${
                 shouldHidePrice || isFree ? "text-green-300" : "text-white"
               }`}
             >
@@ -346,7 +348,7 @@ export default function CourseCard({
 
           <Link
             href={`/courses/${course.slug}`}
-            className="flex items-center justify-center bg-white text-green-800 font-bold py-2.5 rounded-xl hover:bg-green-50 transition-all text-sm shadow-lg"
+            className="flex items-center justify-center bg-white text-green-800 font-bold py-3 rounded-xl hover:bg-green-50 transition-all text-sm shadow-lg"
           >
             Xem chi tiết và đăng ký
             <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

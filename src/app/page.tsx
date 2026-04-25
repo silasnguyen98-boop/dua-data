@@ -289,7 +289,7 @@ export default async function HomePage() {
       {/* 2. Social Proof */}
       <section className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 py-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221.5%22%20fill%3D%22white%22%20opacity%3D%220.08%22%2F%3E%3C%2Fsvg%3E')]" />
-        <div className="max-w-6xl mx-auto px-4 relative">
+        <div className="max-w-7xl mx-auto px-4 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {socialProofStats.map((stat, i) => (
               <div key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.15}s` }}>
@@ -369,7 +369,7 @@ export default async function HomePage() {
         <div className="absolute top-20 -left-20 w-80 h-80 bg-green-200/20 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-20 -right-20 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
 
-        <div className="max-w-6xl mx-auto px-4 relative">
+        <div className="max-w-7xl mx-auto px-4 relative">
           <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2 text-center">About us</p>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4 font-display">
             Sứ mệnh đưa Data đến nhiều người hơn
@@ -484,7 +484,7 @@ export default async function HomePage() {
       <section className="py-20 bg-gradient-to-b from-green-50/50 to-white relative overflow-hidden">
         <div className="absolute top-10 left-10 w-64 h-64 bg-green-200/30 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-10 w-48 h-48 bg-emerald-200/30 rounded-full blur-3xl" />
-        <div className="max-w-6xl mx-auto px-4 relative">
+        <div className="max-w-7xl mx-auto px-4 relative">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2">Our Team</p>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Đội ngũ chuyên gia</h2>
