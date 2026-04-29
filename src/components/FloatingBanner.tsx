@@ -44,7 +44,7 @@ export default function FloatingBanner() {
   if (!ad || dismissed) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 animate-fade-in-up" style={{ maxWidth: 280 }}>
+    <div className="fixed bottom-4 right-4 z-50 animate-fade-in-up" style={{ maxWidth: 300 }}>
       <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden group">
         {/* Close button */}
         <button
@@ -55,9 +55,10 @@ export default function FloatingBanner() {
           ✕
         </button>
         {/* Countdown */}
-        {timeLeft && (
-          <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-mono px-2 py-1 rounded-lg backdrop-blur-sm z-10">
-            ⏱ {timeLeft}
+        {timeLeft && timeLeft !== "Đã hết hạn" && (
+          <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-4 py-2 text-center z-10">
+            <div className="text-xs font-medium opacity-80 mb-0.5">⏱ Kết thúc sau</div>
+            <div className="text-xl font-bold font-mono tracking-wider">{timeLeft}</div>
           </div>
         )}
         {/* Banner image */}
@@ -65,7 +66,7 @@ export default function FloatingBanner() {
           <img
             src={ad.imageUrl}
             alt="banner"
-            className="w-full max-h-40 object-cover"
+            className="w-full max-h-48 object-cover"
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
         </a>
