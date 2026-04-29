@@ -41,18 +41,27 @@ export default function FloatingBanner() {
     return () => clearInterval(id);
   }, [ad]);
 
+  // Auto-dismiss after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setDismissed(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   if (!ad || dismissed) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-fade-in-up" style={{ maxWidth: 300 }}>
+    <div
+      className="fixed bottom-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto z-50 animate-fade-in-up"
+      style={{ maxWidth: 300 }}
+    >
       <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden group">
         {/* Close button */}
         <button
           onClick={() => setDismissed(true)}
-          className="absolute top-2 right-2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
           aria-label="Đóng banner"
         >
-          ✕
+          Bỏ qua
         </button>
         {/* Banner image */}
         <a href={ad.link} target="_blank" rel="noopener noreferrer" className="block">
