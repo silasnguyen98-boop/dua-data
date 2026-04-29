@@ -15,7 +15,7 @@ export default function FloatingBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    fetch("/api/ads?active=true")
+    fetch("/api/ads?active=true&type=floating")
       .then((r) => r.json())
       .then((ads: Ad[]) => {
         if (ads.length > 0) setAd(ads[0]);

@@ -17,6 +17,8 @@ interface Resource {
   updatedAt: string;
 }
 
+const PAGE_SIZE = 6;
+
 async function getResources(): Promise<Resource[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   try {
@@ -45,8 +47,20 @@ const categories = [
   { key: "Article", label: "Bài viết" },
 ];
 
-export default async function ResourcePage() {
+function getPageHref(page: number) {
+  return page <= 1 ? "/resource" : `/resource?page=${page}`;
+}
+
+export default async function ResourcePage({
+  searchParams,
+}: {
+  searchParams?: { page?: string };
+}) {
   const resources = await getResources();
+  const currentPage = Math.max(1, Number(searchParams?.page) || 1);
+  const totalPages = Math.max(1, Math.ceil(resources.length / PAGE_SIZE));
+  const page = Math.min(currentPage, totalPages);
+  const paginatedResources = resources.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-white">
@@ -86,60 +100,113 @@ export default async function ResourcePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {resources.map((resource, i) => (
-              <Link
-                key={resource.id}
-                href={`/resource/${resource.slug}`}
-                className="group bg-white rounded-3xl overflow-hidden shadow-md shadow-green-100/40 border border-green-50 hover:shadow-2xl hover:shadow-green-100/60 hover:-translate-y-2 transition-all duration-500 flex flex-col animate-fade-in-up"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                {/* Image */}
-                {resource.imageUrl ? (
-                  <div className="h-48 relative overflow-hidden">
-                    <img
-                      src={resource.imageUrl}
-                      alt={resource.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
-                      {resource.category}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="h-48 bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center relative">
-                    <svg className="w-16 h-16 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
-                      {resource.category}
-                    </span>
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="font-bold text-gray-900 group-hover:text-green-600 transition-colors duration-300 mb-2 text-[17px] leading-snug line-clamp-2">
-                    {resource.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-3 leading-relaxed">
-                    {resource.summary}
-                  </p>
-
-                  <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100/80">
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-                        {resource.author.charAt(0)}
-                      </div>
-                      <span>{resource.author}</span>
-                      <span className="text-gray-300">|</span>
-                      <span>{formatDate(resource.createdAt)}</span>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {paginatedResources.map((resource, i) => (
+                <Link
+                  key={resource.id}
+                  href={`/resource/${resource.slug}`}
+                  className="group bg-white rounded-3xl overflow-hidden shadow-md shadow-green-100/40 border border-green-50 hover:shadow-2xl hover:shadow-green-100/60 hover:-translate-y-2 transition-all duration-500 flex flex-col animate-fade-in-up"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  {/* Image */}
+                  {resource.imageUrl ? (
+                    <div className="h-48 relative overflow-hidden">
+                      <img
+                        src={resource.imageUrl}
+                        alt={resource.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                      <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
+                        {resource.category}
+                      </span>
                     </div>
-                    <svg className="w-4 h-4 text-green-500 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                  ) : (
+                    <div className="h-48 bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center relative">
+                      <svg className="w-16 h-16 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
+                        {resource.category}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Content */}
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="font-bold text-gray-900 group-hover:text-green-600 transition-colors duration-300 mb-2 text-[17px] leading-snug line-clamp-2">
+                      {resource.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4 line-clamp-3 leading-relaxed">
+                      {resource.summary}
+                    </p>
+
+                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100/80">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                          {resource.author.charAt(0)}
+                        </div>
+                        <span>{resource.author}</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{formatDate(resource.createdAt)}</span>
+                      </div>
+                      <svg className="w-4 h-4 text-green-500 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-12">
+                <Link
+                  href={getPageHref(page - 1)}
+                  aria-disabled={page === 1}
+                  className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-medium transition ${
+                    page === 1
+                      ? "border-green-100 text-green-300 pointer-events-none"
+                      : "border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Link>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <Link
+                    key={p}
+                    href={getPageHref(p)}
+                    aria-current={p === page ? "page" : undefined}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium flex items-center justify-center transition ${
+                      p === page
+                        ? "bg-green-600 text-white shadow-lg shadow-green-200"
+                        : "border border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                    }`}
+                  >
+                    {p}
+                  </Link>
+                ))}
+
+                <Link
+                  href={getPageHref(page + 1)}
+                  aria-disabled={page === totalPages}
+                  className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-medium transition ${
+                    page === totalPages
+                      ? "border-green-100 text-green-300 pointer-events-none"
+                      : "border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            )}
+
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, resources.length)} trong tổng số {resources.length} tài nguyên
+            </p>
+          </>
         )}
       </section>
 

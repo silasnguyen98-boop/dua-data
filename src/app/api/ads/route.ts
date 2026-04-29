@@ -11,6 +11,7 @@ export interface Ad {
   startDate: string;
   endDate: string;
   enabled: boolean;
+  type: "floating" | "top_banner";
   createdAt?: string;
 }
 
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   const activeOnly = searchParams.get("active") === "true";
+  const type = searchParams.get("type");
 
   if (id) {
     const snapshot = await get(ref(db, `ads/${id}`));
@@ -35,12 +37,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ id, ...snapshot.val() });
   }
 
-  const ads = await readAds();
+  let ads = await readAds();
+
+  if (type) {
+    ads = ads.filter(a => a.type === type);
+  }
 
   if (activeOnly) {
     const now = new Date().toISOString();
-    const active = ads.filter(a => a.enabled && a.startDate <= now && a.endDate >= now);
-    return NextResponse.json(active);
+    ads = ads.filter(a => a.enabled && a.startDate <= now && a.endDate >= now);
   }
 
   return NextResponse.json(ads);
@@ -55,6 +60,7 @@ export async function POST(req: NextRequest) {
     startDate: body.startDate || "",
     endDate: body.endDate || "",
     enabled: body.enabled !== undefined ? body.enabled : true,
+    type: body.type || "floating",
     createdAt: new Date().toISOString(),
   };
   await set(newRef, ad);

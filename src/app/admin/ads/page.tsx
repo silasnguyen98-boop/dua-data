@@ -10,6 +10,7 @@ interface Ad {
   startDate: string;
   endDate: string;
   enabled: boolean;
+  type: "floating" | "top_banner";
   createdAt?: string;
 }
 
@@ -19,6 +20,7 @@ const emptyAd = {
   startDate: "",
   endDate: "",
   enabled: true,
+  type: "floating" as const,
 };
 
 export default function AdsAdminPage() {
@@ -110,7 +112,7 @@ export default function AdsAdminPage() {
   };
 
   const editAd = (ad: Ad) => {
-    setForm({ imageUrl: ad.imageUrl, link: ad.link, startDate: ad.startDate, endDate: ad.endDate, enabled: ad.enabled });
+    setForm({ imageUrl: ad.imageUrl, link: ad.link, startDate: ad.startDate, endDate: ad.endDate, enabled: ad.enabled, type: (ad as Ad).type || "floating" });
     setEditing(ad);
     setShowForm(true);
   };
@@ -152,6 +154,7 @@ export default function AdsAdminPage() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Banner</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Loại</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Link</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Thời hạn</th>
                   <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">Trạng thái</th>
@@ -163,6 +166,15 @@ export default function AdsAdminPage() {
                   <tr key={ad.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <img src={ad.imageUrl} alt="banner" className="h-16 w-auto rounded-lg object-cover" onError={e => (e.currentTarget.style.display = "none")} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        ad.type === "top_banner"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
+                        {ad.type === "top_banner" ? "🎌 Top Banner" : "📌 Floating"}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <a href={ad.link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline max-w-[200px] truncate block">{ad.link}</a>
@@ -219,6 +231,20 @@ export default function AdsAdminPage() {
                 {form.imageUrl && (
                   <img src={form.imageUrl} alt="preview" className="mt-2 h-24 w-auto rounded-lg object-cover" onError={e => (e.currentTarget.style.display = "none")} />
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Loại banner</label>
+                <select
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value as "floating" | "top_banner" })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="floating">📌 Floating — góc phải dưới, có countdown</option>
+                  <option value="top_banner">🎌 Top Banner — trên navbar, chỉ ảnh</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  {form.type === "top_banner" ? "Kích cỡ ảnh khuyến nghị: 2172×724 px. Không có countdown." : "Hiển thị góc phải bên dưới màn hình, có đếm ngược thời gian."}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Link chuyển hướng *</label>
