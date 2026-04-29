@@ -3253,15 +3253,19 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung chi tiết (HTML)</label>
-                <textarea
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  rows={6}
-                  value={activityForm.content}
-                  onChange={(e) => setActivityForm({ ...activityForm, content: e.target.value })}
-                />
-              </div>
+            <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nội dung hoạt động
+          </label>
+          <RichTextEditor
+            value={activityForm.content || ""}
+            onChange={(content) => setActivityForm({ ...activityForm, content })}
+            placeholder="Nhập nội dung chi tiết hoạt động..."
+            minHeight="220px"
+            maxHeight="360px"
+            editorClassName="bg-white"
+          />
+        </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh minh hoạ (URL)</label>
@@ -3383,12 +3387,14 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả chi tiết (HTML)</label>
-                <textarea
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  rows={6}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung chia sẻ</label>
+                <RichTextEditor
                   value={jobForm.content}
-                  onChange={(e) => setJobForm({ ...jobForm, content: e.target.value })}
+                  onChange={(val: string) => setJobForm({ ...jobForm, content: val })}
                 />
+              </div>
               </div>
 
               <div>

@@ -41,6 +41,7 @@ export default function Navbar() {
     { href: "/courses", label: "Khóa học" },
     { href: "/roadmap", label: "Lộ trình" },
     { href: "/resource", label: "Tài nguyên" },
+    { href: "/community", label: "Cộng đồng"}
   ];
 
   const isActive = (href: string) => {

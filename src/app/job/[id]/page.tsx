@@ -4,7 +4,6 @@ import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { ref, get } from "firebase/database";
 import { notFound } from "next/navigation";
-import ApplyJobForm from "@/components/ApplyJobForm";
 
 interface Job {
   id: string;
@@ -26,11 +25,11 @@ interface Job {
 }
 
 const workTypeColors: Record<string, string> = {
-  "Full-time": "bg-green-100 text-green-700",
-  "Part-time": "bg-blue-100 text-blue-700",
-  "Internship": "bg-amber-100 text-amber-700",
-  "Freelance": "bg-purple-100 text-purple-700",
-  "Remote": "bg-teal-100 text-teal-700",
+  "Full-time": "bg-emerald-50 text-emerald-700 border-emerald-100",
+  "Part-time": "bg-blue-50 text-blue-700 border-blue-100",
+  Internship: "bg-amber-50 text-amber-700 border-amber-100",
+  Freelance: "bg-purple-50 text-purple-700 border-purple-100",
+  Remote: "bg-teal-50 text-teal-700 border-teal-100",
 };
 
 async function getJob(id: string): Promise<Job | null> {
@@ -40,116 +39,213 @@ async function getJob(id: string): Promise<Job | null> {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("vi-VN", {
+  if (!dateStr) return null;
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+
+  return date.toLocaleDateString("vi-VN", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const job = await getJob(params.id);
 
   if (!job || !job.published) {
     notFound();
   }
 
-  const typeColor = workTypeColors[job.workType] || "bg-gray-100 text-gray-600";
+  const typeColor =
+    workTypeColors[job.workType] || "bg-gray-50 text-gray-600 border-gray-100";
+  const companyInitial = job.company?.trim()?.charAt(0) || "?";
+  const formattedDeadline = formatDate(job.applicationDeadline);
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      {/* Back */}
-      <div className="max-w-4xl mx-auto px-4 pt-8">
-        <Link href="/job" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-yellow-600 transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Quay lại danh sách việc làm
-        </Link>
-      </div>
-
-      {/* Hero */}
-      <section className="max-w-4xl mx-auto px-4 py-10">
-        <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-sm">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row gap-6 mb-8">
-            {job.imageUrl ? (
-              <img
-                src={job.imageUrl}
-                alt={job.company}
-                className="w-20 h-20 rounded-2xl object-cover border border-gray-100 flex-shrink-0"
+      <main className="bg-gradient-to-br from-yellow-50 via-white to-orange-50">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <Link
+            href="/job"
+            className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-yellow-300 hover:text-yellow-700"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
               />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-3xl font-bold text-yellow-600">{job.company.charAt(0)}</span>
+            </svg>
+            Quay lại danh sách việc làm
+          </Link>
+
+          <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <article className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl shadow-yellow-900/5">
+              <div className="border-b border-gray-100 bg-white p-6 md:p-10">
+                <div className="flex flex-col gap-6 sm:flex-row">
+                  {job.imageUrl ? (
+                    <img
+                      src={job.imageUrl}
+                      alt={job.company || job.title}
+                      className="h-20 w-20 shrink-0 rounded-2xl border border-gray-100 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100">
+                      <span className="text-3xl font-bold text-yellow-700">
+                        {companyInitial}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {job.workType && (
+                        <span
+                          className={`rounded-full border px-3 py-1 text-sm font-bold ${typeColor}`}
+                        >
+                          {job.workType}
+                        </span>
+                      )}
+
+                      {job.location && (
+                        <span className="rounded-full border border-gray-100 bg-gray-50 px-3 py-1 text-sm font-bold text-gray-600">
+                          {job.location}
+                        </span>
+                      )}
+
+                      {job.salary && (
+                        <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
+                          {job.salary}
+                        </span>
+                      )}
+                    </div>
+
+                    <h1 className="font-display text-3xl font-bold leading-tight text-gray-950 md:text-5xl">
+                      {job.title}
+                    </h1>
+
+                    <p className="mt-3 text-lg font-medium text-gray-500">
+                      {job.company || "Đang cập nhật"}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{job.title}</h1>
-              <p className="text-lg text-gray-500 mb-3">{job.company}</p>
-              <div className="flex flex-wrap gap-2">
-                <span className={`inline-flex items-center gap-1 text-sm font-medium px-3 py-1 rounded-full ${typeColor}`}>
-                  {job.workType}
-                </span>
-                {job.location && (
-                  <span className="inline-flex items-center gap-1 text-sm font-medium px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {job.location}
-                  </span>
+
+              <div className="p-6 md:p-10">
+                <div className="mb-8 grid gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-5 sm:grid-cols-2">
+                  {job.position && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                        Vị trí
+                      </p>
+                      <p className="mt-1 font-semibold text-gray-800">
+                        {job.position}
+                      </p>
+                    </div>
+                  )}
+
+                  {formattedDeadline && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                        Hạn nộp
+                      </p>
+                      <p className="mt-1 font-semibold text-gray-800">
+                        {formattedDeadline}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {job.content ? (
+                  <section>
+                    <h2 className="mb-4 text-2xl font-bold text-gray-950">
+                      Mô tả công việc
+                    </h2>
+                    <div className="whitespace-pre-line text-base leading-8 text-gray-600">
+                      {job.content}
+                    </div>
+                  </section>
+                ) : job.summary ? (
+                  <section>
+                    <h2 className="mb-4 text-2xl font-bold text-gray-950">
+                      Tóm tắt
+                    </h2>
+                    <p className="text-base leading-8 text-gray-600">
+                      {job.summary}
+                    </p>
+                  </section>
+                ) : null}
+              </div>
+            </article>
+
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <div className="rounded-3xl border border-yellow-100 bg-white p-6 shadow-xl shadow-yellow-900/5">
+                <p className="text-sm font-bold uppercase tracking-wide text-yellow-600">
+                  Ứng tuyển
+                </p>
+
+                <h2 className="mt-3 text-2xl font-bold text-gray-950">
+                  Sẵn sàng gửi hồ sơ?
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-gray-600">
+                  Kiểm tra thông tin công việc, sau đó nhấn ứng tuyển để đi tới
+                  trang nộp hồ sơ của vị trí này.
+                </p>
+
+                {job.applicationLink ? (
+                  <a
+                    href={job.applicationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gray-950 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-gray-900/10 transition hover:bg-yellow-600"
+                  >
+                    Ứng tuyển ngay
+                  </a>
+                ) : (
+                  <div className="mt-6 rounded-xl bg-gray-100 px-6 py-3.5 text-center text-sm font-bold text-gray-500">
+                    Chưa mở ứng tuyển
+                  </div>
                 )}
-                {job.salary && (
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600">
-                    {job.salary}
-                  </span>
-                )}
+
+                <div className="mt-6 border-t border-gray-100 pt-5">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    Công ty
+                  </p>
+                  <p className="mt-1 font-semibold text-gray-800">
+                    {job.company || "Đang cập nhật"}
+                  </p>
+
+                  {formattedDeadline && (
+                    <>
+                      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-gray-400">
+                        Hạn ứng tuyển
+                      </p>
+                      <p className="mt-1 font-semibold text-gray-800">
+                        {formattedDeadline}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Meta */}
-          <div className="flex flex-wrap gap-6 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-100">
-            {job.position && (
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span>Vị trí: <strong className="text-gray-700">{job.position}</strong></span>
-              </div>
-            )}
-            {job.applicationDeadline && (
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Hạn nộp: <strong className="text-gray-700">{formatDate(job.applicationDeadline)}</strong></span>
-              </div>
-            )}
-          </div>
-
-          {/* Content */}
-          {job.content && (
-            <div className="prose max-w-none mb-10">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Mô tả công việc</h2>
-              <div className="text-gray-600 leading-relaxed whitespace-pre-line">{job.content}</div>
-            </div>
-          )}
-
-          {job.summary && !job.content && (
-            <div className="mb-10">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Tóm tắt</h2>
-              <p className="text-gray-600 leading-relaxed">{job.summary}</p>
-            </div>
-          )}
-
-          {/* Apply */}
-          <ApplyJobForm jobId={job.id} jobTitle={job.title} applicationLink={job.applicationLink} />
+            </aside>
+          </section>
         </div>
-      </section>
+      </main>
 
       <Footer />
     </div>

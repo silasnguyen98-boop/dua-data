@@ -139,7 +139,7 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Số điện thoại của bạn <span className="text-red-500">*</span>
+                Số điện thoại (Zalo) của bạn <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -189,7 +189,9 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
               onChange={e => setForm({ ...form, expectations: e.target.value })}
             />
           </div>
-          <p><i>*Dứa sẽ ưu tiên liên hiệ với bạn qua zalo/facebook</i></p>
+          <p style={{ color: "#166534" }}>
+            <i>*DUA sẽ ưu tiên liên hệ với bạn qua Zalo/Facebook</i>
+          </p>
           <button
             type="submit"
             disabled={submitting}
