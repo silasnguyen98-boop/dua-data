@@ -254,7 +254,7 @@ interface LeadResource {
   createdAt: string;
 }
 
-type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "alumni" | "shortlinks" | "leads" | "users" | "waitlist" | "quiz";
+type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "alumni" | "shortlinks" | "leads" | "users" | "waitlist" | "quiz" | "ads";
 type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant" | "teacher";
 
 interface WaitListEntry {
@@ -1283,6 +1283,7 @@ export default function AdminPage() {
     { key: "shortlinks" as ActiveView, label: "Quản lý Shortlink", icon: "🔗", count: shortlinks.length },
     { key: "leads" as ActiveView, label: "Đăng ký nhận tài liệu", icon: "📩", count: leads.length },
     { key: "users" as ActiveView, label: "Quản lý người dùng", icon: "👤", count: systemUsers.length },
+    { key: "ads" as ActiveView, label: "Quản lý Banner Ads", icon: "🎨" },
   ];
 
   // Role-based sidebar filtering
@@ -1292,7 +1293,7 @@ export default function AdminPage() {
     sales_executive: ["dashboard", "waitlist", "students", "leads"],
     teaching_assistant: ["dashboard", "students", "courses"],
     teacher: ["alumni", "quiz", "resources", "activities"],
-    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "alumni", "quiz", "shortlinks", "leads", "users"],
+    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "alumni", "quiz", "shortlinks", "leads", "users", "ads"],
   };
   const allowedViews = rolePermissionMap[currentRole || ""] || rolePermissionMap["system_admin"];
   useEffect(() => {
@@ -2706,6 +2707,20 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeView === "ads" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Quản lý Banner Ads</h1>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200">
+                <p className="text-gray-600 mb-3">Trang quản lý Banner Ads</p>
+                <a href="/admin/ads" target="_blank" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm">
+                  Mở trang quản lý Ads →
+                </a>
+              </div>
             </div>
           )}
         </div>

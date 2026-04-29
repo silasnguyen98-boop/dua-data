@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import FloatingBanner from "@/components/FloatingBanner";
 
 const BRAND_LOGO = "https://i.ibb.co/3yKrstMS/Thie-t-ke-chu-a-co-te-n-20.png";
 
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]">{children}</body>
+      <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]">{children}<FloatingBanner /></body>
     </html>
   );
 }
