@@ -54,13 +54,6 @@ export default function FloatingBanner() {
         >
           ✕
         </button>
-        {/* Countdown */}
-        {timeLeft && timeLeft !== "Đã hết hạn" && (
-          <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-4 py-2 text-center z-10">
-            <div className="text-xs font-medium opacity-80 mb-0.5">⏱ Kết thúc sau</div>
-            <div className="text-xl font-bold font-mono tracking-wider">{timeLeft}</div>
-          </div>
-        )}
         {/* Banner image */}
         <a href={ad.link} target="_blank" rel="noopener noreferrer" className="block">
           <img
@@ -70,6 +63,13 @@ export default function FloatingBanner() {
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
         </a>
+        {/* Countdown */}
+        {timeLeft && timeLeft !== "Đã hết hạn" && (
+          <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-4 py-2 text-center">
+            <div className="text-xs font-medium opacity-80 mb-0.5">⏱ Kết thúc sau</div>
+            <div className="text-xl font-bold font-mono tracking-wider">{timeLeft}</div>
+          </div>
+        )}
       </div>
     </div>
   );
