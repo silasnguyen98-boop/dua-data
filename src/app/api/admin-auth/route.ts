@@ -15,19 +15,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No users found" }, { status: 401 });
     }
 
-    const users = snapshot.val();
-    const matchedUser = Object.values(users).find(
-      (u: any) => u.username === username && u.password === password
-    ) as { id: string; role: string; name: string; username: string } | undefined;
+    const users = snapshot.val() as Record<string, any>;
+    const matchedEntry = Object.entries(users).find(
+      ([, user]) => user.username === username && user.password === password
+    );
 
-    if (!matchedUser) {
+    if (!matchedEntry) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    const [id, matchedUser] = matchedEntry;
+
     // Simple token: base64 of id:role
-    const token = Buffer.from(`${matchedUser.id}:${matchedUser.role}:${matchedUser.name}:${matchedUser.username}`).toString("base64");
+    const token = Buffer.from(`${id}:${matchedUser.role}:${matchedUser.name}:${matchedUser.username}`).toString("base64");
 
     return NextResponse.json({
+      id,
       token,
       role: matchedUser.role,
       name: matchedUser.name,

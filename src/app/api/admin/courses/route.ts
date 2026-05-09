@@ -4,7 +4,7 @@ import { buildCoursePayload, buildCurriculumPayload, groupCurriculumByCourseId, 
 
 export const dynamic = "force-dynamic";
 
-const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, registration_deadline, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
+const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
 
 export async function GET(req: NextRequest) {
   try {

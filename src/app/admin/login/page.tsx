@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { rtdb } from "@/lib/firebase";
-import { ref, get } from "firebase/database";
 import BrandLogo from "@/components/BrandLogo";
 
 export default function AdminLoginPage() {
@@ -19,36 +17,47 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      const snapshot = await get(ref(rtdb, "users/_system"));
-      if (!snapshot.exists()) {
-        setError("Không tìm thấy người dùng nào. Vui lòng liên hệ quản trị viên.");
-        setLoading(false);
+      const res = await fetch("/api/admin-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          password,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(
+          data.error === "No users found"
+            ? "Không tìm thấy người dùng nào. Vui lòng liên hệ quản trị viên."
+            : data.error === "Invalid credentials"
+              ? "Sai tài khoản hoặc mật khẩu"
+              : "Lỗi kết nối. Vui lòng thử lại."
+        );
         return;
       }
 
-      const allUsers = snapshot.val() as Record<string, any>;
-      const matchedKey = Object.keys(allUsers).find(
-        (k) => allUsers[k].username === username && allUsers[k].password === password
-      );
+      const role = String(data.role || "").trim();
+      const token = String(data.token || "");
 
-      if (!matchedKey) {
-        setError("Sai tài khoản hoặc mật khẩu");
-        setLoading(false);
+      if (!role || !token) {
+        setError("Không nhận được phiên đăng nhập hợp lệ. Vui lòng thử lại.");
         return;
       }
 
-      const matchedUser = allUsers[matchedKey];
-      const role = (matchedUser.role || "").trim();
-      // Encode role as base64 so API can decode reliably
-      const encodedRole = btoa(role);
       sessionStorage.setItem("admin_auth", "true");
-      sessionStorage.setItem("admin_role", encodedRole);
-      sessionStorage.setItem("admin_id", matchedKey);
-      sessionStorage.setItem("admin_name", (matchedUser.name || role || "").trim());
-      sessionStorage.setItem("admin_username", username);
+      sessionStorage.setItem("admin_role", token);
+      sessionStorage.setItem("admin_id", String(data.id || ""));
+      sessionStorage.setItem("admin_name", String(data.name || role).trim());
+      sessionStorage.setItem(
+        "admin_username",
+        String(data.username || username).trim()
+      );
       router.push("/admin");
     } catch {
       setError("Lỗi kết nối. Vui lòng thử lại.");
+    } finally {
       setLoading(false);
     }
   };

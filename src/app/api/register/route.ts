@@ -57,6 +57,26 @@ async function getCourseById(courseId: string) {
   return data;
 }
 
+async function incrementCourseStudentsFallback(courseId: string, previousStudents: unknown) {
+  const supabase = createAdminWriteClient();
+  const currentStudents = Number(previousStudents ?? 0);
+  const nextStudents = currentStudents + 1;
+
+  let query = supabase
+    .from("courses")
+    .update({ students: nextStudents })
+    .eq("id", courseId);
+
+  query = previousStudents == null
+    ? query.is("students", null)
+    : query.eq("students", currentStudents);
+
+  const { error } = await query;
+  if (error) {
+    console.error("Increment course students fallback failed:", error);
+  }
+}
+
 export async function GET() {
   const supabase = createAdminWriteClient();
   const [registrationsResult, coursesResult] = await Promise.all([
@@ -201,6 +221,8 @@ export async function POST(req: NextRequest) {
         { status: 500 },
       );
     }
+
+    await incrementCourseStudentsFallback(course.id, course.students);
 
     let emailSent = false;
     let emailError = "";

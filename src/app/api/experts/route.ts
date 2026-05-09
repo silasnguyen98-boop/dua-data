@@ -9,7 +9,7 @@ export async function GET() {
     const supabase = createAdminWriteClient();
     const { data, error } = await supabase
       .from("experts")
-      .select('id, name, position, previous_work, avatar_url, linkedin, "order", published');
+      .select("id, name, position, previous_work, avatar_url, linkedin, display_order, published");
 
     if (error) {
       console.error("Error fetching experts:", error);

@@ -379,12 +379,12 @@ function AdminPageContent() {
   const [userSearch, setUserSearch] = useState("");
 
   // Build auth header from session
-  function buildAuthHeader(): Record<string, string> {
+  const buildAuthHeader = useCallback((): Record<string, string> => {
     if (typeof window === "undefined") return {};
     const stored = safeGetSessionItem("admin_role");
     if (!stored) return {};
     return { Authorization: `Bearer ${decodeStoredRole(stored) || stored.trim()}` };
-  }
+  }, []);
 
   // Mobile sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -492,9 +492,11 @@ function AdminPageContent() {
       setSystemUsers(Array.isArray(data) ? data : []);
     } catch { setSystemUsers([]); }
     setUsersLoading(false);
-  }, []);
+  }, [buildAuthHeader]);
 
   useEffect(() => {
+    if (!authChecked) return;
+
     fetchCourses();
     fetchStudents();
     fetchResources();
@@ -506,7 +508,7 @@ function AdminPageContent() {
     if (decodeStoredRole(safeGetSessionItem("admin_role")) === "system_admin") {
       fetchSystemUsers();
     }
-  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchLeads, fetchWaitList, fetchSystemUsers]);
+  }, [authChecked, fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchLeads, fetchWaitList, fetchSystemUsers]);
 
   function handleEdit(course: Course) {
     setEditing(course);
