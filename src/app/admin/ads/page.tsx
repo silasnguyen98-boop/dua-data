@@ -60,8 +60,8 @@ export default function AdsAdminPage() {
   };
 
   const handleSave = async () => {
-    if (!form.imageUrl || !form.link) {
-      showMessage("error", "Vui lòng điền đầy đủ thông tin");
+    if (!form.imageUrl || !form.link || !form.startDate || !form.endDate) {
+      showMessage("error", "Vui lòng điền đầy đủ ảnh, link và thời hạn chạy ads");
       return;
     }
     setSaving(true);
@@ -243,7 +243,7 @@ export default function AdsAdminPage() {
                   <option value="top_banner">🎌 Top Banner — trên navbar, chỉ ảnh</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  {form.type === "top_banner" ? "Kích cỡ ảnh khuyến nghị: 2172×724 px. Không có countdown." : "Hiển thị góc phải bên dưới màn hình, có đếm ngược thời gian."}
+                  {form.type === "top_banner" ? "Kích cỡ ảnh khuyến nghị: 1920×240 px. Không có countdown." : "Hiển thị góc phải bên dưới màn hình, có đếm ngược thời gian."}
                 </p>
               </div>
               <div>

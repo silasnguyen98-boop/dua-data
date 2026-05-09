@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, type MouseEvent } from "react";
 import { Alumni } from "@/types/alumni";
 
 interface Props {
@@ -8,6 +9,26 @@ interface Props {
 }
 
 export default function AlumniModal({ alumni, onClose }: Props) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  const displayName = alumni.name?.trim() || "Alumni";
+  const displayJob = alumni.job?.trim() || "Học viên DUA Edu";
+  const displayImage = alumni.coverImage || alumni.imageUrl || "";
+  const initials = displayName.charAt(0).toUpperCase();
+
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
@@ -15,7 +36,10 @@ export default function AlumniModal({ alumni, onClose }: Props) {
     >
       <div
         className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up"
-        onClick={e => e.stopPropagation()}
+        onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={displayName}
       >
         {/* Header */}
         <div className="relative bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 p-8 pb-24 text-center">
@@ -26,16 +50,16 @@ export default function AlumniModal({ alumni, onClose }: Props) {
             ×
           </button>
           <div className="relative inline-block">
-            {alumni.imageUrl ? (
+            {displayImage ? (
               <img
-                src={alumni.imageUrl}
-                alt={alumni.name}
+                src={displayImage}
+                alt={displayName}
                 className="w-28 h-28 rounded-full object-cover border-4 border-white/30 shadow-xl mx-auto"
               />
             ) : (
               <div className="w-28 h-28 rounded-full bg-green-200 border-4 border-white/30 shadow-xl mx-auto flex items-center justify-center">
                 <span className="text-4xl font-bold text-green-700">
-                  {alumni.name.charAt(0)}
+                  {initials || "A"}
                 </span>
               </div>
             )}
@@ -46,8 +70,8 @@ export default function AlumniModal({ alumni, onClose }: Props) {
         <div className="px-8 pb-8 -mt-16 relative z-10">
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <div className="text-center mb-4">
-              <h3 className="text-2xl font-extrabold text-gray-900">{alumni.name}</h3>
-              <p className="text-green-600 font-semibold text-sm mt-1">{alumni.job}</p>
+              <h3 className="text-2xl font-extrabold text-gray-900">{displayName}</h3>
+              <p className="text-green-600 font-semibold text-sm mt-1">{displayJob}</p>
               {alumni.linkedin && (
                 <a
                   href={alumni.linkedin}
@@ -68,7 +92,7 @@ export default function AlumniModal({ alumni, onClose }: Props) {
 
             {/* Content */}
             <div className="text-gray-700 text-sm leading-relaxed [&_p]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-bold [&_h3]:text-base [&_h3]:font-semibold">
-              <div dangerouslySetInnerHTML={{ __html: alumni.content }} />
+              <div dangerouslySetInnerHTML={{ __html: alumni.content || "" }} />
             </div>
           </div>
         </div>

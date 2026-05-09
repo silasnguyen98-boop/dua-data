@@ -13,6 +13,7 @@ export interface Ad {
   enabled: boolean;
   type: "floating" | "top_banner";
   createdAt?: string;
+  updatedAt?: string;
 }
 
 async function readAds(): Promise<Ad[]> {
@@ -23,6 +24,17 @@ async function readAds(): Promise<Ad[]> {
     ...val,
     id: key,
   }));
+}
+
+function parseAdTime(value?: string) {
+  const time = value ? new Date(value).getTime() : NaN;
+  return Number.isFinite(time) ? time : 0;
+}
+
+function isActiveAd(ad: Ad, now: number) {
+  const start = parseAdTime(ad.startDate);
+  const end = parseAdTime(ad.endDate);
+  return ad.enabled && start <= now && end >= now;
 }
 
 export async function GET(req: NextRequest) {
@@ -44,9 +56,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (activeOnly) {
-    const now = new Date().toISOString();
-    ads = ads.filter(a => a.enabled && a.startDate <= now && a.endDate >= now);
+    const now = Date.now();
+    ads = ads.filter(a => isActiveAd(a, now));
   }
+
+  ads = ads.sort((a, b) => parseAdTime(b.createdAt) - parseAdTime(a.createdAt));
 
   return NextResponse.json(ads);
 }
@@ -62,6 +76,7 @@ export async function POST(req: NextRequest) {
     enabled: body.enabled !== undefined ? body.enabled : true,
     type: body.type || "floating",
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   await set(newRef, ad);
   return NextResponse.json({ id: newRef.key, ...ad }, { status: 201 });
@@ -76,7 +91,7 @@ export async function PUT(req: NextRequest) {
   const snapshot = await get(adRef);
   if (!snapshot.exists()) return NextResponse.json({ error: "Ad not found" }, { status: 404 });
 
-  await update(adRef, data);
+  await update(adRef, { ...data, updatedAt: new Date().toISOString() });
   const updated = await get(adRef);
   return NextResponse.json({ id, ...updated.val() });
 }

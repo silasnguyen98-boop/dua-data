@@ -36,6 +36,7 @@ export interface Course {
   schedule: string;
   hours: string;
   category: string;
+  courseType?: "offline" | "online" | "e_learning" | "self_study" | "";
   curriculum: CurriculumItem[];
   outcomes: string[];
   targetAudience: string[];

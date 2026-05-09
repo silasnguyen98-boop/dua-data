@@ -10,19 +10,27 @@ import WaitListRegister from "@/components/WaitListRegister";
 
 async function getCourse(slug: string): Promise<Course | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/courses`, { cache: "no-store" });
-  if (!res.ok) return null;
-  const courses: Course[] = await res.json();
-  return courses.find((c) => c.slug === slug) || null;
+  const res = await fetch(`${baseUrl}/api/courses?slug=${encodeURIComponent(slug)}`, { next: { revalidate: 300 } });
+  if (res.status === 404 || !res.ok) return null;
+  const course = await res.json();
+  return course || null;
 }
 
 function formatPrice(price: number) {
+  if (price === 0) return "Miễn phí";
   return new Intl.NumberFormat("vi-VN").format(price) + "đ";
 }
 
-export default async function CourseDetailPage({ params }: { params: { slug: string } }) {
+export default async function CourseDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams?: { register?: string };
+}) {
   const course = await getCourse(params.slug);
   if (!course || course.published === false || course.isHidden === true) notFound();
+  const autoOpenRegister = searchParams?.register === "1";
 
   const totalTopics = course.curriculum.reduce((sum, item) => sum + (item.topics?.length || 0), 0);
   const shouldHidePrice = course.hidePrice === true;
@@ -298,13 +306,13 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                       {formatPrice(course.price)}
                     </div>
 
-                    {course.originalPrice > course.price && (
+                    {course.price > 0 && course.originalPrice > course.price && (
                       <div className="text-green-200 line-through text-lg mt-1">
                         {formatPrice(course.originalPrice)}
                       </div>
                     )}
 
-                    {course.discount > 0 && (
+                    {course.price > 0 && course.discount > 0 && (
                       <div className="inline-block bg-white/20 backdrop-blur-sm text-white text-sm mt-2 px-3 py-1 rounded-full font-medium">
                         Tiết kiệm {formatPrice(course.originalPrice - course.price)}
                       </div>
@@ -323,8 +331,10 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                   <RegisterButton
                     courseId={course.id}
                     courseTitle={course.title}
+                    coursePath={`/courses/${course.slug || params.slug}`}
                     endDate={course.endDate}
                     registrationDeadline={course.registrationDeadline}
+                    autoOpen={autoOpenRegister}
                   />
 
                   <a

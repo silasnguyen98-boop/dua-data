@@ -6,6 +6,8 @@ interface Ad {
   id: string;
   imageUrl: string;
   link: string;
+  type?: "floating" | "top_banner";
+  createdAt?: string;
   endDate: string;
 }
 
@@ -28,7 +30,7 @@ export default function FloatingBanner() {
     const calc = () => {
       const diff = new Date(ad.endDate).getTime() - Date.now();
       if (diff <= 0) {
-        setTimeLeft("Đã hết hạn");
+        setDismissed(true);
         return;
       }
       const h = Math.floor(diff / 3600000);
@@ -41,18 +43,12 @@ export default function FloatingBanner() {
     return () => clearInterval(id);
   }, [ad]);
 
-  // Auto-dismiss after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => setDismissed(true), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
   if (!ad || dismissed) return null;
 
   return (
     <div
-      className="fixed bottom-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto z-50 animate-fade-in-up"
-      style={{ maxWidth: 300 }}
+      className="fixed bottom-4 right-4 z-50 animate-fade-in-up"
+      style={{ maxWidth: 320 }}
     >
       <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden group">
         {/* Close button */}
@@ -68,7 +64,7 @@ export default function FloatingBanner() {
           <img
             src={ad.imageUrl}
             alt="banner"
-            className="w-full max-h-48 object-cover"
+            className="w-full max-h-56 object-cover"
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
         </a>

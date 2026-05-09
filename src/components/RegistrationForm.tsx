@@ -1,47 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase-client";
+import { getAppCheckHeaders } from "@/lib/firebase-app-check";
 
 interface Props {
   courseId: string;
   courseTitle: string;
+  coursePath: string;
   onClose: () => void;
 }
 
-export default function RegistrationForm({ courseId, courseTitle, onClose }: Props) {
+export default function RegistrationForm({ courseId, courseTitle, coursePath, onClose }: Props) {
+  const router = useRouter();
   const [form, setForm] = useState({
-    fullName: "",
-    facebook: "",
-    birthday: "",
     phone: "",
-    email: "",
-    referralCode: "",
-    expectations: "",
+    facebook: "",
+    learningNeeds: "",
+    learnerGroup: "",
   });
+  const [honeypot, setHoneypot] = useState("");
+  const [formStartedAt, setFormStartedAt] = useState<number>(Date.now());
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [emailError, setEmailError] = useState("");
+
+  useEffect(() => {
+    setFormStartedAt(Date.now());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setEmailError("");
 
-    if (!form.fullName || !form.birthday || !form.phone || !form.email) {
-      setError("Vui lòng điền đầy đủ thông tin bắt buộc");
+    if (!form.phone.trim() || !form.learningNeeds.trim()) {
+      setError("Vui lòng nhập số điện thoại và nhu cầu học");
+      return;
+    }
+
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (!/^0[0-9]{9,10}$/.test(phoneDigits)) {
+      setError("Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Zalo của bạn.");
       return;
     }
 
     setSubmitting(true);
     try {
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token || "";
+      if (!accessToken) {
+        router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
+        return;
+      }
+
+      const appCheckHeaders = await getAppCheckHeaders();
       const res = await fetch("/api/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, courseId }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          ...appCheckHeaders,
+        },
+        body: JSON.stringify({
+          courseId,
+          phone: phoneDigits,
+          facebook: form.facebook,
+          learningNeeds: form.learningNeeds,
+          learnerGroup: Number(form.learnerGroup),
+          honeypot,
+          formStartedAt,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         setSuccess(true);
+        setEmailSent(Boolean(data.emailSent));
+        setEmailError(data.emailError || "");
       } else {
+        if (res.status === 401 && data.loginUrl) {
+          router.push(data.loginUrl);
+          return;
+        }
+        if (res.status === 401) {
+          router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
+          return;
+        }
         setError(data.error || "Đăng ký thất bại");
       }
     } catch {
@@ -60,9 +108,19 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
             </svg>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Chúc mừng!</h3>
-          <p className="text-gray-600 leading-relaxed mb-6">
-            Chúc mừng bạn đã đăng ký thành công khóa học <span className="font-semibold text-green-600">{courseTitle}</span>, DUA sẽ sớm liên hệ lại bạn!
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Chúc mừng bạn đã đăng ký thành công khóa học <span className="font-semibold text-green-600">{courseTitle}</span>.
           </p>
+          <p className="text-sm text-gray-500 leading-relaxed mb-4">
+            {emailSent
+              ? "DUA đã gửi email xác nhận vào Gmail bạn đã đăng nhập."
+              : "DUA đã lưu đăng ký của bạn. Email xác nhận sẽ được gửi sớm."}
+          </p>
+          {emailError && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-6 text-left">
+              Mail xác nhận chưa gửi được ngay: {emailError}
+            </p>
+          )}
           <button
             onClick={onClose}
             className="bg-green-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-green-700 transition-all"
@@ -88,38 +146,58 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <input
+            type="text"
+            name="company"
+            autoComplete="off"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="hidden"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
               {error}
             </div>
           )}
 
-          {/* Họ tên + Ngày sinh on same row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Họ tên của bạn <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                placeholder="Nguyễn Văn A"
-                value={form.fullName}
-                onChange={e => setForm({ ...form, fullName: e.target.value })}
-              />
-            </div>
+          <div className="rounded-2xl border border-green-100 bg-green-50/70 px-4 py-3 text-sm text-green-800">
+            Đăng ký bằng tài khoản Google đã đăng nhập. Email xác nhận sẽ được gửi tới Gmail của bạn.
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Ngày sinh của bạn <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                value={form.birthday}
-                onChange={e => setForm({ ...form, birthday: e.target.value })}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Số điện thoại Zalo của bạn <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+              placeholder="Ví dụ: 0912345678"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+            />
+            <p className="mt-1 text-xs text-gray-400">Số này DUA sẽ dùng để liên hệ qua Zalo nếu cần.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Bạn đang là? <span className="text-gray-400 text-xs">(không bắt buộc)</span>
+            </label>
+            <select
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white"
+              value={form.learnerGroup}
+              onChange={e => setForm({ ...form, learnerGroup: e.target.value })}
+            >
+              <option value="">Chọn một mục</option>
+              <option value="1">Học sinh / Sinh viên</option>
+              <option value="2">Người đi làm 0-2 năm</option>
+              <option value="3">Người đi làm 3-5 năm</option>
+              <option value="0">Người chuyển ngành</option>
+              <option value="0">Khác</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-400">DUA dùng thông tin này để cá nhân hóa tư vấn và tài liệu gửi bạn.</p>
           </div>
 
           <div>
@@ -135,63 +213,23 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
             />
           </div>
 
-          {/* Số điện thoại + Email on same row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Số điện thoại (Zalo) của bạn <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                placeholder="0912345678"
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email của bạn <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                placeholder="email@example.com"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Mã giới thiệu <span className="text-gray-400 text-xs">(không bắt buộc)</span>
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-              placeholder="Nhập mã giới thiệu nếu có"
-              value={form.referralCode}
-              onChange={e => setForm({ ...form, referralCode: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Bạn mong muốn nhận được điều gì thêm từ khóa học <span className="text-gray-400 text-xs">(không bắt buộc)</span>
+              Bạn mong muốn học gì từ khóa học này? <span className="text-red-500">*</span>
             </label>
             <textarea
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-              rows={3}
-              placeholder="Chia sẻ mong muốn của bạn..."
-              value={form.expectations}
-              onChange={e => setForm({ ...form, expectations: e.target.value })}
+              rows={4}
+              placeholder="Ví dụ: Em muốn học để tối ưu workflow, làm dashboard và ứng dụng AI vào công việc..."
+              value={form.learningNeeds}
+              onChange={e => setForm({ ...form, learningNeeds: e.target.value })}
             />
           </div>
+
           <p style={{ color: "#166534" }}>
-            <i>*DUA sẽ ưu tiên liên hệ với bạn qua Zalo/Facebook</i>
+            <i>*DUA sẽ ưu tiên liên hệ với bạn qua Zalo/Facebook và gửi email xác nhận vào Gmail đã đăng nhập.</i>
           </p>
+
           <button
             type="submit"
             disabled={submitting}
@@ -199,7 +237,10 @@ export default function RegistrationForm({ courseId, courseTitle, onClose }: Pro
           >
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
                 Đang đăng ký...
               </span>
             ) : "Đăng ký ngay"}

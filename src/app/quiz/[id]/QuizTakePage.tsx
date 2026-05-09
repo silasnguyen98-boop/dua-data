@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Quiz, QuizAttemptRecord, QuizLeaderboardEntry } from "@/types/quiz";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { createClient } from "@/lib/supabase-client";
+import type { Session } from "@supabase/supabase-js";
 
 type QuizState = "not-started" | "in-progress" | "completed";
 
@@ -97,16 +99,23 @@ export default function QuizTakePage({
   const [leaderboard, setLeaderboard] = useState<QuizLeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState("");
+  const [authSession, setAuthSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const timeoutHandledRef = useRef(false);
   const leaderboardLoadedRef = useRef(false);
+  const authAutoSyncRef = useRef(false);
   const startedAtRef = useRef<number | null>(null);
   const hasTimeLimit = Number(quiz.durationMinutes || 0) > 0;
   const initialTimeLeft = hasTimeLimit ? Number(quiz.durationMinutes || 0) * 60 : 0;
   const [timeLeft, setTimeLeft] = useState(initialTimeLeft);
+  const currentPath = useMemo(() => `/quiz/${quiz.id}`, [quiz.id]);
 
   const questions = normalizeQuestions(quiz.questions);
   const total = questions.length;
   const currentQ = questions[currentIndex];
+  const isLoggedIn = Boolean(authSession);
+  const authDisplayName = authSession?.user.user_metadata?.full_name || authSession?.user.user_metadata?.name || "Tài khoản";
+  const authEmail = authSession?.user.email || "";
 
   function handleSelectAnswer(optionIndex: number) {
     if (submitted) return;
@@ -140,6 +149,24 @@ export default function QuizTakePage({
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthSession(data.session);
+      setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setAuthSession(nextSession);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   function handleSubmit(byTimeout = false) {
     if (submitted) return;
@@ -181,58 +208,75 @@ export default function QuizTakePage({
     document.cookie = cookieParts.join("; ");
   }
 
-  function handleRevealResults() {
-    const trimmedName = viewerName.trim();
-    if (!trimmedName) {
-      setNameError("Vui lòng nhập tên để xem kết quả");
-      return;
-    }
-
+  async function saveAttemptToLeaderboard(sourceAttempt: QuizAttemptRecord, session: Session) {
     setSavingAttempt(true);
     setLeaderboardError("");
 
+    try {
+      const accessToken = session.access_token;
+      const nextAttempt: QuizAttemptRecord = {
+        ...sourceAttempt,
+        participantName: authDisplayName || sourceAttempt.participantName || "Ẩn danh",
+        participantEmail: authEmail || undefined,
+        participantDisplayName: authDisplayName || undefined,
+      };
+
+      const res = await fetch(`/api/quiz/${quiz.id}/attempts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          answers: nextAttempt.answers,
+          submittedByTimeout: nextAttempt.submittedByTimeout,
+          submittedAt: nextAttempt.submittedAt,
+          elapsedSeconds: nextAttempt.elapsedSeconds,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Vui lòng đăng nhập để xem kết quả");
+      }
+
+      const data = await res.json();
+      persistAttempt(nextAttempt);
+      setSubmittedAt(nextAttempt.submittedAt);
+      setAttemptElapsedSeconds(nextAttempt.elapsedSeconds || 0);
+      setViewerName(nextAttempt.participantName || "");
+      setNameError("");
+      setLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+      leaderboardLoadedRef.current = true;
+      setResultsVisible(true);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Không thể lưu kết quả");
+    } finally {
+      setSavingAttempt(false);
+    }
+  }
+
+  function handleRevealResults() {
     const nextAttempt: QuizAttemptRecord = {
       answers,
       submittedByTimeout,
       submittedAt: submittedAt || new Date().toISOString(),
-      participantName: trimmedName,
+      participantName: authDisplayName || viewerName.trim(),
+      participantEmail: authEmail || undefined,
+      participantDisplayName: authDisplayName || undefined,
       elapsedSeconds: attemptElapsedSeconds,
     };
 
-    fetch(`/api/quiz/${quiz.id}/attempts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        participantName: trimmedName,
-        answers,
-        submittedByTimeout,
-        submittedAt: nextAttempt.submittedAt,
-        elapsedSeconds: attemptElapsedSeconds,
-      }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Không thể lưu kết quả");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        persistAttempt(nextAttempt);
-        setSubmittedAt(nextAttempt.submittedAt);
-        setAttemptElapsedSeconds(nextAttempt.elapsedSeconds || 0);
-        setViewerName(trimmedName);
-        setNameError("");
-        setLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
-        leaderboardLoadedRef.current = true;
-        setResultsVisible(true);
-      })
-      .catch((err: Error) => {
-        setNameError(err.message || "Không thể lưu kết quả");
-      })
-      .finally(() => {
-        setSavingAttempt(false);
-      });
+    if (!isLoggedIn || !authSession) {
+      persistAttempt(nextAttempt);
+      setSubmittedAt(nextAttempt.submittedAt);
+      setAttemptElapsedSeconds(nextAttempt.elapsedSeconds || 0);
+      setResultsVisible(false);
+      setNameError("Đăng nhập để xem kết quả và lưu BXH");
+      return;
+    }
+
+    void saveAttemptToLeaderboard(nextAttempt, authSession);
   }
 
   async function loadLeaderboard() {
@@ -282,6 +326,38 @@ export default function QuizTakePage({
     leaderboardLoadedRef.current = true;
     void loadLeaderboard();
   }, [state, resultsVisible]);
+
+  useEffect(() => {
+    const pendingAttempt = Boolean(initialAttempt) && !initialAttempt?.participantName?.trim();
+    if (!pendingAttempt) return;
+    if (!authSession || authLoading) return;
+    if (state !== "completed" || resultsVisible || authAutoSyncRef.current) return;
+
+    authAutoSyncRef.current = true;
+    void saveAttemptToLeaderboard(
+      {
+        answers: initialAttempt?.answers ?? answers,
+        submittedByTimeout: Boolean(initialAttempt?.submittedByTimeout),
+        submittedAt: initialAttempt?.submittedAt || submittedAt || new Date().toISOString(),
+        participantName: authDisplayName || "",
+        participantEmail: authEmail || undefined,
+        participantDisplayName: authDisplayName || undefined,
+        elapsedSeconds: Number(initialAttempt?.elapsedSeconds ?? attemptElapsedSeconds),
+      },
+      authSession
+    );
+  }, [
+    answers,
+    attemptElapsedSeconds,
+    authEmail,
+    authDisplayName,
+    authLoading,
+    authSession,
+    initialAttempt,
+    resultsVisible,
+    state,
+    submittedAt,
+  ]);
 
   const score = questions.reduce((acc, q, i) => {
     return acc + (answers[i] === q.correctIndex ? 1 : 0);
@@ -400,12 +476,12 @@ export default function QuizTakePage({
           {/* Score card */}
           <div className={`text-center rounded-3xl border-2 p-10 mb-10 ${scoreBg}`}>
             <h2 className="text-3xl font-extrabold text-emerald-950 mb-2">
-              {resultsVisible ? (percentage >= 80 ? "Xuất sắc!" : percentage >= 50 ? "Khá tốt!" : "Cần cố gắng thêm!") : "Nhập tên để xem kết quả"}
+              {resultsVisible ? (percentage >= 80 ? "Xuất sắc!" : percentage >= 50 ? "Khá tốt!" : "Cần cố gắng thêm!") : "Đăng nhập để xem kết quả"}
             </h2>
             <p className="text-emerald-900/70 text-sm mb-4">
               {resultsVisible
                 ? `Bạn đã hoàn thành bài quiz.`
-                : "Sau khi nhập tên, điểm số và chi tiết đáp án sẽ hiện ra ở bên dưới."}
+                : "Sau khi đăng nhập, điểm số, chi tiết đáp án và BXH sẽ hiện ra ở bên dưới."}
             </p>
             {submittedByTimeout && hasTimeLimit && (
               <div className="inline-flex items-center gap-2 bg-red-50 text-red-700 text-sm font-bold px-4 py-2 rounded-full border border-red-100 mb-4">
@@ -415,40 +491,63 @@ export default function QuizTakePage({
             {!resultsVisible ? (
               <div className="max-w-xl mx-auto">
                 <div className="rounded-3xl border border-emerald-100 bg-white/90 shadow-sm p-6 text-left">
-                  <p className="text-sm font-semibold text-emerald-900/70 mb-4">
-                    Nhập Họ Tên của bạn để xem kết quả.
-                  </p>
-                  {nameError && (
-                    <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-100 mb-4">
-                      {nameError}
+                  {authLoading ? (
+                    <p className="text-sm font-semibold text-emerald-900/70 mb-4">
+                      Đang kiểm tra trạng thái đăng nhập...
+                    </p>
+                  ) : isLoggedIn ? (
+                    <div className="space-y-4">
+                      <p className="text-sm font-semibold text-emerald-900/70">
+                        Bạn đã đăng nhập. Kết quả sẽ được lưu bằng email đã đăng nhập: <span className="text-emerald-700">{authEmail}</span>
+                      </p>
+                      {nameError && (
+                        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-100">
+                          {nameError}
+                        </div>
+                      )}
+                      {savingAttempt ? (
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                          Đang lưu kết quả và đồng bộ BXH...
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (authSession) {
+                              void saveAttemptToLeaderboard(
+                                {
+                                  answers,
+                                  submittedByTimeout,
+                                  submittedAt: submittedAt || new Date().toISOString(),
+                                  participantName: authEmail || authDisplayName || "",
+                                  elapsedSeconds: attemptElapsedSeconds,
+                                },
+                                authSession
+                              );
+                            }
+                          }}
+                          className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-bold px-6 py-3 rounded-2xl hover:from-emerald-800 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                        >
+                          Xem kết quả
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm font-semibold text-emerald-900/70">
+                        Đăng nhập để xem kết quả và lưu BXH bằng email đã đăng nhập.
+                      </p>
+                      <div className="bg-amber-50 text-amber-800 text-sm px-4 py-3 rounded-xl border border-amber-100">
+                        Bạn vẫn có thể giữ đáp án hiện tại. Sau khi đăng nhập và quay lại trang này, kết quả sẽ được đồng bộ.
+                      </div>
+                      <Link
+                        href={`/login?next=${encodeURIComponent(currentPath)}`}
+                        className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-bold px-6 py-3 rounded-2xl hover:from-emerald-800 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                      >
+                        Đăng nhập để xem kết quả
+                      </Link>
                     </div>
                   )}
-                  <form
-                    className="space-y-3"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleRevealResults();
-                    }}
-                  >
-                    <label className="block text-sm font-semibold text-emerald-900/80">
-                      Họ tên
-                    </label>
-                    <input
-                      type="text"
-                      value={viewerName}
-                      onChange={(e) => setViewerName(e.target.value)}
-                      placeholder="Nhập Họ Tên của bạn để xem kết quả"
-                      disabled={savingAttempt}
-                      className="w-full rounded-2xl border border-emerald-200 px-4 py-3 text-base text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                    />
-                    <button
-                      type="submit"
-                      disabled={savingAttempt}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white font-bold px-6 py-3 rounded-2xl hover:from-emerald-800 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-200"
-                    >
-                      {savingAttempt ? "Đang lưu..." : "Xem kết quả"}
-                    </button>
-                  </form>
                 </div>
               </div>
             ) : (
@@ -458,7 +557,7 @@ export default function QuizTakePage({
                     <div className="flex items-center justify-between gap-4 mb-6">
                       <div>
                         <h3 className="text-2xl font-extrabold text-emerald-950">
-                          Kết quả của {viewerName.trim()}
+                          Kết quả của {viewerName.trim() || authEmail || authDisplayName || "bạn"}
                         </h3>
                       </div>
                       {submittedByTimeout && hasTimeLimit && (
@@ -486,7 +585,9 @@ export default function QuizTakePage({
                     </div>
 
                     <p className="text-emerald-900/70 text-sm mt-6">
-                      Tên đã nhập sẽ được lưu cùng bài làm trên trình duyệt này.
+                      {isLoggedIn
+                        ? "Kết quả đã được lưu với email đăng nhập của bạn."
+                        : "Tên và đáp án đang được lưu tạm trên trình duyệt này. Hãy đăng nhập để đồng bộ BXH."}
                     </p>
                   </div>
                 </div>
@@ -589,7 +690,8 @@ export default function QuizTakePage({
                   ) : (
                     <div className="space-y-3">
                       {leaderboard.map((entry, index) => {
-                        const isCurrentUser = entry.participantName.trim() === viewerName.trim();
+                        const isCurrentEmail = authEmail && entry.participantEmail === authEmail;
+                        const isCurrentUser = isCurrentEmail || entry.participantName.trim() === viewerName.trim();
                         return (
                           <div
                             key={`${entry.id}-${index}`}

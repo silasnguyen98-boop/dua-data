@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ref, get, push, set } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { Quiz, QuizLeaderboardEntry } from "@/types/quiz";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ async function getLeaderboard(id: string): Promise<QuizLeaderboardEntry[]> {
   const entries = Object.entries(data).map(([attemptId, value]: [string, any]) => ({
     id: attemptId,
     participantName: String(value.participantName || "Ẩn danh"),
+    participantEmail: value.participantEmail ? String(value.participantEmail) : undefined,
+    participantDisplayName: value.participantDisplayName ? String(value.participantDisplayName) : undefined,
     score: Number(value.score) || 0,
     totalQuestions: Number(value.totalQuestions) || 0,
     percentage: Number(value.percentage) || 0,
@@ -42,6 +45,20 @@ function normalizeAnswers(input: any): Record<number, number> {
     acc[index] = Number(value);
     return acc;
   }, {});
+}
+
+function createSupabaseAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
+  );
 }
 
 export async function GET(
@@ -68,9 +85,17 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const participantName = String(body.participantName || "").trim();
-    if (!participantName) {
-      return NextResponse.json({ error: "Missing participant name" }, { status: 400 });
+    const authHeader = req.headers.get("authorization") || "";
+    const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    if (!accessToken) {
+      return NextResponse.json({ error: "Bạn cần đăng nhập để xem kết quả" }, { status: 401 });
+    }
+
+    const supabase = createSupabaseAuthClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
+    const user = userData.user;
+    if (userError || !user) {
+      return NextResponse.json({ error: "Bạn cần đăng nhập để xem kết quả" }, { status: 401 });
     }
 
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
@@ -83,12 +108,21 @@ export async function POST(
       ? body.submittedAt.trim()
       : new Date().toISOString();
     const now = new Date().toISOString();
+    const participantEmail = String(user.email || "").trim();
+    const participantDisplayName = String(
+      user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "Ẩn danh"
+    ).trim();
+    const participantName = participantDisplayName || "Ẩn danh";
 
     const attemptRef = push(ref(db, `quiz_attempts/${params.id}`));
     const record = {
       id: attemptRef.key!,
       quizId: params.id,
       participantName,
+      participantEmail,
+      participantDisplayName,
       answers,
       score,
       totalQuestions,

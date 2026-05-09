@@ -8,17 +8,23 @@ import CourseCard from "@/components/CourseCard";
 import RegistrationCountdown from "@/components/RegistrationCountdown";
 import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
 
+export const dynamic = "force-dynamic";
+
 async function getCourses(): Promise<Course[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/courses`, { cache: "no-store" });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch(`${baseUrl}/api/courses`, { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
 }
 
 async function getExperts(): Promise<Expert[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   try {
-    const res = await fetch(`${baseUrl}/api/experts`, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/api/experts`, { next: { revalidate: 600 } });
     if (!res.ok) return [];
     const experts = await res.json();
     return experts.filter((e: Expert) => e.published);
@@ -102,6 +108,7 @@ const valueBlocks = [
 function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed" {
   const now = new Date();
   const start = new Date(startDate);
+  if (isNaN(start.getTime())) return "upcoming";
   if (start > now) return "upcoming";
   // Assume course runs ~3 months
   const endEstimate = new Date(start);
@@ -110,18 +117,26 @@ function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed
   return "completed";
 }
 
+function getCourseSortTime(course: Course) {
+  const start = new Date(course.startDate);
+  if (!isNaN(start.getTime())) return start.getTime();
+  const createdAt = new Date(course.createdAt || "");
+  if (!isNaN(createdAt.getTime())) return createdAt.getTime();
+  return 0;
+}
+
 function sortCourses(courses: Course[]): { main: Course[]; comingSoon: Course | null } {
   if (!courses || courses.length === 0) return { main: [], comingSoon: null };
   const statusOrder = { upcoming: 0, ongoing: 1, completed: 2 };
 
   const main = courses
-    .filter(c => c && c.published !== false && !c.isHidden && !c.comingSoon && c.startDate)
+    .filter(c => c && c.published !== false && !c.isHidden && !c.comingSoon)
     .filter(c => getCourseStatus(c.startDate) !== "completed")
     .sort((a, b) => {
       const sa = statusOrder[getCourseStatus(a.startDate)];
       const sb = statusOrder[getCourseStatus(b.startDate)];
       if (sa !== sb) return sa - sb;
-      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      return getCourseSortTime(a) - getCourseSortTime(b);
     });
 
   const comingSoonCourses = courses
@@ -362,77 +377,98 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 5. About Dứa Data — Dynamic Illustrated Layout */}
-      <section id="about" className="relative py-24 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-green-50/60 to-white" />
-        <div className="absolute top-20 -left-20 w-80 h-80 bg-green-200/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 -right-20 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+      {/* 5. About Dứa Data — Editorial Minimal Layout */}
+      <section id="about" className="relative py-28 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-stone-50 to-white" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-200 to-transparent" />
+        <div className="absolute -top-24 left-1/3 w-96 h-96 rounded-full bg-emerald-100/40 blur-3xl" />
+        <div className="absolute -bottom-24 right-0 w-[28rem] h-[28rem] rounded-full bg-green-100/30 blur-3xl" />
 
         <div className="max-w-7xl mx-auto px-4 relative">
-          <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2 text-center">About us</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4 font-display">
-            Sứ mệnh đưa Data đến nhiều người hơn
-          </h2>
-          <p className="text-gray-600 text-center max-w-3xl mx-auto mb-16">
-            Dứa Data tin rằng Data không chỉ dành cho người làm kỹ thuật, mà dành cho bất kỳ ai muốn hiểu vấn đề và đưa ra quyết định tốt hơn.
-          </p>
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-green-700 mb-4">
+              About us
+            </p>
+            <h2 className="text-3xl md:text-5xl font-semibold text-gray-950 leading-tight font-display">
+              Sứ mệnh của Dứa Data là làm cho Data trở nên gần gũi, thực tế và đáng tin cậy hơn
+            </h2>
+            <p className="mt-6 text-lg text-gray-600 leading-8 max-w-2xl">
+              Chúng tôi tin rằng một khóa học tốt không cần quá nhiều phô trương. Điều quan trọng là nội dung rõ ràng,
+              trải nghiệm học gọn gàng và những gì học viên mang về có thể áp dụng ngay vào công việc.
+            </p>
+          </div>
 
-          {/* Feature card */}
-          <div className="mb-16">
-            <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-8 md:p-10 text-white relative overflow-hidden animate-fade-in-left group max-w-4xl mx-auto">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
-              <div className="relative">
-                <div className="text-5xl mb-4">🧠</div>
-                <h3 className="text-2xl font-bold mb-3">{valueBlocks[0].title}</h3>
-                <p className="text-green-100 leading-relaxed text-lg">{valueBlocks[0].desc}</p>
-                {/* Inline illustration: data flow */}
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                    Thu thập
-                  </div>
-                  <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    Phân tích
-                  </div>
-                  <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Quyết định
-                  </div>
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 items-stretch">
+            <div className="rounded-[2rem] border border-green-100 bg-white/90 backdrop-blur-sm shadow-[0_24px_80px_rgba(16,185,129,0.08)] p-8 md:p-10">
+              <div className="flex items-center justify-between gap-6 flex-wrap">
+                <div>
+                  <p className="text-sm font-medium text-green-700 uppercase tracking-[0.2em]">
+                    Triết lý giảng dạy
+                  </p>
+                  <h3 className="mt-2 text-2xl md:text-3xl font-semibold text-gray-950">
+                    Học ít hơn, hiểu sâu hơn, làm được nhiều hơn
+                  </h3>
                 </div>
+                <div className="rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
+                  Data-driven, but human-first
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4">
+                {whyChooseCards.map((card, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-stone-200 bg-stone-50/80 p-5 md:p-6 transition-all duration-300 hover:border-green-200 hover:bg-white"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div className="min-w-12 pt-0.5">
+                        <div className="h-12 w-12 rounded-2xl border border-green-200 bg-white flex items-center justify-center text-base font-semibold text-green-700">
+                          0{i + 1}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-gray-950">{card.title}</h4>
+                        <p className="mt-2 text-sm md:text-base leading-7 text-gray-600">{card.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-          </div>
+            <div className="rounded-[2rem] border border-stone-200 bg-stone-950 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] p-8 md:p-10 flex flex-col justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/90">Cam kết</p>
+                <h3 className="mt-3 text-2xl md:text-3xl font-semibold leading-tight">
+                  Gọn gàng, có chiều sâu và tập trung vào kết quả thật
+                </h3>
+                <p className="mt-4 text-white/72 leading-7">
+                  Mỗi chương trình đều được thiết kế để người học hiểu bản chất, luyện tập trên tình huống thực tế và
+                  có một lộ trình đủ rõ để tiếp tục tiến lên.
+                </p>
+              </div>
 
-          {/* Why Choose Dứa Data — integrated into About */}
-          <div className="mt-16">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-3">Tại sao chọn Dứa Data?</h3>
-            <p className="text-gray-500 max-w-2xl mx-auto text-center mb-10">
-              Không chỉ học công cụ, mà học cách dùng Data để làm việc và giải quyết vấn đề
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {whyChooseCards.map((card, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl p-7 border border-green-100 shadow-lg shadow-green-100/40 animate-fade-in-up hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group"
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                >
-                  <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <span className="text-2xl">{card.icon}</span>
+              <div className="mt-10 grid grid-cols-2 gap-4">
+                {socialProofStats.map((stat, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+                  >
+                    <div className="text-2xl md:text-3xl font-semibold text-white">{stat.number}</div>
+                    <div className="mt-1 text-sm leading-6 text-white/65">{stat.label}</div>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{card.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{card.desc}</p>
-                  <div className="mt-5 h-1 w-12 rounded-full bg-gradient-to-r from-green-500 to-green-200 group-hover:w-20 transition-all duration-500" />
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <div className="mt-10 border-t border-white/10 pt-6">
+                <p className="text-sm uppercase tracking-[0.2em] text-white/45 mb-3">Dứa Data in one sentence</p>
+                <p className="text-xl md:text-2xl font-medium leading-relaxed text-white">
+                  Chúng tôi tạo ra những trải nghiệm học Data đủ tinh tế để đẹp, đủ thực tế để dùng, và đủ rõ ràng để
+                  tin.
+                </p>
+              </div>
             </div>
           </div>
-
         </div>
       </section>
 

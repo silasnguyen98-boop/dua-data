@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Alumni } from "@/types/alumni";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AlumniModal from "@/components/AlumniModal";
 
 const PAGE_SIZE = 12;
 
 export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
   const [page, setPage] = useState(1);
+  const [selectedAlumni, setSelectedAlumni] = useState<Alumni | null>(null);
 
   const totalPages = Math.ceil(alumni.length / PAGE_SIZE);
   const paginated = alumni.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -49,10 +51,10 @@ export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {paginated.map((a) => (
-                <Link
+                <div
                   key={a.id}
-                  href={`/alumni/${a.id}`}
-                  className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-green-100/60 hover:-translate-y-2 transition-all duration-500 overflow-hidden block"
+                  className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-green-100/60 hover:-translate-y-2 transition-all duration-500 overflow-hidden block cursor-pointer"
+                  onClick={() => setSelectedAlumni(a)}
                 >
                   {/* Top gradient bar */}
                   <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-400 group-hover:h-1.5 transition-all duration-500" />
@@ -93,15 +95,19 @@ export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
                           LinkedIn
                         </span>
                       ) : <span />}
-                      <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold group-hover:gap-2 transition-all">
-                        Xem thêm
+                      <Link
+                        href={`/alumni/${a.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold group-hover:gap-2 transition-all"
+                      >
+                        Xem chi tiết
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
-                      </span>
+                      </Link>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
 
@@ -151,6 +157,13 @@ export default function AlumniClientPage({ alumni }: { alumni: Alumni[] }) {
           </>
         )}
       </section>
+
+      {selectedAlumni && (
+        <AlumniModal
+          alumni={selectedAlumni}
+          onClose={() => setSelectedAlumni(null)}
+        />
+      )}
 
       {/* CTA */}
       <section className="bg-gradient-to-r from-green-600 to-emerald-500 py-16">

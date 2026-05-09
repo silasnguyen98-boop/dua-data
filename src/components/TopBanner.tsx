@@ -6,7 +6,7 @@ interface Ad {
   id: string;
   imageUrl: string;
   link: string;
-  endDate: string;
+  createdAt?: string;
 }
 
 export default function TopBanner() {
@@ -24,18 +24,15 @@ export default function TopBanner() {
   if (!ad) return null;
 
   return (
-    <a
-      href={ad.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block w-full"
-    >
-      <img
-        src={ad.imageUrl}
-        alt="banner"
-        className="w-full h-auto max-h-[120px] object-contain"
-        onError={(e) => (e.currentTarget.style.display = "none")}
-      />
-    </a>
+    <div className="w-full bg-white overflow-hidden border-b border-gray-100">
+      <a href={ad.link} target="_blank" rel="noopener noreferrer" className="block w-full">
+        <img
+          src={ad.imageUrl}
+          alt="banner"
+          className="w-full aspect-[1920/240] object-cover"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+      </a>
+    </div>
   );
 }

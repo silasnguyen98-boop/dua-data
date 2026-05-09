@@ -27,11 +27,19 @@ function generateCode(existing: Set<string>): string {
   return code;
 }
 
+function normalizeUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^[a-z][a-z\d+\-.]*:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { url, title } = body;
     if (!url) return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    const normalizedUrl = normalizeUrl(url);
 
     // Get existing codes
     const snapshot = await get(ref(db, "shortlink"));
@@ -45,8 +53,8 @@ export async function POST(request: NextRequest) {
     const code = generateCode(existingCodes);
     const newRef = push(ref(db, "shortlink"));
     const shortlink = {
-      url,
-      title: title || url,
+      url: normalizedUrl,
+      title: title || normalizedUrl,
       code,
       clicks: 0,
       createdAt: new Date().toISOString(),

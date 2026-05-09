@@ -1,28 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import FloatingBanner from "@/components/FloatingBanner";
 import TopBanner from "@/components/TopBanner";
 
 const BRAND_LOGO = "https://i.ibb.co/3yKrstMS/Thie-t-ke-chu-a-co-te-n-20.png";
-
-const inter = Inter({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-space",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "DUA Edu - Nâng cấp năng lực bằng Dữ liệu",
@@ -36,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="vi">
       <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]"><TopBanner />{children}<FloatingBanner /></body>
     </html>
   );

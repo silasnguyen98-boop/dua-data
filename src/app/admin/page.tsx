@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { Component, Suspense, useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Course, CurriculumItem } from "@/types/course";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -82,17 +83,6 @@ interface Resource {
   updatedAt: string;
 }
 
-const emptyResource: Omit<Resource, "id" | "createdAt" | "updatedAt"> = {
-  title: "",
-  slug: "",
-  summary: "",
-  content: "",
-  category: "Article",
-  imageUrl: "",
-  author: "DUA Edu",
-  published: true,
-};
-
 interface Activity {
   id: string;
   title: string;
@@ -141,22 +131,6 @@ interface Job {
   updatedAt: string;
 }
 
-const emptyJob: Omit<Job, "id" | "createdAt" | "updatedAt"> = {
-  title: "",
-  company: "",
-  summary: "",
-  content: "",
-  imageUrl: "",
-  workType: "Full-time",
-  location: "",
-  position: "",
-  applicationLink: "",
-  applicationDeadline: "",
-  salary: "",
-  author: "DUA Edu",
-  published: true,
-};
-
 interface Expert {
   id: string;
   name: string;
@@ -180,62 +154,6 @@ const emptyExpert: Omit<Expert, "id" | "createdAt" | "updatedAt"> = {
   published: true,
 };
 
-interface Alumni {
-  id: string;
-  name: string;
-  job: string;
-  linkedin?: string;
-  imageUrl?: string;
-  coverImage?: string;
-  content: string;
-  order?: number;
-  published?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Quiz {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl?: string;
-  category?: string;
-  difficulty?: "easy" | "medium" | "hard";
-  password?: string;
-  hasPassword?: boolean;
-  durationMinutes?: number;
-  questionCount?: number;
-  questions: { id: string; question: string; options: string[]; correctIndex: number; explanation?: string }[];
-  published?: boolean;
-  order?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const emptyAlumni: Omit<Alumni, "id" | "createdAt" | "updatedAt"> = {
-  name: "",
-  job: "",
-  linkedin: "",
-  imageUrl: "",
-  coverImage: "",
-  content: "",
-  order: 0,
-  published: true,
-};
-
-const emptyQuiz = {
-  title: "",
-  description: "",
-  imageUrl: "",
-  category: "",
-  difficulty: "medium" as const,
-  password: "",
-  durationMinutes: 0,
-  questions: [] as Quiz["questions"],
-  published: true,
-  order: 0,
-};
-
 interface Shortlink {
   id: string;
   url: string;
@@ -254,7 +172,7 @@ interface LeadResource {
   createdAt: string;
 }
 
-type ActiveView = "dashboard" | "courses" | "students" | "resources" | "activities" | "jobs" | "experts" | "alumni" | "shortlinks" | "leads" | "users" | "waitlist" | "quiz" | "ads";
+type ActiveView = "dashboard" | "students" | "activities" | "shortlinks" | "leads" | "users" | "waitlist";
 type UserRole = "system_admin" | "content_manager" | "sales_executive" | "teaching_assistant" | "teacher";
 
 interface WaitListEntry {
@@ -291,14 +209,71 @@ function decodeStoredRole(stored: string | null): string | null {
   }
 }
 
-export default function AdminPage() {
+function safeGetSessionItem(key: string): string | null {
+  try {
+    return typeof window === "undefined" ? null : sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeGetLocalItem(key: string): string | null {
+  try {
+    return typeof window === "undefined" ? null : localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeJsonParse<T>(value: string | null, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function getValidDate(value: string | undefined | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value: string | undefined | null, locale = "vi-VN", options?: Intl.DateTimeFormatOptions) {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  try {
+    return date.toLocaleDateString(locale, options);
+  } catch {
+    return "—";
+  }
+}
+
+function formatDateTime(value: string | undefined | null, locale = "vi-VN") {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  try {
+    return date.toLocaleTimeString(locale);
+  } catch {
+    return "—";
+  }
+}
+
+function getDayKey(value: string | undefined | null) {
+  const date = getValidDate(value);
+  return date ? date.toISOString().slice(0, 10) : "";
+}
+
+function AdminPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [authChecked, setAuthChecked] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const isAuth = sessionStorage.getItem("admin_auth");
+      const isAuth = safeGetSessionItem("admin_auth");
       if (!isAuth) {
         router.replace("/admin/login");
       } else {
@@ -306,6 +281,13 @@ export default function AdminPage() {
       }
     }
   }, [router]);
+
+  useEffect(() => {
+    const view = searchParams.get("view");
+    if (view) {
+      setActiveView(view as ActiveView);
+    }
+  }, [searchParams]);
 
   // Course state
   const [courses, setCourses] = useState<Course[]>([]);
@@ -350,25 +332,25 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("processed_students");
-      if (saved) setProcessedStudents(JSON.parse(saved));
+      const saved = safeGetLocalItem("processed_students");
+      setProcessedStudents(safeJsonParse<Record<string, boolean>>(saved, {}));
     }
   }, []);
 
   const toggleProcessed = (id: string) => {
     setProcessedStudents(prev => {
       const next = { ...prev, [id]: !prev[id] };
-      localStorage.setItem("processed_students", JSON.stringify(next));
+      try {
+        localStorage.setItem("processed_students", JSON.stringify(next));
+      } catch {
+        // Ignore storage failures.
+      }
       return next;
     });
   };
 
   // Resource state
   const [resources, setResources] = useState<Resource[]>([]);
-  const [resourcesLoading, setResourcesLoading] = useState(false);
-  const [editingResource, setEditingResource] = useState<Resource | null>(null);
-  const [resourceForm, setResourceForm] = useState<Omit<Resource, "id" | "createdAt" | "updatedAt">>(emptyResource);
-  const [showResourceForm, setShowResourceForm] = useState(false);
 
   // Activity state
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -379,33 +361,6 @@ export default function AdminPage() {
 
   // Job state
   const [jobsList, setJobsList] = useState<Job[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [jobForm, setJobForm] = useState<Omit<Job, "id" | "createdAt" | "updatedAt">>(emptyJob);
-  const [showJobForm, setShowJobForm] = useState(false);
-
-  // Expert state
-  const [expertsList, setExpertsList] = useState<Expert[]>([]);
-  const [expertsLoading, setExpertsLoading] = useState(false);
-  const [editingExpert, setEditingExpert] = useState<Expert | null>(null);
-  const [expertForm, setExpertForm] = useState<Omit<Expert, "id" | "createdAt" | "updatedAt">>(emptyExpert);
-  const [showExpertForm, setShowExpertForm] = useState(false);
-
-  // Alumni state
-  const [alumniList, setAlumniList] = useState<Alumni[]>([]);
-  const [alumniLoading, setAlumniLoading] = useState(false);
-  const [editingAlumni, setEditingAlumni] = useState<Alumni | null>(null);
-  const [alumniForm, setAlumniForm] = useState<Omit<Alumni, "id" | "createdAt" | "updatedAt">>(emptyAlumni);
-  const [showAlumniForm, setShowAlumniForm] = useState(false);
-
-  // Quiz state
-  const [quizzesList, setQuizzesList] = useState<Quiz[]>([]);
-  const [quizzesLoading, setQuizzesLoading] = useState(false);
-  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
-  const [quizForm, setQuizForm] = useState<Omit<Quiz, "id" | "createdAt" | "updatedAt">>(emptyQuiz);
-  const [quizPasswordEnabled, setQuizPasswordEnabled] = useState(false);
-  const [quizDurationEnabled, setQuizDurationEnabled] = useState(false);
-  const [showQuizForm, setShowQuizForm] = useState(false);
 
   // Shortlink state
   const [shortlinks, setShortlinks] = useState<Shortlink[]>([]);
@@ -426,7 +381,7 @@ export default function AdminPage() {
   // Build auth header from session
   function buildAuthHeader(): Record<string, string> {
     if (typeof window === "undefined") return {};
-    const stored = sessionStorage.getItem("admin_role");
+    const stored = safeGetSessionItem("admin_role");
     if (!stored) return {};
     return { Authorization: `Bearer ${decodeStoredRole(stored) || stored.trim()}` };
   }
@@ -435,89 +390,88 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchResources = useCallback(async () => {
-    setResourcesLoading(true);
-    const res = await fetch("/api/resources");
-    const data = await res.json();
-    setResources(data);
-    setResourcesLoading(false);
+    try {
+      const res = await fetch("/api/resources");
+      const data = await res.json().catch(() => []);
+      setResources(Array.isArray(data) ? data : []);
+    } catch {
+      setResources([]);
+    }
   }, []);
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/courses");
-    const data = await res.json();
-    setCourses(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/courses");
+      const data = await res.json().catch(() => []);
+      setCourses(Array.isArray(data) ? data : []);
+    } catch {
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const fetchWaitList = useCallback(async () => {
     setWaitListLoading(true);
-    const res = await fetch("/api/wait-list");
-    if (res.ok) {
-      const data = await res.json();
-      setWaitList(data);
+    try {
+      const res = await fetch("/api/wait-list");
+      const data = await res.json().catch(() => []);
+      setWaitList(Array.isArray(data) ? data : []);
+    } catch {
+      setWaitList([]);
+    } finally {
+      setWaitListLoading(false);
     }
-    setWaitListLoading(false);
   }, []);
 
   const fetchStudents = useCallback(async () => {
     setStudentsLoading(true);
-    const res = await fetch("/api/register");
-    const data = await res.json();
-    setStudents(data);
-    setStudentsLoading(false);
+    try {
+      const res = await fetch("/api/register");
+      const data = await res.json().catch(() => []);
+      setStudents(Array.isArray(data) ? data : []);
+    } catch {
+      setStudents([]);
+    } finally {
+      setStudentsLoading(false);
+    }
   }, []);
 
   const fetchActivities = useCallback(async () => {
     setActivitiesLoading(true);
-    const res = await fetch("/api/activities");
-    const data = await res.json();
-    setActivities(data);
-    setActivitiesLoading(false);
+    try {
+      const res = await fetch("/api/activities");
+      const data = await res.json().catch(() => []);
+      setActivities(Array.isArray(data) ? data : []);
+    } catch {
+      setActivities([]);
+    } finally {
+      setActivitiesLoading(false);
+    }
   }, []);
 
   const fetchJobs = useCallback(async () => {
-    setJobsLoading(true);
-    const res = await fetch("/api/jobs");
-    const data = await res.json();
-    setJobsList(data);
-    setJobsLoading(false);
-  }, []);
-
-  const fetchExperts = useCallback(async () => {
-    setExpertsLoading(true);
-    const res = await fetch("/api/experts");
-    const data = await res.json();
-    setExpertsList(data);
-    setExpertsLoading(false);
-  }, []);
-
-  const fetchAlumni = useCallback(async () => {
-    setAlumniLoading(true);
-    const res = await fetch("/api/alumni");
-    const data = await res.json();
-    setAlumniList(data);
-    setAlumniLoading(false);
-  }, []);
-
-  const fetchQuizzes = useCallback(async () => {
-    setQuizzesLoading(true);
     try {
-      const res = await fetch("/api/quiz");
-      const data = await res.json();
-      setQuizzesList(Array.isArray(data) ? data : []);
+      const res = await fetch("/api/jobs");
+      const data = await res.json().catch(() => []);
+      setJobsList(Array.isArray(data) ? data : []);
     } catch {
-      setQuizzesList([]);
+      setJobsList([]);
     }
-    setQuizzesLoading(false);
   }, []);
 
   const fetchShortlinks = useCallback(async () => {
     setShortlinksLoading(true);
-    const res = await fetch("/api/shortlinks");
-    const data = await res.json();
-    setShortlinks(data);
-    setShortlinksLoading(false);
+    try {
+      const res = await fetch("/api/shortlinks");
+      const data = await res.json().catch(() => []);
+      setShortlinks(Array.isArray(data) ? data : []);
+    } catch {
+      setShortlinks([]);
+    } finally {
+      setShortlinksLoading(false);
+    }
   }, []);
 
   const fetchLeads = useCallback(async () => {
@@ -546,16 +500,13 @@ export default function AdminPage() {
     fetchResources();
     fetchActivities();
     fetchJobs();
-    fetchExperts();
-    fetchAlumni();
-    fetchQuizzes();
     fetchShortlinks();
     fetchLeads();
     fetchWaitList();
-    if (typeof window !== "undefined" && decodeStoredRole(sessionStorage.getItem("admin_role")) === "system_admin") {
+    if (decodeStoredRole(safeGetSessionItem("admin_role")) === "system_admin") {
       fetchSystemUsers();
     }
-  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchExperts, fetchAlumni, fetchQuizzes, fetchLeads, fetchWaitList, fetchSystemUsers]);
+  }, [fetchCourses, fetchStudents, fetchResources, fetchActivities, fetchJobs, fetchLeads, fetchWaitList, fetchSystemUsers]);
 
   function handleEdit(course: Course) {
     setEditing(course);
@@ -592,13 +543,13 @@ export default function AdminPage() {
     };
 
     if (editing) {
-      await fetch("/api/courses", {
+      await fetch("/api/admin/courses", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, id: editing.id }),
       });
     } else {
-      await fetch("/api/courses", {
+      await fetch("/api/admin/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -613,12 +564,12 @@ export default function AdminPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Bạn có chắc muốn xóa khóa học này?")) return;
-    await fetch(`/api/courses?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/courses?id=${id}`, { method: "DELETE" });
     fetchCourses();
   }
 
   async function handlePublish(course: Course) {
-    await fetch("/api/courses", {
+    await fetch("/api/admin/courses", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, published: true }),
@@ -627,7 +578,7 @@ export default function AdminPage() {
   }
 
   async function handleToggleComingSoon(course: Course) {
-    await fetch("/api/courses", {
+    await fetch("/api/admin/courses", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, comingSoon: !course.comingSoon }),
@@ -636,7 +587,7 @@ export default function AdminPage() {
   }
 
   async function handleToggleHidden(course: Course) {
-    await fetch("/api/courses", {
+    await fetch("/api/admin/courses", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, isHidden: !course.isHidden }),
@@ -645,7 +596,7 @@ export default function AdminPage() {
   }
 
   async function handleToggleHidePrice(course: Course) {
-    await fetch("/api/courses", {
+    await fetch("/api/admin/courses", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: course.id, hidePrice: !course.hidePrice }),
@@ -662,7 +613,7 @@ export default function AdminPage() {
       published: false,
       comingSoon: false,
     };
-    await fetch("/api/courses", {
+    await fetch("/api/admin/courses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -753,62 +704,6 @@ export default function AdminPage() {
     setForm({ ...form, targetAudience: form.targetAudience.filter((_, i) => i !== index) });
   }
 
-  // Resource handlers
-  function handleNewResource() {
-    setEditingResource(null);
-    setResourceForm(emptyResource);
-    setShowResourceForm(true);
-  }
-
-  function handleEditResource(resource: Resource) {
-    setEditingResource(resource);
-    const { id, createdAt, updatedAt, ...rest } = resource;
-    setResourceForm(rest);
-    setShowResourceForm(true);
-  }
-
-  async function handleSaveResource() {
-    if (!resourceForm.title.trim()) {
-      alert("Vui lòng nhập tiêu đề");
-      return;
-    }
-    if (!resourceForm.content.trim()) {
-      alert("Vui lòng nhập nội dung");
-      return;
-    }
-
-    const payload = {
-      ...resourceForm,
-      slug: resourceForm.slug || slugify(resourceForm.title),
-    };
-
-    const method = editingResource ? "PUT" : "POST";
-    const body = editingResource ? { ...payload, id: editingResource.id } : payload;
-
-    const res = await fetch("/api/resources", {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
-      alert(`${editingResource ? "Sửa" : "Thêm"} thất bại: ${err.error}`);
-      return;
-    }
-
-    setShowResourceForm(false);
-    setEditingResource(null);
-    setResourceForm(emptyResource);
-    fetchResources();
-  }
-
-  async function handleDeleteResource(id: string) {
-    if (!confirm("Bạn có chắc muốn xóa tài nguyên này?")) return;
-    await fetch(`/api/resources?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
-    fetchResources();
-  }
-
   // Activity handlers
   function handleNewActivity() {
     setEditingActivity(null);
@@ -851,210 +746,6 @@ export default function AdminPage() {
     fetchActivities();
   }
 
-  // Job handlers
-  function handleNewJob() {
-    setEditingJob(null);
-    setJobForm(emptyJob);
-    setShowJobForm(true);
-  }
-
-  function handleEditJob(job: Job) {
-    setEditingJob(job);
-    const { id, createdAt, updatedAt, ...rest } = job;
-    setJobForm(rest);
-    setShowJobForm(true);
-  }
-
-  async function handleSaveJob() {
-    const method = editingJob ? "PUT" : "POST";
-    const body = editingJob ? { ...jobForm, id: editingJob.id } : jobForm;
-
-    const res = await fetch("/api/jobs", {
-      method,
-      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
-      alert(`${editingJob ? "Sửa" : "Thêm"} việc làm thất bại: ${err.error}`);
-      return;
-    }
-
-    setShowJobForm(false);
-    setEditingJob(null);
-    setJobForm(emptyJob);
-    fetchJobs();
-  }
-
-  async function handleDeleteJob(id: string) {
-    if (!confirm("Bạn có chắc muốn xóa việc làm này?")) return;
-    await fetch(`/api/jobs?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
-    fetchJobs();
-  }
-
-  // Expert handlers
-  function handleNewExpert() {
-    setEditingExpert(null);
-    setExpertForm(emptyExpert);
-    setShowExpertForm(true);
-  }
-
-  function handleEditExpert(expert: Expert) {
-    setEditingExpert(expert);
-    const { id, createdAt, updatedAt, ...rest } = expert;
-    setExpertForm(rest);
-    setShowExpertForm(true);
-  }
-
-  async function handleSaveExpert() {
-    const method = editingExpert ? "PUT" : "POST";
-    const body = editingExpert ? { ...expertForm, id: editingExpert.id } : expertForm;
-
-    const res = await fetch("/api/experts", {
-      method,
-      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
-      alert(`${editingExpert ? "Sửa" : "Thêm"} chuyên gia thất bại: ${err.error}`);
-      return;
-    }
-
-    setShowExpertForm(false);
-    setEditingExpert(null);
-    setExpertForm(emptyExpert);
-    fetchExperts();
-  }
-
-  async function handleDeleteExpert(id: string) {
-    if (!confirm("Bạn có chắc muốn xóa chuyên gia này?")) return;
-    await fetch(`/api/experts?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
-    fetchExperts();
-  }
-
-  function handleNewAlumni() {
-    setEditingAlumni(null);
-    setAlumniForm(emptyAlumni);
-    setShowAlumniForm(true);
-  }
-
-  function handleEditAlumni(alumni: Alumni) {
-    setEditingAlumni(alumni);
-    const { id, createdAt, updatedAt, ...rest } = alumni;
-    setAlumniForm(rest);
-    setShowAlumniForm(true);
-  }
-
-  async function handleSaveAlumni() {
-    if (!alumniForm.name || !alumniForm.job) {
-      alert("Vui lòng nhập Tên và Nghề nghiệp");
-      return;
-    }
-    const method = editingAlumni ? "PUT" : "POST";
-    const body = editingAlumni ? { ...alumniForm, id: editingAlumni.id } : alumniForm;
-
-    const res = await fetch("/api/alumni", {
-      method,
-      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
-      alert(`${editingAlumni ? "Sửa" : "Thêm"} alumni thất bại: ${err.error}`);
-      return;
-    }
-
-    setShowAlumniForm(false);
-    setEditingAlumni(null);
-    setAlumniForm(emptyAlumni);
-    fetchAlumni();
-  }
-
-  async function handleDeleteAlumni(id: string) {
-    if (!confirm("Bạn có chắc muốn xóa alumni này?")) return;
-    await fetch(`/api/alumni?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
-    fetchAlumni();
-  }
-
-  function handleNewQuiz() {
-    setEditingQuiz(null);
-    setQuizForm(emptyQuiz);
-    setQuizPasswordEnabled(false);
-    setQuizDurationEnabled(false);
-    setShowQuizForm(true);
-  }
-
-  async function handleEditQuiz(quiz: Quiz) {
-    try {
-      const res = await fetch(`/api/quiz/${quiz.id}`, {
-        headers: { "x-admin-preview": "1" },
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const fullQuiz = await res.json();
-      setEditingQuiz(fullQuiz);
-      const { id, createdAt, updatedAt, ...rest } = fullQuiz;
-      setQuizForm({
-        ...emptyQuiz,
-        ...rest,
-        questions: Array.isArray(rest.questions) ? rest.questions : [],
-      });
-      setQuizPasswordEnabled(Boolean(fullQuiz.password));
-      setQuizDurationEnabled(Boolean(fullQuiz.durationMinutes && Number(fullQuiz.durationMinutes) > 0));
-      setShowQuizForm(true);
-    } catch {
-      alert("Không tải được dữ liệu quiz để chỉnh sửa");
-    }
-  }
-
-  async function handleSaveQuiz() {
-    if (!quizForm.title || !quizForm.description) {
-      alert("Vui lòng nhập tiêu đề và mô tả!");
-      return;
-    }
-    if (quizPasswordEnabled && !quizForm.password?.trim()) {
-      alert("Vui lòng nhập mật khẩu hoặc chọn 'Không mật khẩu'");
-      return;
-    }
-    if (quizDurationEnabled && !(Number(quizForm.durationMinutes) > 0)) {
-      alert("Vui lòng nhập thời gian làm bài lớn hơn 0 phút hoặc chọn 'Không giới hạn'");
-      return;
-    }
-    const method = editingQuiz ? "PUT" : "POST";
-    const body = editingQuiz
-      ? {
-          ...quizForm,
-          id: editingQuiz.id,
-          password: quizPasswordEnabled ? quizForm.password : "",
-          durationMinutes: quizDurationEnabled ? Number(quizForm.durationMinutes) || 0 : 0,
-        }
-      : {
-          ...quizForm,
-          password: quizPasswordEnabled ? quizForm.password : "",
-          durationMinutes: quizDurationEnabled ? Number(quizForm.durationMinutes) || 0 : 0,
-        };
-    const res = await fetch("/api/quiz", {
-      method,
-      headers: { "Content-Type": "application/json", ...buildAuthHeader() },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) {
-      setShowQuizForm(false);
-      fetchQuizzes();
-    }
-  }
-
-  async function handleDeleteQuiz(id: string) {
-    if (!confirm("Bạn có chắc muốn xóa quiz này?")) return;
-    await fetch(`/api/quiz?id=${id}`, { method: "DELETE", headers: buildAuthHeader() });
-    fetchQuizzes();
-  }
-
   // Excel export helpers
   function downloadActivitiesExcel() {
     const data = activities.map((a, i) => ({
@@ -1072,59 +763,6 @@ export default function AdminPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Hoat dong");
     XLSX.writeFile(wb, `duadata-hoatdong-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }
-
-  function downloadJobsExcel() {
-    const data = jobsList.map((j, i) => ({
-      "STT": i + 1,
-      "Tiêu đề": j.title,
-      "Công ty": j.company,
-      "Hình thức": j.workType,
-      "Vị trí": j.position,
-      "Địa điểm": j.location,
-      "Lương": j.salary,
-      "Link ứng tuyển": j.applicationLink,
-      "Hạn nộp": j.applicationDeadline ? new Date(j.applicationDeadline).toLocaleDateString("vi-VN") : "",
-      "Tác giả": j.author,
-      "Trạng thái": j.published ? "Đã xuất bản" : "Nháp",
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Viec lam");
-    XLSX.writeFile(wb, `duadata-vieclam-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }
-
-  function downloadResourcesExcel() {
-    const data = resources.map((r, i) => ({
-      "STT": i + 1,
-      "Tiêu đề": r.title,
-      "Slug": r.slug,
-      "Tóm tắt": r.summary,
-      "Danh mục": r.category,
-      "Tác giả": r.author,
-      "Trạng thái": r.published ? "Đã xuất bản" : "Nháp",
-      "Ngày tạo": r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "",
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tai nguyen");
-    XLSX.writeFile(wb, `duadata-tailieunguon-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }
-
-  function downloadExpertsExcel() {
-    const data = expertsList.map((e, i) => ({
-      "STT": i + 1,
-      "Tên": e.name,
-      "Chức vụ": e.position,
-      "Công việc trước đó": e.previousWork,
-      "LinkedIn": e.linkedin,
-      "Thứ tự": e.order,
-      "Trạng thái": e.published ? "Hiển thị" : "Ẩn",
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Chuyen gia");
-    XLSX.writeFile(wb, `duadata-chuyengia-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   function downloadStudentsExcel() {
@@ -1221,7 +859,7 @@ export default function AdminPage() {
     const now = new Date();
     if (dateFilter === "today") {
       const todayStr = now.toISOString().slice(0, 10);
-      filtered = filtered.filter(s => s.registeredAt.slice(0, 10) === todayStr);
+      filtered = filtered.filter(s => getDayKey(s.registeredAt) === todayStr);
     } else if (dateFilter === "week") {
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -1248,10 +886,10 @@ export default function AdminPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(s =>
-        s.fullName.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q) ||
-        s.phone.includes(q) ||
-        s.courseName.toLowerCase().includes(q)
+        (s.fullName || "").toLowerCase().includes(q) ||
+        (s.email || "").toLowerCase().includes(q) ||
+        (s.phone || "").includes(q) ||
+        (s.courseName || "").toLowerCase().includes(q)
       );
     }
 
@@ -1271,29 +909,22 @@ export default function AdminPage() {
 
   const sidebarItems = [
     { key: "dashboard" as ActiveView, label: "Tổng quan", icon: "📊", count: 0 },
-    { key: "courses" as ActiveView, label: "Quản lý khóa học", icon: "📚", count: courses.length },
     { key: "waitlist" as ActiveView, label: "Danh sách chờ", icon: "🔔", count: waitList.filter(w => w.status === "pending").length },
     { key: "students" as ActiveView, label: "Quản lý đăng ký", icon: "👥", count: students.length },
-    { key: "resources" as ActiveView, label: "Quản lý tài nguyên", icon: "📝", count: resources.length },
     { key: "activities" as ActiveView, label: "Quản lý hoạt động", icon: "🎯", count: activities.length },
-    { key: "jobs" as ActiveView, label: "Quản lý việc làm", icon: "💼", count: jobsList.length },
-    { key: "experts" as ActiveView, label: "Đội ngũ chuyên gia", icon: "🏅", count: expertsList.length },
-    { key: "alumni" as ActiveView, label: "Alumni", icon: "🎓", count: alumniList.length },
-    { key: "quiz" as ActiveView, label: "Quiz", icon: "📝", count: quizzesList.length },
     { key: "shortlinks" as ActiveView, label: "Quản lý Shortlink", icon: "🔗", count: shortlinks.length },
     { key: "leads" as ActiveView, label: "Đăng ký nhận tài liệu", icon: "📩", count: leads.length },
     { key: "users" as ActiveView, label: "Quản lý người dùng", icon: "👤", count: systemUsers.length },
-    { key: "ads" as ActiveView, label: "Quản lý Banner Ads", icon: "🎨" },
   ];
 
   // Role-based sidebar filtering
-  const currentRole = typeof window !== "undefined" ? decodeStoredRole(sessionStorage.getItem("admin_role")) : null;
+  const currentRole = decodeStoredRole(safeGetSessionItem("admin_role"));
   const rolePermissionMap: Record<string, ActiveView[]> = {
-    content_manager: ["dashboard", "activities", "resources", "jobs", "shortlinks"],
+    content_manager: ["dashboard", "activities", "shortlinks"],
     sales_executive: ["dashboard", "waitlist", "students", "leads"],
-    teaching_assistant: ["dashboard", "students", "courses"],
-    teacher: ["alumni", "quiz", "resources", "activities"],
-    system_admin: ["dashboard", "courses", "waitlist", "students", "resources", "activities", "jobs", "experts", "alumni", "quiz", "shortlinks", "leads", "users", "ads"],
+    teaching_assistant: ["dashboard", "students"],
+    teacher: ["activities"],
+    system_admin: ["dashboard", "waitlist", "students", "activities", "shortlinks", "leads", "users"],
   };
   const allowedViews = rolePermissionMap[currentRole || ""] || rolePermissionMap["system_admin"];
   useEffect(() => {
@@ -1304,23 +935,37 @@ export default function AdminPage() {
   const filteredSidebarItems = sidebarItems.filter(item => allowedViews.includes(item.key));
   const sidebarGroups = [
     { label: "Tổng quan", keys: ["dashboard"] as ActiveView[] },
-    { label: "Học viên", keys: ["students", "leads", "alumni"] as ActiveView[] },
-    { label: "Khóa học", keys: ["courses", "waitlist", "activities", "experts"] as ActiveView[] },
-    { label: "Kiểm tra", keys: ["quiz"] as ActiveView[] },
-    { label: "Tài nguyên", keys: ["resources", "shortlinks"] as ActiveView[] },
-    { label: "Công việc", keys: ["jobs"] as ActiveView[] },
+    { label: "Học viên", keys: ["students", "leads"] as ActiveView[] },
+    { label: "Khóa học", keys: ["waitlist", "activities"] as ActiveView[] },
+    { label: "Tài nguyên", keys: ["shortlinks"] as ActiveView[] },
     { label: "Hệ thống", keys: ["users"] as ActiveView[] },
   ];
   const visibleGroups = sidebarGroups
     .map(g => ({ ...g, items: filteredSidebarItems.filter(i => g.keys.includes(i.key)) }))
     .filter(g => g.items.length > 0);
 
+  const adminQuickLinks = [
+    { href: "/admin/courses", label: "Courses" },
+    { href: "/admin/quiz", label: "Quiz" },
+    { href: "/admin/quiz-attempts", label: "Quiz Attempts" },
+    { href: "/admin/mail-template", label: "Mail Template" },
+    { href: "/admin/mail", label: "Mail" },
+    { href: "/admin/sale", label: "Sale" },
+    { href: "/admin/experts", label: "Experts" },
+    { href: "/admin/resources", label: "Resources" },
+    { href: "/admin/job", label: "Job" },
+    { href: "/admin/alumni", label: "Alumni" },
+    { href: "/admin/ads", label: "Ads" },
+    { href: "/newletters", label: "Newletters" },
+  ];
+
   // Dashboard stats
   const totalRevenue = courses.reduce((sum, c) => sum + (c.price * c.students), 0);
-  const todayStudents = students.filter(s => s.registeredAt.slice(0, 10) === new Date().toISOString().slice(0, 10)).length;
+  const todayStudents = students.filter(s => getDayKey(s.registeredAt) === new Date().toISOString().slice(0, 10)).length;
   const weekStudents = students.filter(s => {
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    return new Date(s.registeredAt) >= weekAgo;
+    const registered = getValidDate(s.registeredAt);
+    return registered ? registered >= weekAgo : false;
   }).length;
 
   // Registration growth chart data (last 30 days)
@@ -1333,7 +978,7 @@ export default function AdminPage() {
       days[d.toISOString().slice(0, 10)] = 0;
     }
     students.forEach(s => {
-      const day = s.registeredAt.slice(0, 10);
+      const day = getDayKey(s.registeredAt);
       if (day in days) days[day]++;
     });
     return Object.entries(days).map(([date, count]) => ({
@@ -1380,16 +1025,35 @@ export default function AdminPage() {
                "Quản trị hệ thống"}
             </span>
           </div>
-          <nav className="flex items-center gap-2 md:gap-4 text-xs md:text-sm font-medium text-gray-600">
-            <Link href="/" className="hover:text-gray-900 transition hidden sm:inline">Trang chủ</Link>
-            <Link href="/courses" className="hover:text-gray-900 transition hidden sm:inline">Khóa học</Link>
-            <button
-              onClick={() => { sessionStorage.removeItem("admin_auth"); router.push("/admin/login"); }}
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition text-xs font-medium"
-            >
-              Đăng xuất
-            </button>
-          </nav>
+          <div className="flex flex-col items-end gap-2">
+            <nav className="flex items-center gap-2 md:gap-4 text-xs md:text-sm font-medium text-gray-600">
+              <Link href="/" className="hover:text-gray-900 transition hidden sm:inline">Trang chủ</Link>
+              <button
+                onClick={() => {
+                  try {
+                    sessionStorage.removeItem("admin_auth");
+                  } catch {
+                    // Ignore storage errors.
+                  }
+                  router.push("/admin/login");
+                }}
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition text-xs font-medium"
+              >
+                Đăng xuất
+              </button>
+            </nav>
+            <div className="hidden lg:flex items-center gap-2 max-w-[980px] overflow-x-auto pb-1">
+              {adminQuickLinks.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -1526,9 +1190,9 @@ export default function AdminPage() {
               </div>
 
               {/* Registration Growth Chart */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 mb-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-900 text-sm">📈 Tăng trưởng đăng ký (30 ngày)</h3>
+                  <h3 className="font-bold text-gray-900 text-sm">Tăng trưởng đăng ký 30 ngày</h3>
                   <span className="text-xs text-gray-500">{students.length} tổng đăng ký</span>
                 </div>
                 {chartData.every(d => d.registrations === 0) ? (
@@ -1599,7 +1263,7 @@ export default function AdminPage() {
                           <div key={s.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-gray-900 text-xs font-bold">
-                                {s.fullName.charAt(0)}
+                                {s.fullName?.charAt(0) || "?"}
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{s.fullName}</p>
@@ -1607,7 +1271,7 @@ export default function AdminPage() {
                               </div>
                             </div>
                             <span className="text-[10px] text-gray-500">
-                              {new Date(s.registeredAt).toLocaleDateString("vi-VN")}
+                              {formatDate(s.registeredAt)}
                             </span>
                           </div>
                         ))
@@ -1644,112 +1308,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* === COURSES VIEW === */}
-          {activeView === "courses" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý khóa học</h1>
-                <button
-                  onClick={handleNew}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-gray-900 px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-medium shadow-lg shadow-green-500/30"
-                >
-                  + Thêm khóa học
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="text-center py-20 text-gray-600">Đang tải...</div>
-              ) : courses.length === 0 ? (
-                <div className="text-center py-20 text-gray-600">
-                  <p className="text-xl mb-2">Chưa có khóa học nào</p>
-                  <p>Nhấn &quot;+ Thêm khóa học&quot; để bắt đầu</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 text-gray-600 text-left">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Khóa học</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Danh mục</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Giá</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Học viên</th>
-                        <th className="px-4 py-3 font-medium text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {courses.map((course) => (
-                        <tr key={course.id} className="hover:bg-gray-100">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              {course.imageUrl && (
-                                <img src={course.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover border" />
-                              )}
-                              <div>
-                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                  {course.title}
-                                  {course.published && (
-                                    <span className="text-[10px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded-full font-bold">Đã xuất bản</span>
-                                  )}
-                                  {course.comingSoon && (
-                                    <span className="text-[10px] bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded-full font-bold">Coming Soon</span>
-                                  )}
-                                  {course.isHidden && (
-                                    <span className="text-[10px] bg-gray-500/10 text-gray-500 px-1.5 py-0.5 rounded-full font-bold">Đã ẩn</span>
-                                  )}
-                                  {course.hidePrice && (
-                                    <span className="text-[10px] bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded-full font-bold">Đã ẩn giá</span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-0.5">{course.slug}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">{course.category}</span>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className="font-medium text-green-600">{formatPrice(course.price)}</span>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell text-gray-500">{course.students}</td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1 flex-wrap">
-                              {!course.published && (
-                                <button onClick={() => handlePublish(course)} className="text-green-600 hover:text-green-800 font-medium text-xs bg-green-50 px-2 py-1 rounded-lg">Xuất bản</button>
-                              )}
-                              <button
-                                onClick={() => handleToggleComingSoon(course)}
-                                className={`text-xs font-medium px-2 py-1 rounded-lg ${course.comingSoon ? "bg-amber-100 text-amber-700" : "bg-gray-50 text-gray-500 hover:bg-amber-50 hover:text-amber-600"}`}
-                              >
-                                {course.comingSoon ? "Tắt Sắp ra mắt" : "Sắp ra mắt"}
-                              </button>
-                              <button
-                                onClick={() => handleToggleHidden(course)}
-                                className={`text-xs font-medium px-2 py-1 rounded-lg ${course.isHidden ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-gray-50 text-gray-500 hover:bg-gray-200"}`}
-                              >
-                                {course.isHidden ? "Hiện" : "Ẩn"}
-                              </button>
-                              <button
-                                onClick={() => handleToggleHidePrice(course)}
-                                className={`text-xs font-medium px-2 py-1 rounded-lg ${course.hidePrice ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-gray-50 text-gray-500 hover:bg-gray-200"}`}
-                              >
-                                {course.hidePrice ? "Hiện giá" : "Ẩn giá"}
-                              </button>
-                              <button onClick={() => handleDuplicate(course)} className="text-purple-600 hover:text-purple-800 font-medium text-xs bg-purple-50 px-2 py-1 rounded-lg">Nhân bản</button>
-                              <button onClick={() => handleEdit(course)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg">Sửa</button>
-                              <button onClick={() => handleDelete(course.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xóa</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -1885,9 +1443,9 @@ export default function AdminPage() {
                             <td className="px-4 py-3 hidden md:table-cell text-gray-500">{student.email}</td>
                             <td className="px-4 py-3 hidden md:table-cell text-gray-500">{student.phone}</td>
                             <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                              {new Date(student.registeredAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                            {formatDate(student.registeredAt, "vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
                               <br />
-                              {new Date(student.registeredAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                              {formatDateTime(student.registeredAt, "vi-VN")}
                             </td>
                           </tr>
                           {expandedStudentId === student.id && (
@@ -1928,7 +1486,7 @@ export default function AdminPage() {
                                   </div>
                                   <div>
                                     <span className="text-gray-600 text-xs block mb-0.5">Ngày đăng ký</span>
-                                    <span className="text-gray-700">{new Date(student.registeredAt).toLocaleString("vi-VN")}</span>
+                                    <span className="text-gray-700">{formatDateTime(student.registeredAt)}</span>
                                   </div>
                                   <div>
                                     <span className="text-gray-600 text-xs block mb-0.5">Trạng thái</span>
@@ -1951,89 +1509,6 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* === RESOURCES VIEW === */}
-          {activeView === "resources" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý tài nguyên</h1>
-                <div className="flex items-center gap-3">
-                  <button onClick={downloadResourcesExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
-                    📥 Tải Excel
-                  </button>
-                  <button
-                    onClick={handleNewResource}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-gray-900 px-5 py-2.5 rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-medium shadow-lg shadow-green-500/30"
-                  >
-                    + Thêm tài nguyên
-                  </button>
-                </div>
-              </div>
-
-              {resourcesLoading ? (
-                <div className="text-center py-20 text-gray-600">Đang tải...</div>
-              ) : resources.length === 0 ? (
-                <div className="text-center py-20 text-gray-600">
-                  <p className="text-xl mb-2">Chưa có tài nguyên nào</p>
-                  <p>Nhấn &quot;+ Thêm tài nguyên&quot; để bắt đầu</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 text-gray-600 text-left">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Tiêu đề</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Danh mục</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Trạng thái</th>
-                        <th className="px-4 py-3 font-medium hidden md:table-cell">Ngày tạo</th>
-                        <th className="px-4 py-3 font-medium text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {resources.map((resource) => (
-                        <tr key={resource.id} className="hover:bg-gray-100/80 transition">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              {resource.imageUrl ? (
-                                <img src={resource.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                              ) : (
-                                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600 text-sm">📝</div>
-                              )}
-                              <div>
-                                <p className="font-medium text-gray-900 line-clamp-1">{resource.title}</p>
-                                <p className="text-xs text-gray-600 line-clamp-1">{resource.summary}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell text-gray-500">{resource.category}</td>
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                              resource.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"
-                            }`}>
-                              {resource.published ? "Đã xuất bản" : "Nháp"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
-                            {new Date(resource.createdAt).toLocaleDateString("vi-VN")}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => handleEditResource(resource)}
-                              className="text-blue-600 hover:text-blue-800 mr-3 text-xs font-medium"
-                            >Sửa</button>
-                            <button
-                              onClick={() => handleDeleteResource(resource.id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
-                            >Xóa</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               )}
             </div>
@@ -2082,7 +1557,7 @@ export default function AdminPage() {
                               {act.community === "student" ? "Học viên" : "GenZ Data"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-500">{act.eventDate ? new Date(act.eventDate).toLocaleDateString("vi-VN") : "—"}</td>
+                          <td className="px-4 py-3 text-gray-500">{formatDate(act.eventDate)}</td>
                           <td className="px-4 py-3">
                             <span className={`text-xs px-2 py-1 rounded-full ${act.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}>
                               {act.published ? "Đã xuất bản" : "Nháp"}
@@ -2096,233 +1571,6 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* === JOBS VIEW === */}
-          {activeView === "jobs" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý việc làm</h1>
-                <div className="flex items-center gap-3">
-                  <button onClick={downloadJobsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
-                    📥 Tải Excel
-                  </button>
-                  <button onClick={handleNewJob} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                    + Thêm việc làm
-                  </button>
-                </div>
-              </div>
-
-              {jobsLoading ? (
-                <div className="text-center py-10 text-gray-600">Đang tải...</div>
-              ) : jobsList.length === 0 ? (
-                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
-                  <p className="text-lg">Chưa có việc làm nào</p>
-                  <p className="text-sm mt-1">Nhấn &quot;+ Thêm việc làm&quot; để tạo mới</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-medium text-gray-500">Tiêu đề</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-500">Công ty</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-500">Hình thức</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-500">Hạn nộp</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                        <th className="text-right px-4 py-3 font-medium text-gray-500">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {jobsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(job => (
-                        <tr key={job.id} className="hover:bg-gray-100">
-                          <td className="px-4 py-3 font-medium text-gray-900">{job.title}</td>
-                          <td className="px-4 py-3 text-gray-500">{job.company}</td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-full">{job.workType}</span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">{job.applicationDeadline ? new Date(job.applicationDeadline).toLocaleDateString("vi-VN") : "—"}</td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-1 rounded-full ${job.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}>
-                              {job.published ? "Đã xuất bản" : "Nháp"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button onClick={() => handleEditJob(job)} className="text-blue-600 hover:text-blue-800 mr-3 text-xs font-medium">Sửa</button>
-                            <button onClick={() => handleDeleteJob(job.id)} className="text-red-500 hover:text-red-700 text-xs font-medium">Xóa</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-          {/* === EXPERTS VIEW === */}
-          {activeView === "experts" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Đội ngũ chuyên gia</h1>
-                <div className="flex items-center gap-3">
-                  <button onClick={downloadExpertsExcel} className="bg-green-600 text-white px-4 py-2 rounded-xl border border-green-700 hover:bg-green-700 transition font-medium text-sm">
-                    📥 Tải Excel
-                  </button>
-                  <button onClick={handleNewExpert} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                    + Thêm chuyên gia
-                  </button>
-                </div>
-              </div>
-
-              {expertsLoading ? (
-                <div className="text-center py-10 text-gray-600">Đang tải...</div>
-              ) : expertsList.length === 0 ? (
-                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
-                  <p className="text-lg">Chưa có chuyên gia nào</p>
-                  <p className="text-sm mt-1">Nhấn &quot;+ Thêm chuyên gia&quot; để tạo mới</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {expertsList.sort((a, b) => (a.order || 0) - (b.order || 0)).map(expert => (
-                    <div key={expert.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-center text-center">
-                      {expert.avatarUrl ? (
-                        <img src={expert.avatarUrl} alt={expert.name} className="w-20 h-20 rounded-full object-cover mb-3 border-2 border-green-500/30" />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl mb-3">
-                          {expert.name.charAt(0)}
-                        </div>
-                      )}
-                      <h3 className="text-gray-900 font-bold">{expert.name}</h3>
-                      <p className="text-green-400 text-sm">{expert.position}</p>
-                      {expert.previousWork && <p className="text-gray-500 text-xs mt-1">{expert.previousWork}</p>}
-                      <p className="text-gray-500 text-xs mt-1">Thứ tự: {expert.order}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full mt-2 ${expert.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}>
-                        {expert.published ? "Hiển thị" : "Ẩn"}
-                      </span>
-                      <div className="flex gap-3 mt-3">
-                        <button onClick={() => handleEditExpert(expert)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">Sửa</button>
-                        <button onClick={() => handleDeleteExpert(expert.id)} className="text-red-400 hover:text-red-300 text-xs font-medium">Xóa</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {/* === ALUMNI VIEW === */}
-          {activeView === "alumni" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý Alumni</h1>
-                <div className="flex items-center gap-3">
-                  <button onClick={handleNewAlumni} className="bg-green-600 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow">
-                    + Thêm Alumni
-                  </button>
-                </div>
-              </div>
-
-              {alumniLoading ? (
-                <div className="text-center py-10 text-gray-600">Đang tải...</div>
-              ) : alumniList.length === 0 ? (
-                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
-                  <p className="text-lg">Chưa có alumni nào</p>
-                  <p className="text-sm mt-1">Nhấn &quot;+ Thêm Alumni&quot; để tạo mới</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {alumniList.sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(alumni => (
-                    <div key={alumni.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-center text-center">
-                      {alumni.imageUrl ? (
-                        <img src={alumni.imageUrl} alt={alumni.name} className="w-20 h-20 rounded-full object-cover mb-3 border-2 border-green-500/30" />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl mb-3 text-white font-bold">
-                          {alumni.name.charAt(0)}
-                        </div>
-                      )}
-                      <h3 className="text-gray-900 font-bold">{alumni.name}</h3>
-                      <p className="text-green-600 text-sm">{alumni.job}</p>
-                      {alumni.linkedin && (
-                        <a href={alumni.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs mt-1 hover:text-blue-800">
-                          LinkedIn ↗
-                        </a>
-                      )}
-                      <p className="text-gray-500 text-xs mt-1">Thứ tự: {alumni.order ?? 0}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full mt-2 ${alumni.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                        {alumni.published !== false ? "Hiển thị" : "Ẩn"}
-                      </span>
-                      <div className="flex gap-3 mt-3">
-                        <button onClick={() => handleEditAlumni(alumni)} className="text-blue-500 hover:text-blue-400 text-xs font-medium">Sửa</button>
-                        <button onClick={() => handleDeleteAlumni(alumni.id)} className="text-red-500 hover:text-red-400 text-xs font-medium">Xóa</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeView === "quiz" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý Quiz</h1>
-                <button onClick={handleNewQuiz} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition shadow">
-                  + Thêm Quiz
-                </button>
-              </div>
-
-              {quizzesLoading ? (
-                <div className="text-center py-10 text-gray-600">Đang tải...</div>
-              ) : quizzesList.length === 0 ? (
-                <div className="text-center py-20 text-gray-500 bg-gray-50 rounded-2xl border border-gray-200">
-                  <p className="text-lg">Chưa có quiz nào</p>
-                  <p className="text-sm mt-1">Nhấn "+ Thêm Quiz" để tạo mới</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...quizzesList].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).map(quiz => (
-                    <div key={quiz.id} className="bg-white rounded-2xl border border-gray-200 p-5">
-                      {quiz.imageUrl && (
-                        <div className="aspect-video w-full overflow-hidden rounded-xl mb-4 bg-gray-100 border border-gray-100">
-                          <img src={quiz.imageUrl} alt={quiz.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <h3 className="font-bold text-gray-900 mb-2">{quiz.title}</h3>
-                      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{quiz.description}</p>
-                      <div className="flex items-center gap-2 flex-wrap mb-3">
-                      {quiz.category && (
-                        <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">{quiz.category}</span>
-                      )}
-                      {quiz.difficulty && (
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${quiz.difficulty === "easy" ? "bg-green-100 text-green-700" : quiz.difficulty === "medium" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
-                          {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "medium" ? "Trung bình" : "Khó"}
-                        </span>
-                      )}
-                      {quiz.hasPassword && (
-                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium border border-emerald-100">
-                          🔒 Có mật khẩu
-                        </span>
-                      )}
-                      {quiz.durationMinutes && quiz.durationMinutes > 0 && (
-                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium border border-emerald-100">
-                          ⏱ {quiz.durationMinutes} phút
-                        </span>
-                      )}
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                          {quiz.questionCount ?? (Array.isArray((quiz as any).questions) ? (quiz as any).questions.length : 0)} câu
-                        </span>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${quiz.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                        {quiz.published !== false ? "Hiển thị" : "Ẩn"}
-                      </span>
-                      <div className="flex gap-3 mt-3">
-                        <button onClick={() => handleEditQuiz(quiz)} className="text-blue-500 hover:text-blue-400 text-xs font-medium">Sửa</button>
-                        <button onClick={() => handleDeleteQuiz(quiz.id)} className="text-red-500 hover:text-red-400 text-xs font-medium">Xóa</button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
@@ -2389,7 +1637,7 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center text-gray-500 text-xs">
-                            {link.createdAt ? new Date(link.createdAt).toLocaleDateString("vi-VN") : "-"}
+                            {formatDate(link.createdAt)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
@@ -2481,7 +1729,7 @@ export default function AdminPage() {
                             <span className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded-full font-medium">{lead.resourceType}</span>
                           </td>
                           <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("vi-VN") : "-"}
+                            {formatDate(lead.createdAt)}
                           </td>
                         </tr>
                       ))}
@@ -2598,8 +1846,8 @@ export default function AdminPage() {
                               <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">{entry.courseTitle}</span>
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs">
-                              <div>{new Date(entry.registeredAt).toLocaleDateString("vi-VN")}</div>
-                              <div className="text-gray-400">{new Date(entry.registeredAt).toLocaleTimeString("vi-VN")}</div>
+                              <div>{formatDate(entry.registeredAt)}</div>
+                              <div className="text-gray-400">{formatDateTime(entry.registeredAt)}</div>
                             </td>
                             <td className="px-4 py-3">
                               <select
@@ -2696,7 +1944,7 @@ export default function AdminPage() {
                                 <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || "?"}</div><span className="font-medium text-gray-900">{user.name}</span></div></td>
                                 <td className="px-4 py-3 text-gray-500">{user.username}</td>
                                 <td className="px-4 py-3"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${user.role === "system_admin" ? "bg-red-500/10 text-red-600" : user.role === "content_manager" ? "bg-purple-500/10 text-purple-600" : user.role === "sales_executive" ? "bg-blue-500/10 text-blue-600" : user.role === "teacher" ? "bg-cyan-500/10 text-cyan-600" : "bg-amber-500/10 text-amber-600"}`}>{ROLE_LABELS[user.role as UserRole] || user.role}</span></td>
-                                <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
+                                <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">{formatDate(user.createdAt)}</td>
                                 <td className="px-4 py-3 text-right"><button onClick={() => handleEditUser(user)} className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-lg mr-2">Sửa</button><button onClick={() => handleDeleteUser(user.id)} className="text-red-500 hover:text-red-700 font-medium text-xs bg-red-50 px-2 py-1 rounded-lg">Xóa</button></td>
                               </tr>
                             ))}
@@ -2710,1284 +1958,8 @@ export default function AdminPage() {
             </div>
           )}
 
-          {activeView === "ads" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý Banner Ads</h1>
-              </div>
-              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-200">
-                <p className="text-gray-600 mb-3">Trang quản lý Banner Ads</p>
-                <a href="/admin/ads" target="_blank" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm">
-                  Mở trang quản lý Ads →
-                </a>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Resource Form Modal */}
-      {showResourceForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingResource ? "Sửa tài nguyên" : "Thêm tài nguyên mới"}
-              </h2>
-              <button onClick={() => setShowResourceForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={resourceForm.title}
-                    onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
-                    placeholder="VD: Hướng dẫn sử dụng Power BI"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Slug (tự tạo nếu bỏ trống)</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={resourceForm.slug}
-                    onChange={(e) => setResourceForm({ ...resourceForm, slug: e.target.value })}
-                    placeholder="huong-dan-su-dung-power-bi"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tóm tắt</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={resourceForm.summary}
-                  onChange={(e) => setResourceForm({ ...resourceForm, summary: e.target.value })}
-                  placeholder="Mô tả ngắn gọn về tài nguyên"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung *</label>
-                <RichTextEditor
-                  value={resourceForm.content}
-                  onChange={(content) => setResourceForm({ ...resourceForm, content })}
-                  placeholder="Nhập nội dung bài viết..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
-                  <select
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={resourceForm.category}
-                    onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
-                  >
-                    <option value="Article">Bài viết</option>
-                    <option value="Tutorial">Hướng dẫn</option>
-                    <option value="Template">Template</option>
-                    <option value="Tool">Công cụ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tác giả</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={resourceForm.author}
-                    onChange={(e) => setResourceForm({ ...resourceForm, author: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                  <select
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={resourceForm.published ? "true" : "false"}
-                    onChange={(e) => setResourceForm({ ...resourceForm, published: e.target.value === "true" })}
-                  >
-                    <option value="true">Xuất bản</option>
-                    <option value="false">Nháp</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh bìa (URL)</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={resourceForm.imageUrl}
-                  onChange={(e) => setResourceForm({ ...resourceForm, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-                {resourceForm.imageUrl && (
-                  <img src={resourceForm.imageUrl} alt="Preview" className="mt-2 w-full h-40 object-cover rounded-lg" />
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowResourceForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveResource} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editingResource ? "Cập nhật" : "Tạo tài nguyên"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Course Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-8">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editing ? "Chỉnh sửa khóa học" : "Thêm khóa học mới"}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">×</button>
-            </div>
-
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên khóa học *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="VD: Lập trình Python cơ bản"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Slug (tự tạo nếu bỏ trống)</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.slug}
-                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    placeholder="lap-trinh-python-co-ban"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả ngắn</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={form.shortDescription}
-                  onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
-                />
-              </div>
-
-              <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Mô tả chi tiết
-  </label>
-  <RichTextEditor
-    value={form.description || ""}
-    onChange={(description) => setForm({ ...form, description })}
-    placeholder="Nhập mô tả chi tiết khóa học..."
-    minHeight="180px"
-    maxHeight="320px"
-    editorClassName="bg-white"
-  />
-</div>
-
-
-              {/* Image URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Đường link ảnh minh hoạ khóa học</label>
-                <div className="flex items-center gap-4">
-                  {form.imageUrl && (
-                    <div className="w-24 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                      <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.imageUrl || ""}
-                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                    placeholder="https://example.com/course-image.jpg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    placeholder="VD: Lập trình"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giảng viên</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.instructor}
-                    onChange={(e) => setForm({ ...form, instructor: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VNĐ)</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giá gốc</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.originalPrice}
-                    onChange={(e) => setForm({ ...form, originalPrice: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giảm giá (%)</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.discount}
-                    onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tổng bài học</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.totalLessons}
-                    onChange={(e) => setForm({ ...form, totalLessons: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Học viên</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.students}
-                    onChange={(e) => setForm({ ...form, students: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Đánh giá</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.rating}
-                    onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số đánh giá</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.reviews}
-                    onChange={(e) => setForm({ ...form, reviews: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày khai giảng</label>
-                  <input
-                    type="date"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.startDate}
-                    onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc</label>
-                  <input
-                    type="date"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.endDate}
-                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lịch học</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.schedule}
-                    onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-                    placeholder="Thứ 2, 4, 6"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giờ học</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={form.hours}
-                    onChange={(e) => setForm({ ...form, hours: e.target.value })}
-                    placeholder="20:00 - 22:00"
-                  />
-                </div>
-              </div>
-
-              {/* Curriculum */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Lộ trình học</label>
-                {form.curriculum.map((item, i) => (
-                  <div key={i} className="mb-3 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    {/* Edit form for phase/title/lessons */}
-                    {editingCurriculumIndex === i ? (
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <input
-                            className="border rounded px-2 py-1.5 text-sm w-28"
-                            placeholder="Giai đoạn"
-                            value={editCurriculumPhase}
-                            onChange={(e) => setEditCurriculumPhase(e.target.value)}
-                          />
-                          <input
-                            className="border rounded px-2 py-1.5 text-sm flex-1"
-                            placeholder="Tên chương"
-                            value={editCurriculumTitle}
-                            onChange={(e) => setEditCurriculumTitle(e.target.value)}
-                          />
-                          <input
-                            type="number"
-                            className="border rounded px-2 py-1.5 text-sm w-20"
-                            placeholder="Số bài"
-                            value={editCurriculumLessons}
-                            onChange={(e) => setEditCurriculumLessons(Number(e.target.value))}
-                          />
-                          <button
-                            onClick={saveCurriculumItemEdit}
-                            className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-green-700"
-                          >
-                            Lưu
-                          </button>
-                          <button
-                            onClick={() => setEditingCurriculumIndex(null)}
-                            className="bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs font-medium hover:bg-gray-300"
-                          >
-                            Hủy
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <span className="font-medium text-green-600">{item.phase}:</span>
-                        <span className="flex-1 font-medium">{item.title}</span>
-                        <span className="text-gray-600">{item.lessons} bài</span>
-                        <button onClick={() => moveCurriculumUp(i)} className="text-gray-400 hover:text-gray-700 text-xs px-1" title="Lên">▲</button>
-                        <button onClick={() => moveCurriculumDown(i)} className="text-gray-400 hover:text-gray-700 text-xs px-1" title="Xuống">▼</button>
-                        <button
-                          onClick={() => {
-                            setEditingTopicsIndex(editingTopicsIndex === i ? null : i);
-                            setEditingTopicsValue((item.topics || []).join("\n"));
-                          }}
-                          className="text-blue-500 hover:text-blue-700 text-xs font-medium px-1"
-                        >
-                          {editingTopicsIndex === i ? "Đóng ND" : "Sửa ND"}
-                        </button>
-                        <button
-                          onClick={() => startEditCurriculumItem(i)}
-                          className="text-purple-500 hover:text-purple-700 text-xs font-medium px-1"
-                        >
-                          Sửa
-                        </button>
-                        <button onClick={() => removeCurriculumItem(i)} className="text-red-400 hover:text-red-600 text-xs px-1">✕</button>
-                      </div>
-                    )}
-                    {item.topics && item.topics.length > 0 && editingTopicsIndex !== i && editingCurriculumIndex !== i && (
-                      <div className="mt-2 pl-4 border-l-2 border-green-200 space-y-0.5">
-                        {item.topics.map((topic, j) => (
-                          <p key={j} className="text-xs text-gray-500">• {topic}</p>
-                        ))}
-                      </div>
-                    )}
-                    {editingTopicsIndex === i && (
-                      <div className="mt-2">
-                        <textarea
-                          className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                          rows={4}
-                          value={editingTopicsValue}
-                          onChange={(e) => setEditingTopicsValue(e.target.value)}
-                          placeholder="Mỗi dòng là 1 nội dung học"
-                        />
-                        <button
-                          onClick={() => saveTopicsEdit(i)}
-                          className="mt-1 bg-green-600 text-gray-900 px-3 py-1 rounded text-xs font-medium hover:bg-green-700"
-                        >
-                          Lưu nội dung
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div className="space-y-2 mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-xs font-medium text-green-700">Thêm giai đoạn mới</p>
-                  <div className="flex gap-2">
-                    <input className="border rounded px-2 py-1.5 text-sm w-28" placeholder="Giai đoạn" value={currPhase} onChange={(e) => setCurrPhase(e.target.value)} />
-                    <input className="border rounded px-2 py-1.5 text-sm flex-1" placeholder="Tên chương" value={currTitle} onChange={(e) => setCurrTitle(e.target.value)} />
-                    <input type="number" className="border rounded px-2 py-1.5 text-sm w-20" placeholder="Số bài" value={currLessons} onChange={(e) => setCurrLessons(Number(e.target.value))} />
-                  </div>
-                  <textarea
-                    className="w-full border rounded px-2 py-1.5 text-sm"
-                    rows={3}
-                    value={currTopics}
-                    onChange={(e) => setCurrTopics(e.target.value)}
-                    placeholder="Nội dung học (mỗi dòng 1 nội dung)"
-                  />
-                  <button onClick={addCurriculumItem} className="bg-green-600 text-gray-900 px-4 py-1.5 rounded text-sm font-medium hover:bg-green-700">+ Thêm giai đoạn</button>
-                </div>
-              </div>
-
-              {/* Outcomes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Kết quả đạt được</label>
-                {form.outcomes.map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-1 text-sm">
-                    <span className="flex-1 bg-gray-50 p-2 rounded">{item}</span>
-                    <button onClick={() => removeOutcome(i)} className="text-red-400 hover:text-red-600">✕</button>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
-                  <input
-                    className="border rounded px-2 py-1.5 text-sm flex-1"
-                    placeholder="Thêm kết quả đạt được"
-                    value={newOutcome}
-                    onChange={(e) => setNewOutcome(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addOutcome()}
-                  />
-                  <button onClick={addOutcome} className="bg-green-500/10 text-green-400 px-3 py-1.5 rounded text-sm font-medium hover:bg-green-200">+</button>
-                </div>
-              </div>
-
-              {/* Target Audience */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Đối tượng phù hợp</label>
-                {form.targetAudience.map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-1 text-sm">
-                    <span className="flex-1 bg-gray-50 p-2 rounded">{item}</span>
-                    <button onClick={() => removeTarget(i)} className="text-red-400 hover:text-red-600">✕</button>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
-                  <input
-                    className="border rounded px-2 py-1.5 text-sm flex-1"
-                    placeholder="Thêm đối tượng"
-                    value={newTarget}
-                    onChange={(e) => setNewTarget(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addTarget()}
-                  />
-                  <button onClick={addTarget} className="bg-green-500/10 text-green-400 px-3 py-1.5 rounded text-sm font-medium hover:bg-green-200">+</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Toggles */}
-            <div className="flex items-center gap-6 mt-4 flex-wrap">
-              {editing && (
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-gray-700">Xuat ban:</label>
-                  <button
-                    onClick={() => setForm({ ...form, published: !form.published })}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition ${form.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}
-                  >
-                    {form.published ? "Đã xuất bản" : "Nháp"}
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">Coming Soon:</label>
-                <button
-                  onClick={() => setForm({ ...form, comingSoon: !form.comingSoon })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${form.comingSoon ? "bg-amber-500/10 text-amber-600" : "bg-gray-100 text-gray-500"}`}
-                >
-                  {form.comingSoon ? "Bat" : "Tat"}
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">An gia:</label>
-                <button
-                  onClick={() => setForm({ ...form, hidePrice: !form.hidePrice })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${form.hidePrice ? "bg-red-500/10 text-red-600" : "bg-gray-100 text-gray-500"}`}
-                >
-                  {form.hidePrice ? "Bat" : "Tat"}
-                </button>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editing ? "Cập nhật" : "Tạo khóa học"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Activity Form Modal */}
-      {showActivityForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingActivity ? "Sửa hoạt động" : "Thêm hoạt động mới"}
-              </h2>
-              <button onClick={() => setShowActivityForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề *</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={activityForm.title}
-                  onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
-                  placeholder="VD: Workshop Data Analysis"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tóm tắt</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={activityForm.summary}
-                  onChange={(e) => setActivityForm({ ...activityForm, summary: e.target.value })}
-                />
-              </div>
-
-            <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nội dung hoạt động
-          </label>
-          <RichTextEditor
-            value={activityForm.content || ""}
-            onChange={(content) => setActivityForm({ ...activityForm, content })}
-            placeholder="Nhập nội dung chi tiết hoạt động..."
-            minHeight="220px"
-            maxHeight="360px"
-            editorClassName="bg-white"
-          />
-        </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh minh hoạ (URL)</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={activityForm.imageUrl}
-                  onChange={(e) => setActivityForm({ ...activityForm, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cộng đồng *</label>
-                  <select
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={activityForm.community}
-                    onChange={(e) => setActivityForm({ ...activityForm, community: e.target.value as "student" | "genz" })}
-                  >
-                    <option value="student">Cộng đồng học viên</option>
-                    <option value="genz">GenZ làm Data</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sự kiện</label>
-                  <input
-                    type="date"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={activityForm.eventDate}
-                    onChange={(e) => setActivityForm({ ...activityForm, eventDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Link đăng ký</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={activityForm.registrationLink}
-                    onChange={(e) => setActivityForm({ ...activityForm, registrationLink: e.target.value })}
-                    placeholder="https://forms.gle/..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hạn đăng ký</label>
-                  <input
-                    type="date"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={activityForm.registrationDeadline}
-                    onChange={(e) => setActivityForm({ ...activityForm, registrationDeadline: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">Xuất bản:</label>
-                <button
-                  type="button"
-                  onClick={() => setActivityForm({ ...activityForm, published: !activityForm.published })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${activityForm.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}
-                >
-                  {activityForm.published ? "Đã xuất bản" : "Nháp"}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowActivityForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveActivity} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editingActivity ? "Cập nhật" : "Tạo hoạt động"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Job Form Modal */}
-      {showJobForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingJob ? "Sửa việc làm" : "Thêm việc làm mới"}
-              </h2>
-              <button onClick={() => setShowJobForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.title}
-                    onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
-                    placeholder="VD: Data Analyst Intern"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Công ty *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.company}
-                    onChange={(e) => setJobForm({ ...jobForm, company: e.target.value })}
-                    placeholder="VD: FPT Software"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tóm tắt</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={jobForm.summary}
-                  onChange={(e) => setJobForm({ ...jobForm, summary: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả chi tiết (HTML)</label>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung chia sẻ</label>
-                <RichTextEditor
-                  value={jobForm.content}
-                  onChange={(val: string) => setJobForm({ ...jobForm, content: val })}
-                />
-              </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh minh hoạ (URL)</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={jobForm.imageUrl}
-                  onChange={(e) => setJobForm({ ...jobForm, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hình thức</label>
-                  <select
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.workType}
-                    onChange={(e) => setJobForm({ ...jobForm, workType: e.target.value })}
-                  >
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Freelance">Freelance</option>
-                    <option value="Remote">Remote</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vị trí</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.position}
-                    onChange={(e) => setJobForm({ ...jobForm, position: e.target.value })}
-                    placeholder="VD: Data Analyst"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Địa điểm</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.location}
-                    onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
-                    placeholder="VD: Hà Nội"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mức lương</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.salary}
-                    onChange={(e) => setJobForm({ ...jobForm, salary: e.target.value })}
-                    placeholder="VD: 8-15 triệu VNĐ"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hạn nộp hồ sơ</label>
-                  <input
-                    type="date"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={jobForm.applicationDeadline}
-                    onChange={(e) => setJobForm({ ...jobForm, applicationDeadline: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link ứng tuyển</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={jobForm.applicationLink}
-                  onChange={(e) => setJobForm({ ...jobForm, applicationLink: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">Xuất bản:</label>
-                <button
-                  type="button"
-                  onClick={() => setJobForm({ ...jobForm, published: !jobForm.published })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${jobForm.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}
-                >
-                  {jobForm.published ? "Đã xuất bản" : "Nháp"}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowJobForm(false)} className="px-5 py-2 rounded-lg border text-gray-500 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveJob} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editingJob ? "Cập nhật" : "Tạo việc làm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Expert Form Modal */}
-      {showExpertForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingExpert ? "Sửa chuyên gia" : "Thêm chuyên gia mới"}
-              </h2>
-              <button onClick={() => setShowExpertForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={expertForm.name}
-                    onChange={(e) => setExpertForm({ ...expertForm, name: e.target.value })}
-                    placeholder="VD: Cuong DN"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vị trí *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={expertForm.position}
-                    onChange={(e) => setExpertForm({ ...expertForm, position: e.target.value })}
-                    placeholder="VD: Founder & Lead Instructor"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Công việc trước đây</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={expertForm.previousWork}
-                  onChange={(e) => setExpertForm({ ...expertForm, previousWork: e.target.value })}
-                  placeholder="VD: Data Analyst @ FPT Software"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={expertForm.avatarUrl}
-                    onChange={(e) => setExpertForm({ ...expertForm, avatarUrl: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={expertForm.linkedin}
-                    onChange={(e) => setExpertForm({ ...expertForm, linkedin: e.target.value })}
-                    placeholder="https://linkedin.com/in/..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={expertForm.order}
-                    onChange={(e) => setExpertForm({ ...expertForm, order: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-gray-700">Hiển thị:</label>
-                    <button
-                      type="button"
-                      onClick={() => setExpertForm({ ...expertForm, published: !expertForm.published })}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${expertForm.published ? "bg-green-500/10 text-green-400" : "bg-gray-100 text-gray-500"}`}
-                    >
-                      {expertForm.published ? "Hiển thị" : "Ẩn"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <button onClick={() => setShowExpertForm(false)} className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveExpert} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editingExpert ? "Cập nhật" : "Thêm chuyên gia"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Alumni Form Modal */}
-      {showAlumniForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 mb-10">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingAlumni ? "Sửa Alumni" : "Thêm Alumni mới"}
-              </h2>
-              <button onClick={() => setShowAlumniForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={alumniForm.name}
-                    onChange={(e) => setAlumniForm({ ...alumniForm, name: e.target.value })}
-                    placeholder="VD: Nguyễn Văn A"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nghề nghiệp *</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={alumniForm.job}
-                    onChange={(e) => setAlumniForm({ ...alumniForm, job: e.target.value })}
-                    placeholder="VD: Data Analyst @ FPT"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
-                <input
-                  className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                  value={alumniForm.linkedin ?? ""}
-                  onChange={(e) => setAlumniForm({ ...alumniForm, linkedin: e.target.value })}
-                  placeholder="https://linkedin.com/in/..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar (URL)</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={alumniForm.imageUrl ?? ""}
-                    onChange={(e) => setAlumniForm({ ...alumniForm, imageUrl: e.target.value })}
-                    placeholder="https://... (hình tròn)"
-                  />
-                  {alumniForm.imageUrl && (
-                    <img src={alumniForm.imageUrl} alt="avatar preview" className="mt-2 w-16 h-16 rounded-full object-cover border-2 border-green-200" />
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh bìa 4x6 (URL)</label>
-                  <input
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={alumniForm.coverImage ?? ""}
-                    onChange={(e) => setAlumniForm({ ...alumniForm, coverImage: e.target.value })}
-                    placeholder="https://... (hình chữ nhật 4x6)"
-                  />
-                  {alumniForm.coverImage && (
-                    <img src={alumniForm.coverImage} alt="cover preview" className="mt-2 h-16 w-auto rounded-lg border-2 border-green-200 object-cover" />
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nội dung chia sẻ</label>
-                <RichTextEditor
-                  value={alumniForm.content}
-                  onChange={(val: string) => setAlumniForm({ ...alumniForm, content: val })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 outline-none"
-                    value={alumniForm.order ?? 0}
-                    onChange={(e) => setAlumniForm({ ...alumniForm, order: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-gray-700">Hiển thị:</label>
-                    <button
-                      type="button"
-                      onClick={() => setAlumniForm({ ...alumniForm, published: !alumniForm.published })}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${alumniForm.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}
-                    >
-                      {alumniForm.published !== false ? "Hiển thị" : "Ẩn"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <button onClick={() => setShowAlumniForm(false)} className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveAlumni} className="px-5 py-2 rounded-lg bg-green-600 text-gray-900 font-medium hover:bg-green-700 transition shadow">
-                {editingAlumni ? "Cập nhật" : "Thêm Alumni"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quiz Form Modal */}
-      {showQuizForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-10 overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 mb-10 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingQuiz ? "Sửa Quiz" : "Thêm Quiz mới"}
-              </h2>
-              <button onClick={() => setShowQuizForm(false)} className="text-gray-600 hover:text-gray-500 text-2xl">&times;</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề Quiz *</label>
-                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} placeholder="VD: Kiến thức Data cơ bản" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Chủ đề (category)</label>
-                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.category ?? ""} onChange={(e) => setQuizForm({ ...quizForm, category: e.target.value })} placeholder="VD: Data Analytics" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bảo vệ quiz</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQuizPasswordEnabled(false);
-                        setQuizForm({ ...quizForm, password: "" });
-                      }}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
-                        !quizPasswordEnabled
-                          ? "bg-emerald-700 text-white border-emerald-700"
-                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                      }`}
-                    >
-                      Không mật khẩu
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setQuizPasswordEnabled(true)}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
-                        quizPasswordEnabled
-                          ? "bg-emerald-700 text-white border-emerald-700"
-                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                      }`}
-                    >
-                      Có mật khẩu
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-end">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Chọn "Có mật khẩu" để yêu cầu người học nhập đúng mật khẩu trước khi vào quiz.
-                  </p>
-                </div>
-              </div>
-
-              {quizPasswordEnabled && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu truy cập</label>
-                  <input
-                    type="password"
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.password ?? ""}
-                    onChange={(e) => setQuizForm({ ...quizForm, password: e.target.value })}
-                    placeholder="Nhập mật khẩu cho quiz"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian làm bài</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQuizDurationEnabled(false);
-                        setQuizForm({ ...quizForm, durationMinutes: 0 });
-                      }}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
-                        !quizDurationEnabled
-                          ? "bg-emerald-700 text-white border-emerald-700"
-                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                      }`}
-                    >
-                      Không giới hạn
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setQuizDurationEnabled(true)}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
-                        quizDurationEnabled
-                          ? "bg-emerald-700 text-white border-emerald-700"
-                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                      }`}
-                    >
-                      Có thời gian
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-end">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Chọn "Có thời gian" để người học thấy đếm ngược và hệ thống tự nộp khi hết giờ.
-                  </p>
-                </div>
-              </div>
-
-              {quizDurationEnabled && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số phút làm bài</label>
-                  <input
-                    type="number"
-                    min={1}
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.durationMinutes ?? 0}
-                    onChange={(e) => setQuizForm({ ...quizForm, durationMinutes: parseInt(e.target.value) || 0 })}
-                    placeholder="VD: 15"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả *</label>
-                <textarea className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none resize-none"
-                  rows={2}
-                  value={quizForm.description} onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })} placeholder="Mô tả ngắn về quiz..." />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh bìa (URL)</label>
-                  <input className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.imageUrl ?? ""} onChange={(e) => setQuizForm({ ...quizForm, imageUrl: e.target.value })} placeholder="https://..." />
-                  {quizForm.imageUrl && (
-                    <div className="mt-2 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                      <img src={quizForm.imageUrl} alt="preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Độ khó</label>
-                  <select className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.difficulty ?? "medium"} onChange={(e) => setQuizForm({ ...quizForm, difficulty: e.target.value as "easy" | "medium" | "hard" })}>
-                    <option value="easy">Dễ</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="hard">Khó</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
-                  <input type="number" className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                    value={quizForm.order ?? 0} onChange={(e) => setQuizForm({ ...quizForm, order: parseInt(e.target.value) || 0 })} />
-                </div>
-              </div>
-
-              {/* Questions */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">Câu hỏi ({quizForm.questions.length})</label>
-                  <button
-                    type="button"
-                    onClick={() => setQuizForm({
-                      ...quizForm,
-                      questions: [...quizForm.questions, { id: `q${quizForm.questions.length + 1}`, question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]
-                    })}
-                    className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100 transition"
-                  >
-                    + Thêm câu hỏi
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {quizForm.questions.map((q, qi) => (
-                    <div key={qi} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-indigo-600">Câu {qi + 1}</span>
-                        <button type="button" onClick={() => {
-                          const qs = [...quizForm.questions];
-                          qs.splice(qi, 1);
-                          setQuizForm({ ...quizForm, questions: qs });
-                        }} className="text-red-400 hover:text-red-600 text-xs font-medium">Xóa</button>
-                      </div>
-                      <div className="mb-3">
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Nội dung câu hỏi *</label>
-                        <RichTextEditor
-                          value={q.question}
-                          onChange={(content) => {
-                            const qs = [...quizForm.questions];
-                            qs[qi] = { ...qs[qi], question: content };
-                            setQuizForm({ ...quizForm, questions: qs });
-                          }}
-                          placeholder="Nhập nội dung câu hỏi... Có thể xuống dòng, tạo đoạn và chèn ảnh link."
-                          minHeight="180px"
-                          maxHeight="260px"
-                          editorClassName="bg-white"
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                        {q.options.map((opt, oi) => (
-                          <div key={oi} className="flex items-center gap-2">
-                            <input type="radio" name={`correct-${qi}`} checked={q.correctIndex === oi}
-                              onChange={() => {
-                                const qs = [...quizForm.questions];
-                                qs[qi] = { ...qs[qi], correctIndex: oi };
-                                setQuizForm({ ...quizForm, questions: qs });
-                              }}
-                              className="accent-indigo-600" title="Đáp án đúng" />
-                            <input className="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
-                              value={opt} onChange={(e) => {
-                                const qs = [...quizForm.questions];
-                                const opts = [...qs[qi].options];
-                                opts[oi] = e.target.value;
-                                qs[qi] = { ...qs[qi], options: opts };
-                                setQuizForm({ ...quizForm, questions: qs });
-                              }} placeholder={`Đáp án ${String.fromCharCode(65 + oi)}`} />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3">
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Giải thích (tùy chọn)</label>
-                        <RichTextEditor
-                          value={q.explanation ?? ""}
-                          onChange={(content) => {
-                            const qs = [...quizForm.questions];
-                            qs[qi] = { ...qs[qi], explanation: content };
-                            setQuizForm({ ...quizForm, questions: qs });
-                          }}
-                          placeholder="Giải thích đáp án, có thể kèm ảnh minh họa bằng link."
-                          minHeight="140px"
-                          maxHeight="220px"
-                          editorClassName="bg-white"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {quizForm.questions.length === 0 && (
-                    <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-xl">
-                      Chưa có câu hỏi nào. Nhấn "+ Thêm câu hỏi" để bắt đầu.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <label className="text-sm font-medium text-gray-700">Hiển thị:</label>
-                <button type="button" onClick={() => setQuizForm({ ...quizForm, published: !quizForm.published })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${quizForm.published !== false ? "bg-green-500/10 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                  {quizForm.published !== false ? "Hiển thị" : "Ẩn"}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-              <button onClick={() => setShowQuizForm(false)} className="px-5 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">Hủy</button>
-              <button onClick={handleSaveQuiz} className="px-5 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition shadow">
-                {editingQuiz ? "Cập nhật" : "Thêm Quiz"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* User Form Modal */}
       {showUserForm && (
@@ -4009,5 +1981,55 @@ export default function AdminPage() {
       )}
 
     </div>
+  );
+}
+
+class AdminErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+          <div className="max-w-lg w-full bg-white border border-gray-200 rounded-2xl shadow-sm p-6 text-center">
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Trang quản trị đang gặp lỗi</h1>
+            <p className="text-sm text-gray-600">
+              Mình đã chặn màn trắng bằng một fallback an toàn. Hãy tải lại trang, và nếu lỗi vẫn còn thì gửi mình ảnh chụp console để mình khoanh tiếp chính xác hơn.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="flex items-center gap-3 text-gray-500">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Đang tải trang quản trị...
+          </div>
+        </div>
+      }
+    >
+      <AdminErrorBoundary>
+        <AdminPageContent />
+      </AdminErrorBoundary>
+    </Suspense>
   );
 }

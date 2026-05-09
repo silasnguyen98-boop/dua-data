@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getAppCheckHeaders } from "@/lib/firebase-app-check";
 
 interface Props {
   courseId: string;
@@ -11,8 +12,14 @@ export default function WaitListRegister({ courseId, courseTitle }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [formStartedAt, setFormStartedAt] = useState<number>(Date.now());
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setFormStartedAt(Date.now());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +41,14 @@ export default function WaitListRegister({ courseId, courseTitle }: Props) {
     setStatus("loading");
 
     try {
+      const appCheckHeaders = await getAppCheckHeaders();
       const res = await fetch("/api/wait-list", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, name, phone, email }),
+        headers: {
+          "Content-Type": "application/json",
+          ...appCheckHeaders,
+        },
+        body: JSON.stringify({ courseId, name, phone, email, honeypot, formStartedAt }),
       });
 
       if (!res.ok) {
@@ -76,6 +87,17 @@ export default function WaitListRegister({ courseId, courseTitle }: Props) {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            name="website"
+            autoComplete="off"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="hidden"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-2">
             <p className="text-sm text-amber-700 font-medium flex items-center gap-1.5">
               <span className="text-base">🔔</span>

@@ -11,12 +11,16 @@ export interface QuizAttemptRecord {
   submittedByTimeout: boolean;
   submittedAt: string;
   participantName?: string;
+  participantEmail?: string;
+  participantDisplayName?: string;
   elapsedSeconds?: number;
 }
 
 export interface QuizLeaderboardEntry {
   id: string;
   participantName: string;
+  participantEmail?: string;
+  participantDisplayName?: string;
   score: number;
   totalQuestions: number;
   percentage: number;
@@ -24,6 +28,14 @@ export interface QuizLeaderboardEntry {
   submittedAt: string;
   submittedByTimeout: boolean;
   rank?: number;
+}
+
+export interface QuizAttemptAdminEntry extends QuizLeaderboardEntry {
+  quizId: string;
+  quizTitle: string;
+  quizCategory?: string;
+  quizDifficulty?: "easy" | "medium" | "hard";
+  quizPublished?: boolean;
 }
 
 export interface Quiz {
