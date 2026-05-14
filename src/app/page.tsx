@@ -7,23 +7,35 @@ import CourseImage from "@/components/CourseImage";
 import CourseCard from "@/components/CourseCard";
 import RegistrationCountdown from "@/components/RegistrationCountdown";
 import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
+import { query } from "@/lib/db";
+import { normalizeCourseRows } from "@/lib/course-data";
+import { normalizeExpertRows } from "@/lib/expert-data";
 
 export const dynamic = "force-dynamic";
 
+import fs from "fs/promises";
+import path from "path";
+
 async function getCourses(): Promise<Course[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
+  const publicCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
+
+  // Try reading from synced JSON first
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const res = await fetch(`${baseUrl}/api/courses`, { 
-      cache: "no-store",
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    
-    if (!res.ok) return [];
-    return res.json();
+    const filePath = path.join(process.cwd(), "src/data/courses.json");
+    const stats = await fs.stat(filePath);
+    if (stats.isFile()) {
+      const data = await fs.readFile(filePath, "utf-8");
+      return JSON.parse(data) as Course[];
+    }
+  } catch (err) {
+    // Fallback to DB
+  }
+
+  try {
+    const { rows } = await query(
+      `SELECT ${publicCourseColumns} FROM courses WHERE published = true ORDER BY start_date DESC`
+    );
+    return normalizeCourseRows((rows || []) as Record<string, unknown>[]);
   } catch (error) {
     console.error("Error fetching courses:", error);
     return [];
@@ -31,20 +43,13 @@ async function getCourses(): Promise<Course[]> {
 }
 
 async function getExperts(): Promise<Expert[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const res = await fetch(`${baseUrl}/api/experts`, { 
-      next: { revalidate: 600 },
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    
-    if (!res.ok) return [];
-    const experts = await res.json();
-    return experts.filter((e: Expert) => e.published);
+    const { rows } = await query(
+      "SELECT id, name, position, previous_work, avatar_url, linkedin, display_order, published FROM experts"
+    );
+    return normalizeExpertRows((rows || []) as Record<string, unknown>[])
+      .filter((expert) => expert.published)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   } catch (error) {
     console.error("Error fetching experts:", error);
     return [];

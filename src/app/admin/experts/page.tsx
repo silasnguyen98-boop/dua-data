@@ -188,7 +188,7 @@ export default function AdminExpertsPage() {
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Quản lý chuyên gia</h1>
             <p className="text-gray-600 mt-2 max-w-2xl">
-              CRUD dữ liệu chuyên gia trực tiếp trên Supabase. Đây là nơi quản lý danh sách hiển thị trên website.
+              CRUD dữ liệu chuyên gia trực tiếp trên PostgreSQL. Đây là nơi quản lý danh sách hiển thị trên website.
             </p>
           </div>
 
@@ -228,7 +228,7 @@ export default function AdminExpertsPage() {
         ) : experts.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-green-200 bg-white/80 px-6 py-16 text-center shadow-sm">
             <p className="text-lg font-semibold text-gray-900">Chưa có chuyên gia nào</p>
-            <p className="text-sm text-gray-500 mt-1">Nhấn “Thêm chuyên gia” để tạo bản ghi đầu tiên trong Supabase.</p>
+            <p className="text-sm text-gray-500 mt-1">Nhấn “Thêm chuyên gia” để tạo bản ghi đầu tiên trong PostgreSQL.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -320,7 +320,7 @@ export default function AdminExpertsPage() {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {editing ? "Sửa chuyên gia" : "Thêm chuyên gia mới"}
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">Dữ liệu sẽ được lưu trực tiếp vào bảng `experts` của Supabase.</p>
+                <p className="text-sm text-gray-500 mt-1">Dữ liệu sẽ được lưu trực tiếp vào bảng `experts` của PostgreSQL.</p>
               </div>
               <button
                 type="button"

@@ -382,7 +382,7 @@ export default function AdminCoursesPage() {
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Danh sách khóa học</h1>
-              <p className="text-sm text-gray-500">CRUD trực tiếp với Supabase cho cả khóa học và lộ trình</p>
+              <p className="text-sm text-gray-500">CRUD trực tiếp với PostgreSQL cho cả khóa học và lộ trình</p>
             </div>
             <button onClick={fetchCourses} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50">Làm mới</button>
           </div>

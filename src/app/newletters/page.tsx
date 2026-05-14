@@ -326,7 +326,7 @@ export default function NewlettersPage() {
               <div className="py-20 text-center text-gray-500">Đang tải dữ liệu...</div>
             ) : recipients.length === 0 ? (
               <div className="py-20 text-center text-gray-500">
-                Chưa có tài khoản nào từ Supabase Auth.
+                Chưa có tài khoản nào từ hệ thống đăng nhập.
               </div>
             ) : (
               <div className="overflow-x-auto">

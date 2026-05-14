@@ -33,6 +33,16 @@ export default function RichTextEditor({
     { label: "28", value: "28px" },
   ];
 
+  const fontNameOptions = [
+    { label: "Mặc định", value: "inherit" },
+    { label: "Inter", value: "'Inter', sans-serif" },
+    { label: "Roboto", value: "'Roboto', sans-serif" },
+    { label: "Montserrat", value: "'Montserrat', sans-serif" },
+    { label: "Playfair Display", value: "'Playfair Display', serif" },
+    { label: "Lora", value: "'Lora', serif" },
+    { label: "Space Mono", value: "'Space Mono', monospace" },
+  ];
+
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
       editorRef.current.innerHTML = value || "";
@@ -105,6 +115,41 @@ export default function RichTextEditor({
     syncChange();
   }, [restoreSelection, syncChange]);
 
+  const applyFontFamily = useCallback((font: string) => {
+    if (!editorRef.current) return;
+
+    restoreSelection();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+
+    const span = document.createElement("span");
+    span.style.fontFamily = font;
+    span.setAttribute("data-font-family", font);
+
+    if (range.collapsed) {
+      span.innerHTML = "&#8203;";
+      range.insertNode(span);
+      const newRange = document.createRange();
+      newRange.setStart(span, 1);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } else {
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      selection.addRange(newRange);
+    }
+
+    syncChange();
+  }, [restoreSelection, syncChange]);
+
   const handleInput = useCallback(() => {
     saveSelection();
     syncChange();
@@ -145,6 +190,24 @@ export default function RichTextEditor({
       <div className="flex flex-wrap items-center gap-1 px-2.5 py-2 bg-gradient-to-r from-gray-50 to-white border-b sticky top-0 z-10">
         <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd("undo")} className={btnClass} title="Undo">↶</button>
         <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => execCmd("redo")} className={btnClass} title="Redo">↷</button>
+
+        <div className={sepClass} />
+
+        <select
+          onChange={(e) => {
+            const font = e.target.value;
+            if (font) applyFontFamily(font);
+            e.target.value = "";
+          }}
+          className="text-xs border rounded-lg px-2 py-1 bg-white text-gray-700 max-w-[80px] truncate"
+          title="Font chữ"
+          defaultValue=""
+        >
+          <option value="" disabled>Font</option>
+          {fontNameOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
 
         <div className={sepClass} />
 

@@ -57,16 +57,28 @@ async function incrementCourseStudentsFallback(courseId: string, previousStudent
 export async function GET() {
   const [{ rows: registrationsResult }, { rows: coursesResult }] = await Promise.all([
     query("SELECT * FROM course_registrations ORDER BY created_at DESC"),
-    query("SELECT id, title FROM courses"),
+    query("SELECT id, title, course_type, price FROM courses"),
   ]);
 
-  const courseTitleById = new Map(
-    (coursesResult || []).map((course) => [String(course.id), String(course.title || "")])
+  const courseMetaById = new Map(
+    (coursesResult || []).map((course) => [
+      String(course.id),
+      {
+        title: String(course.title || ""),
+        courseType: String(course.course_type || "online"),
+        price: Number(course.price || 0),
+      },
+    ])
   );
 
-  const registrations = (registrationsResult || []).map((row) =>
-    mapRegistrationRowToStudent(row, courseTitleById.get(String(row.course_id || "")) || "")
-  );
+  const registrations = (registrationsResult || []).map((row) => {
+    const meta = courseMetaById.get(String(row.course_id || "")) || { title: "N/A", courseType: "online", price: 0 };
+    return {
+      ...mapRegistrationRowToStudent(row, meta.title),
+      courseType: meta.courseType,
+      price: meta.price,
+    };
+  });
   return NextResponse.json(registrations);
 }
 

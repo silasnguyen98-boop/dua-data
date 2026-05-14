@@ -9,8 +9,8 @@ import RegisterButton from "@/components/RegisterButton";
 import WaitListRegister from "@/components/WaitListRegister";
 
 async function getCourse(slug: string): Promise<Course | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
-  const res = await fetch(`${baseUrl}/api/courses?slug=${encodeURIComponent(slug)}`, { next: { revalidate: 300 } });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const res = await fetch(`${baseUrl}/api/courses?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
   if (res.status === 404 || !res.ok) return null;
   const course = await res.json();
   return course || null;

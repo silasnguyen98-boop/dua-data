@@ -77,7 +77,7 @@ function curriculumItemsToRows(courseId: string, curriculum: CurriculumItem[]) {
     phase: item.phase || "",
     title: item.title || "",
     lessons: Number(item.lessons) || 0,
-    topics: Array.isArray(item.topics) ? item.topics : [],
+    topics: JSON.stringify(Array.isArray(item.topics) ? item.topics : []),
     sort_order: index + 1,
     created_at: now,
     updated_at: now,
@@ -177,12 +177,12 @@ export function buildCoursePayload(data: Row, includeTimestamps = true) {
     hours: getString(data, ["hours"]),
     category: getString(data, ["category"]),
     course_type: getString(data, ["courseType", "course_type"], "online"),
-    target_audience: Array.isArray(data.targetAudience)
+    target_audience: JSON.stringify(Array.isArray(data.targetAudience)
       ? data.targetAudience
       : Array.isArray(data.target_audience)
         ? data.target_audience
-        : [],
-    outcomes: Array.isArray(data.outcomes) ? data.outcomes : [],
+        : []),
+    outcomes: JSON.stringify(Array.isArray(data.outcomes) ? data.outcomes : []),
     published: getBoolean(data, ["published"]),
     is_hidden: getBoolean(data, ["isHidden", "is_hidden"]),
     coming_soon: getBoolean(data, ["comingSoon", "coming_soon"]),

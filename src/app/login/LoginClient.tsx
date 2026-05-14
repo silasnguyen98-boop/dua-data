@@ -45,7 +45,7 @@ export default function LoginClient() {
 
   const handleGoogleLogin = async () => {
     if (!googleAvailable) {
-      setError("Vui lòng copy Google Client ID và Secret từ Supabase sang file .env.local.");
+      setError("Vui lòng cấu hình GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET trong file .env.local.");
       return;
     }
 
@@ -98,7 +98,7 @@ export default function LoginClient() {
 
           {!checkingProviders && !googleAvailable && (
             <p className="mt-4 text-xs leading-5 text-amber-700 bg-amber-50 border border-amber-100 px-4 py-3 rounded-xl">
-              Chưa có mã Google Client ID. Hãy copy từ Supabase dán vào GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET trong file .env.local rồi restart server.
+              Chưa có Google OAuth Client. Hãy cấu hình GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET trong file .env.local rồi restart server.
             </p>
           )}
 

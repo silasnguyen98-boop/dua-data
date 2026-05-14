@@ -5,25 +5,39 @@ import { Course } from "@/types/course";
 
 export const dynamic = "force-dynamic";
 
+import fs from "fs/promises";
+import path from "path";
+
 async function readCourses(slug?: string): Promise<Course | Course[] | null> {
   const publicCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
 
+  // Try reading from synced JSON first
+  try {
+    const filePath = path.join(process.cwd(), "src/data/courses.json");
+    // Check if file exists first to avoid potential long hangs in some environments
+    const stats = await fs.stat(filePath);
+    if (stats.isFile()) {
+      const data = await fs.readFile(filePath, "utf-8");
+      const courses = JSON.parse(data) as Course[];
+
+      if (slug) {
+        return courses.find(c => c.slug === slug) || null;
+      }
+      return courses;
+    }
+  } catch (err) {
+    // Silent fail, fallback to DB
+  }
+
   if (slug) {
     const { rows: courseRows } = await query("SELECT * FROM courses WHERE slug = $1 LIMIT 1", [slug]);
-
     if (!courseRows || courseRows.length === 0) return null;
     const course = courseRows[0] as Record<string, unknown>;
-    
-    const { rows: curriculumRows } = await query(
-      "SELECT * FROM course_curriculum WHERE course_id = $1 ORDER BY sort_order ASC",
-      [course.id]
-    );
-
+    const { rows: curriculumRows } = await query("SELECT * FROM course_curriculum WHERE course_id = $1 ORDER BY sort_order ASC", [course.id]);
     return normalizeCourseRow(course, normalizeCurriculumRows((curriculumRows || []) as Record<string, unknown>[]));
   }
 
-  const { rows } = await query(`SELECT ${publicCourseColumns} FROM courses ORDER BY start_date DESC`);
-
+  const { rows } = await query(`SELECT ${publicCourseColumns} FROM courses WHERE published = true ORDER BY start_date DESC`);
   return normalizeCourseRows((rows || []) as Record<string, unknown>[]);
 }
 
