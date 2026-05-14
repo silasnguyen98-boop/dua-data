@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { buildExpertPayload, normalizeExpertRow, normalizeExpertRows } from "@/lib/expert-data";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const supabase = createAdminWriteClient();
-    const { data, error } = await supabase
-      .from("experts")
-      .select("id, name, position, previous_work, avatar_url, linkedin, display_order, published");
+    const { rows } = await query(
+      "SELECT id, name, position, previous_work, avatar_url, linkedin, display_order, published FROM experts"
+    );
 
-    if (error) {
-      console.error("Error fetching experts:", error);
-      return NextResponse.json({ error: error.message || "Failed to fetch experts" }, { status: 500 });
-    }
-
-    const experts = normalizeExpertRows((data || []) as Record<string, unknown>[]).sort(
+    const experts = normalizeExpertRows(rows as Record<string, unknown>[]).sort(
       (a, b) => (a.order || 0) - (b.order || 0),
     );
     return NextResponse.json(experts, {
@@ -32,21 +26,18 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const body = await req.json();
     const payload = buildExpertPayload(body);
+    const columns = Object.keys(payload);
+    const values = Object.values(payload);
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
 
-    const { data, error } = await supabase
-      .from("experts")
-      .insert(payload)
-      .select("*")
-      .single();
+    const { rows } = await query(
+      `INSERT INTO experts (${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
+      values
+    );
 
-    if (error) {
-      console.error("Error creating expert:", error);
-      return NextResponse.json({ error: error.message || "Failed to create expert" }, { status: 500 });
-    }
-
+    const data = rows[0];
     return NextResponse.json(normalizeExpertRow(data as Record<string, unknown>), { status: 201 });
   } catch (error) {
     console.error("Error creating expert:", error);
@@ -56,7 +47,6 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const body = await req.json();
     const { id, ...data } = body;
 
@@ -64,16 +54,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const { data: existingRow, error: existingError } = await supabase
-      .from("experts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (existingError) {
-      console.error("Error loading expert before update:", existingError);
-      return NextResponse.json({ error: existingError.message || "Failed to load expert" }, { status: 500 });
-    }
+    const { rows: existingRows } = await query("SELECT * FROM experts WHERE id = $1", [id]);
+    const existingRow = existingRows[0];
 
     if (!existingRow) {
       return NextResponse.json({ error: "Expert not found" }, { status: 404 });
@@ -84,35 +66,18 @@ export async function PUT(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: updatedRows, error } = await supabase
-      .from("experts")
-      .update(payload)
-      .eq("id", id)
-      .select("*");
+    const columns = Object.keys(payload);
+    const values = Object.values(payload);
+    const setClause = columns.map((col, i) => `${col} = $${i + 2}`).join(", ");
 
-    if (error) {
-      console.error("Error updating expert:", error);
-      return NextResponse.json({ error: error.message || "Failed to update expert" }, { status: 500 });
-    }
+    const { rows: updatedRows } = await query(
+      `UPDATE experts SET ${setClause} WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
 
-    const updated = Array.isArray(updatedRows) ? updatedRows[0] : null;
+    const updated = updatedRows[0];
     if (!updated) {
-      const { data: fallbackRow, error: fallbackError } = await supabase
-        .from("experts")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (fallbackError) {
-        console.error("Error reloading updated expert:", fallbackError);
-        return NextResponse.json({ error: fallbackError.message || "Failed to load updated expert" }, { status: 500 });
-      }
-
-      if (!fallbackRow) {
-        return NextResponse.json({ error: "Expert not found after update" }, { status: 404 });
-      }
-
-      return NextResponse.json(normalizeExpertRow(fallbackRow as Record<string, unknown>));
+      return NextResponse.json({ error: "Expert not found after update" }, { status: 404 });
     }
 
     return NextResponse.json(normalizeExpertRow(updated as Record<string, unknown>));
@@ -124,7 +89,6 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -132,13 +96,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const { error } = await supabase.from("experts").delete().eq("id", id);
-
-    if (error) {
-      console.error("Error deleting expert:", error);
-      return NextResponse.json({ error: error.message || "Failed to delete expert" }, { status: 500 });
-    }
-
+    await query("DELETE FROM experts WHERE id = $1", [id]);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting expert:", error);

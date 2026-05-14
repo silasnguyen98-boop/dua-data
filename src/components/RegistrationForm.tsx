@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase-client";
 import { getAppCheckHeaders } from "@/lib/firebase-app-check";
+import { useSession } from "next-auth/react";
 
 interface Props {
   courseId: string;
@@ -32,6 +32,8 @@ export default function RegistrationForm({ courseId, courseTitle, coursePath, on
     setFormStartedAt(Date.now());
   }, []);
 
+  const { data: session, status: authStatus } = useSession();
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -48,22 +50,18 @@ export default function RegistrationForm({ courseId, courseTitle, coursePath, on
       return;
     }
 
+    if (authStatus !== "authenticated") {
+      router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token || "";
-      if (!accessToken) {
-        router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
-        return;
-      }
-
       const appCheckHeaders = await getAppCheckHeaders();
       const res = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
           ...appCheckHeaders,
         },
         body: JSON.stringify({

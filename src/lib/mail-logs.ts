@@ -1,4 +1,4 @@
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { sendMail } from "@/lib/smtp";
 import type { MailLogStatus } from "@/types/mail";
 
@@ -21,29 +21,31 @@ function toMailBody(options: SendLoggedMailOptions) {
 }
 
 async function createMailLogEntry(options: SendLoggedMailOptions, status: MailLogStatus = "pending") {
-  const supabase = createAdminWriteClient();
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("mail_logs")
-    .insert({
-      registration_id: options.registrationId || null,
-      recipient_email: normalizeText(options.recipientEmail),
-      mail_type: normalizeText(options.mailType),
-      subject: normalizeText(options.subject),
-      status,
-      error_message: null,
-      sent_at: null,
-      body: toMailBody(options),
-      created_at: now,
-    })
-    .select("*")
-    .single();
+  
+  const columns = [
+    "registration_id", "recipient_email", "mail_type", "subject", 
+    "status", "error_message", "sent_at", "body", "created_at"
+  ];
+  const values = [
+    options.registrationId || null,
+    normalizeText(options.recipientEmail),
+    normalizeText(options.mailType),
+    normalizeText(options.subject),
+    status,
+    null,
+    null,
+    toMailBody(options),
+    now
+  ];
+  const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
 
-  if (error) {
-    throw new Error(error.message || "Không thể tạo log mail");
-  }
+  const { rows } = await query(
+    `INSERT INTO mail_logs (${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
+    values
+  );
 
-  return data as Record<string, unknown>;
+  return rows[0] as Record<string, unknown>;
 }
 
 async function updateMailLogEntry(
@@ -54,22 +56,28 @@ async function updateMailLogEntry(
     sentAt: string | null;
   }>,
 ) {
-  const supabase = createAdminWriteClient();
-  const payload: Record<string, unknown> = {
-  };
+  const updates: string[] = [];
+  const values: any[] = [id];
 
   if (patch.status !== undefined) {
-    payload.status = patch.status;
+    updates.push(`status = $${values.length + 1}`);
+    values.push(patch.status);
   }
   if (patch.errorMessage !== undefined) {
-    payload.error_message = patch.errorMessage;
+    updates.push(`error_message = $${values.length + 1}`);
+    values.push(patch.errorMessage);
   }
   if (patch.sentAt !== undefined) {
-    payload.sent_at = patch.sentAt;
+    updates.push(`sent_at = $${values.length + 1}`);
+    values.push(patch.sentAt);
   }
 
-  const { error } = await supabase.from("mail_logs").update(payload).eq("id", id);
-  if (error) throw new Error(error.message || "Không thể cập nhật log mail");
+  if (updates.length === 0) return;
+
+  await query(
+    `UPDATE mail_logs SET ${updates.join(", ")} WHERE id = $1`,
+    values
+  );
 }
 
 export async function sendLoggedMail(options: SendLoggedMailOptions) {

@@ -42,12 +42,13 @@ function sortCourses(courses: Course[]): Course[] {
 }
 
 async function getCourses(): Promise<Course[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
   try {
     const res = await fetch(`${baseUrl}/api/courses`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json();
-  } catch {
+  } catch (error) {
+    console.error("Error fetching courses:", error);
     return [];
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { sendLoggedMail } from "@/lib/mail-logs";
 
 export const dynamic = "force-dynamic";
@@ -33,29 +33,23 @@ function requireMailAccess(req: NextRequest) {
 }
 
 async function loadLogs(limit = 100) {
-  const supabase = createAdminWriteClient();
-  const [logsResult, registrationsResult, coursesResult] = await Promise.all([
-    supabase
-      .from("mail_logs")
-      .select("id, registration_id, recipient_email, mail_type, subject, status, error_message, sent_at, created_at, body")
-      .order("created_at", { ascending: false })
-      .limit(limit),
-    supabase
-      .from("course_registrations")
-      .select("id, course_id, full_name, email, phone, status, created_at")
-      .order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, title"),
+  const [{ rows: logsData }, { rows: registrationsData }, { rows: coursesData }] = await Promise.all([
+    query(
+      `SELECT id, registration_id, recipient_email, mail_type, subject, status, error_message, sent_at, created_at, body 
+       FROM mail_logs 
+       ORDER BY created_at DESC 
+       LIMIT $1`,
+      [limit]
+    ),
+    query("SELECT id, course_id, full_name, email, phone, status, created_at FROM course_registrations ORDER BY created_at DESC"),
+    query("SELECT id, title FROM courses"),
   ]);
 
-  if (logsResult.error) throw logsResult.error;
-  if (registrationsResult.error) throw registrationsResult.error;
-  if (coursesResult.error) throw coursesResult.error;
-
   const courseTitleById = new Map(
-    (coursesResult.data || []).map((course) => [String(course.id), String(course.title || "")])
+    (coursesData || []).map((course) => [String(course.id), String(course.title || "")])
   );
   const registrationById = new Map(
-    (registrationsResult.data || []).map((registration) => {
+    (registrationsData || []).map((registration) => {
       const courseId = String((registration as MailLogRow).course_id || "");
       return [
         String((registration as MailLogRow).id || ""),
@@ -73,7 +67,7 @@ async function loadLogs(limit = 100) {
     })
   );
 
-  const logs = (logsResult.data || []).map((row) => {
+  const logs = (logsData || []).map((row) => {
     const registrationId = row.registration_id ? String(row.registration_id) : null;
     return {
       id: String(row.id || ""),
@@ -144,14 +138,9 @@ export async function POST(req: NextRequest) {
     let registrationId: string | null = normalizeText(body.registrationId) || null;
 
     if (logId) {
-      const supabase = createAdminWriteClient();
-      const { data: existingLog, error: existingError } = await supabase
-        .from("mail_logs")
-        .select("*")
-        .eq("id", logId)
-        .maybeSingle();
+      const { rows } = await query("SELECT * FROM mail_logs WHERE id = $1 LIMIT 1", [logId]);
+      const existingLog = rows[0];
 
-      if (existingError) throw existingError;
       if (!existingLog) {
         return NextResponse.json({ error: "Mail log not found" }, { status: 404 });
       }
@@ -209,21 +198,22 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
     }
 
-    const supabase = createAdminWriteClient();
-    const updateData: Record<string, unknown> = {
-      status,
-      updated_at: new Date().toISOString(),
-    };
+    const updates: string[] = ["status = $2", "updated_at = $3"];
+    const values: any[] = [id, status, new Date().toISOString()];
 
     if (errorMessage !== undefined) {
-      updateData.error_message = errorMessage;
+      updates.push(`error_message = $${values.length + 1}`);
+      values.push(errorMessage);
     }
     if (status === "sent") {
-      updateData.sent_at = new Date().toISOString();
+      updates.push(`sent_at = $${values.length + 1}`);
+      values.push(new Date().toISOString());
     }
 
-    const { error } = await supabase.from("mail_logs").update(updateData).eq("id", id);
-    if (error) throw error;
+    await query(
+      `UPDATE mail_logs SET ${updates.join(", ")} WHERE id = $1`,
+      values
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

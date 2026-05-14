@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import type { SaleRegistrationEntry, SaleRegistrationStatus } from "@/types/sale";
 
 export const dynamic = "force-dynamic";
@@ -67,18 +67,12 @@ function mapRegistration(
 }
 
 async function loadCourseMeta() {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("courses")
-    .select("id, slug, title, price")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
+  const { rows } = await query(
+    "SELECT id, slug, title, price FROM courses ORDER BY created_at DESC"
+  );
 
   return new Map(
-    (data || []).map((course) => [
+    (rows || []).map((course) => [
       String(course.id),
       {
         slug: String((course as Record<string, unknown>).slug || ""),
@@ -95,21 +89,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const supabase = createAdminWriteClient();
-    const [courseMeta, registrationsResult] = await Promise.all([
+    const [courseMeta, { rows: registrationsRows }] = await Promise.all([
       loadCourseMeta(),
-      supabase
-        .from("course_registrations")
-        .select("id, course_id, user_id, full_name, email, phone, facebook, note, learner_group, status, created_at, updated_at")
-        .order("created_at", { ascending: false }),
+      query(
+        "SELECT id, course_id, user_id, full_name, email, phone, facebook, note, learner_group, status, created_at, updated_at FROM course_registrations ORDER BY created_at DESC"
+      ),
     ]);
 
-    if (registrationsResult.error) {
-      console.error("GET /api/sale/registrations error:", registrationsResult.error);
-      return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 });
-    }
-
-    const rows = (registrationsResult.data || [])
+    const rows = (registrationsRows || [])
       .map((row) => {
         const courseId = String((row as Record<string, unknown>).course_id || "");
         const meta = courseMeta.get(courseId);
@@ -137,37 +124,44 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const updates: Record<string, unknown> = {};
+    const updates: string[] = ["updated_at = $2"];
+    const values: any[] = [id, new Date().toISOString()];
 
     if (body.status !== undefined) {
       if (!isValidStatus(body.status)) {
         return NextResponse.json({ error: "Invalid status" }, { status: 400 });
       }
-      updates.status = body.status;
+      updates.push(`status = $${values.length + 1}`);
+      values.push(body.status);
     }
 
-    if (body.fullName !== undefined) updates.full_name = normalizeText(body.fullName);
-    if (body.phone !== undefined) updates.phone = normalizeText(body.phone);
-    if (body.facebook !== undefined) updates.facebook = normalizeText(body.facebook);
-    if (body.note !== undefined) updates.note = normalizeText(body.note);
-    if (body.learnerGroup !== undefined) updates.learner_group = toNumber(body.learnerGroup);
-    updates.updated_at = new Date().toISOString();
-
-    const supabase = createAdminWriteClient();
-    const { data, error } = await supabase
-      .from("course_registrations")
-      .update(updates)
-      .eq("id", id)
-      .select("id, course_id, user_id, full_name, email, phone, facebook, note, learner_group, status, created_at, updated_at")
-      .maybeSingle();
-
-    if (error) {
-      console.error("PATCH /api/sale/registrations error:", error);
-      return NextResponse.json(
-        { error: error.message || "Failed to update registration", code: error.code || "", hint: error.hint || "" },
-        { status: 500 },
-      );
+    if (body.fullName !== undefined) {
+      updates.push(`full_name = $${values.length + 1}`);
+      values.push(normalizeText(body.fullName));
     }
+    if (body.phone !== undefined) {
+      updates.push(`phone = $${values.length + 1}`);
+      values.push(normalizeText(body.phone));
+    }
+    if (body.facebook !== undefined) {
+      updates.push(`facebook = $${values.length + 1}`);
+      values.push(normalizeText(body.facebook));
+    }
+    if (body.note !== undefined) {
+      updates.push(`note = $${values.length + 1}`);
+      values.push(normalizeText(body.note));
+    }
+    if (body.learnerGroup !== undefined) {
+      updates.push(`learner_group = $${values.length + 1}`);
+      values.push(toNumber(body.learnerGroup));
+    }
+
+    const { rows: updatedRows } = await query(
+      `UPDATE course_registrations SET ${updates.join(", ")} WHERE id = $1 RETURNING id, course_id, user_id, full_name, email, phone, facebook, note, learner_group, status, created_at, updated_at`,
+      values
+    );
+
+    const data = updatedRows[0];
 
     if (!data) {
       return NextResponse.json({ error: "Registration not found" }, { status: 404 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
+import { listAuthUsers } from "@/lib/auth-db";
 import {
   getDefaultNewsletterSchedule,
   getNewsletterContent,
@@ -17,57 +18,44 @@ function normalizeText(value: unknown) {
 }
 
 async function loadRecipients() {
-  const supabase = createAdminWriteClient();
-  const [settingsRes, usersRes] = await Promise.all([
-    supabase
-      .from("newsletter_recipients")
-      .select("*")
-      .eq("selected", true)
-      .eq("wants_resources", true)
-      .order("updated_at", { ascending: false }),
-    supabase.auth.admin.listUsers({ page: 1, perPage: 200 }),
+  const [settingsResult, authUsers] = await Promise.all([
+    query("SELECT * FROM newsletter_recipients WHERE selected = true AND wants_resources = true ORDER BY updated_at DESC"),
+    listAuthUsers(),
   ]);
 
-  if (settingsRes.error) throw settingsRes.error;
-  if (usersRes.error) throw usersRes.error;
-
+  const settingsData = settingsResult.rows;
   const userMap = new Map(
-    (usersRes.data.users || []).map((user) => [
+    authUsers.map((user) => [
       user.id,
       {
         email: String(user.email || ""),
-        fullName: String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || ""),
+        fullName: String(user.fullName || user.email.split("@")[0] || ""),
       },
     ]),
   );
 
-  return (settingsRes.data || [])
+  return (settingsData || [])
     .map((row) => {
-      const user = userMap.get(String(row.user_id));
+      const user = userMap.get(String((row as any).user_id));
       if (!user || !user.email) return null;
       return {
-        id: String(row.id || ""),
-        userId: String(row.user_id || ""),
+        id: String((row as any).id || ""),
+        userId: String((row as any).user_id || ""),
         email: user.email,
-        fullName: String(row.full_name || user.fullName || ""),
-        selected: Boolean(row.selected),
-        wantsResources: Boolean(row.wants_resources),
-        lastSentBatchKey: row.last_sent_batch_key ? String(row.last_sent_batch_key) : null,
-        lastSentAt: row.last_sent_at ? String(row.last_sent_at) : null,
+        fullName: String((row as any).full_name || user.fullName || ""),
+        selected: Boolean((row as any).selected),
+        wantsResources: Boolean((row as any).wants_resources),
+        lastSentBatchKey: (row as any).last_sent_batch_key ? String((row as any).last_sent_batch_key) : null,
+        lastSentAt: (row as any).last_sent_at ? String((row as any).last_sent_at) : null,
       } as NewsletterRecipient;
     })
     .filter(Boolean) as NewsletterRecipient[];
 }
 
 async function loadSchedule() {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("newsletter_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+  const { rows } = await query("SELECT * FROM newsletter_settings WHERE id = 1 LIMIT 1");
+  const data = rows[0];
 
-  if (error) throw error;
   if (!data) return getDefaultNewsletterSchedule();
 
   return {
@@ -80,21 +68,24 @@ async function loadSchedule() {
 }
 
 async function upsertBatchState(recipient: NewsletterRecipient, batchKey: string, sentAt: string) {
-  const supabase = createAdminWriteClient();
-  const { error } = await supabase.from("newsletter_recipients").upsert(
-    {
-      user_id: recipient.userId,
-      email: recipient.email,
-      full_name: recipient.fullName,
-      selected: recipient.selected,
-      wants_resources: recipient.wantsResources,
-      last_sent_batch_key: batchKey,
-      last_sent_at: sentAt,
-      updated_at: sentAt,
-    },
-    { onConflict: "user_id" },
+  await query(
+    `INSERT INTO newsletter_recipients (user_id, email, full_name, selected, wants_resources, last_sent_batch_key, last_sent_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (user_id) DO UPDATE SET
+       last_sent_batch_key = EXCLUDED.last_sent_batch_key,
+       last_sent_at = EXCLUDED.last_sent_at,
+       updated_at = EXCLUDED.updated_at`,
+    [
+      recipient.userId,
+      recipient.email,
+      recipient.fullName,
+      recipient.selected,
+      recipient.wantsResources,
+      batchKey,
+      sentAt,
+      sentAt
+    ]
   );
-  if (error) throw error;
 }
 
 export async function POST(req: NextRequest) {

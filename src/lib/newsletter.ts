@@ -1,6 +1,6 @@
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
-import { createAdminClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { sendLoggedMail } from "@/lib/mail-logs";
 import type { NewsletterSchedule } from "@/types/newsletter";
 
@@ -139,11 +139,10 @@ async function readFirebaseRows(path: string) {
 }
 
 export async function getNewsletterContent(): Promise<NewsletterContent> {
-  const supabase = createAdminClient();
-  const [resourcesRows, jobsRows, coursesRows] = await Promise.all([
+  const [resourcesRows, jobsRows, { rows: coursesData }] = await Promise.all([
     readFirebaseRows("resource"),
     readFirebaseRows("Job"),
-    supabase.from("courses").select("id, slug, title, short_description, price, published, coming_soon, is_hidden, hide_price, created_at").order("created_at", { ascending: false }),
+    query("SELECT id, slug, title, short_description, price, published, coming_soon, is_hidden, hide_price, created_at FROM courses ORDER BY created_at DESC"),
   ]);
 
   const resources = (resourcesRows as any[])
@@ -172,7 +171,6 @@ export async function getNewsletterContent(): Promise<NewsletterContent> {
       createdAt: cleanText(item.createdAt || item.created_at),
     }));
 
-  const { data: coursesData } = coursesRows;
   const courses = ((coursesData || []) as any[])
     .filter((course) => course && course.published !== false && course.is_hidden !== true)
     .sort((a, b) => new Date(String(b.created_at || 0)).getTime() - new Date(String(a.created_at || 0)).getTime())

@@ -1,22 +1,15 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { buildCoursePayload, buildCurriculumPayload } from "@/lib/course-data";
 import fs from "fs";
 import path from "path";
 
 export async function POST() {
   try {
-    const supabase = createAdminClient();
-
-    // Check if courses already exist in Supabase
-    const { data: existingCourses, error: existingError } = await supabase
-      .from("courses")
-      .select("id")
-      .limit(1);
-
-    if (existingError) {
-      return NextResponse.json({ error: existingError.message }, { status: 500 });
-    }
+    // Check if courses already exist in Postgres
+    const { rows: existingCourses } = await query(
+      "SELECT id FROM courses LIMIT 1"
+    );
 
     if (existingCourses && existingCourses.length > 0) {
       return NextResponse.json({ message: "Data already seeded", skipped: true });
@@ -24,46 +17,57 @@ export async function POST() {
 
     // Read local courses.json
     const filePath = path.join(process.cwd(), "src", "data", "courses.json");
+    if (!fs.existsSync(filePath)) {
+       return NextResponse.json({ message: "Seed file not found", skipped: true });
+    }
     const courses = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
-    const payloads = courses.map((course: Record<string, unknown>) => buildCoursePayload(course));
-    const { data: insertedCourses, error: insertError } = await supabase.from("courses").insert(payloads).select("id");
+    for (const course of courses) {
+      const normalized = buildCoursePayload(course);
+      const columns = Object.keys(normalized);
+      const values = Object.values(normalized);
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
+      const { rows } = await query(
+        `INSERT INTO courses (${columns.join(", ")}) VALUES (${placeholders}) RETURNING id`,
+        values
+      );
 
-    const curriculumRows = courses.flatMap((course: Record<string, unknown>, index: number) => {
-      const insertedCourse = insertedCourses?.[index] as Record<string, unknown> | undefined;
-      const courseId = insertedCourse?.id as string | undefined;
-      const curriculum = Array.isArray((course as Record<string, unknown>).curriculum)
-        ? ((course as Record<string, unknown>).curriculum as any)
-        : [];
-      return courseId ? buildCurriculumPayload(courseId, curriculum) : [];
-    });
-
-    if (curriculumRows.length > 0) {
-      const { error: curriculumError } = await supabase.from("course_curriculum").insert(curriculumRows);
-      if (curriculumError) {
-        return NextResponse.json({ error: curriculumError.message }, { status: 500 });
+      const courseId = rows[0]?.id;
+      const curriculum = Array.isArray(course.curriculum) ? course.curriculum : [];
+      
+      if (courseId && curriculum.length > 0) {
+        const curriculumRows = buildCurriculumPayload(courseId, curriculum);
+        for (const currRow of curriculumRows) {
+          const currCols = Object.keys(currRow);
+          const currVals = Object.values(currRow);
+          const currPlaceholders = currVals.map((_, i) => `$${i + 1}`).join(", ");
+          await query(
+            `INSERT INTO course_curriculum (${currCols.join(", ")}) VALUES (${currPlaceholders})`,
+            currVals
+          );
+        }
       }
     }
 
     // Read and seed students if they exist
     const studentsPath = path.join(process.cwd(), "src", "data", "students.json");
-    try {
-      const { db } = await import("@/lib/firebase");
-      const { set, ref } = await import("firebase/database");
-      const students = JSON.parse(fs.readFileSync(studentsPath, "utf-8"));
-      for (const student of students) {
-        await set(ref(db, `students/${student.id}`), student);
+    if (fs.existsSync(studentsPath)) {
+      try {
+        const { db } = await import("@/lib/firebase");
+        const { set, ref } = await import("firebase/database");
+        const students = JSON.parse(fs.readFileSync(studentsPath, "utf-8"));
+        for (const student of students) {
+          await set(ref(db, `students/${student.id}`), student);
+        }
+      } catch (err) {
+        console.error("Firebase seed failed:", err);
       }
-    } catch {
-      // No students file, skip
     }
 
     return NextResponse.json({ message: "Seeded successfully", count: courses.length });
   } catch (err: any) {
+    console.error("Seed error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

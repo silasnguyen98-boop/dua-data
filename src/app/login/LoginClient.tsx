@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase-client";
+import { signIn } from "next-auth/react";
 import BrandLogo from "@/components/BrandLogo";
 
 function GoogleIcon() {
@@ -19,30 +19,44 @@ function GoogleIcon() {
 export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [googleAvailable, setGoogleAvailable] = useState(true);
+  const [checkingProviders, setCheckingProviders] = useState(true);
   const searchParams = useSearchParams();
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkProviders() {
+      try {
+        const res = await fetch("/api/auth/providers", { cache: "no-store" });
+        if (!res.ok) throw new Error();
+        const providers = await res.json();
+        if (!cancelled) setGoogleAvailable(Boolean(providers?.google));
+      } catch {
+        if (!cancelled) setGoogleAvailable(false);
+      } finally {
+        if (!cancelled) setCheckingProviders(false);
+      }
+    }
+
+    void checkProviders();
+    return () => { cancelled = true; };
+  }, []);
+
   const handleGoogleLogin = async () => {
+    if (!googleAvailable) {
+      setError("Vui lòng copy Google Client ID và Secret từ Supabase sang file .env.local.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      const supabase = createClient();
       const nextTarget = searchParams.get("next") || "/";
-      const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextTarget)}`
-          : `/auth/callback?next=${encodeURIComponent(nextTarget)}`;
-
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-        },
+      await signIn("google", {
+        callbackUrl: nextTarget,
       });
-
-      if (signInError) {
-        throw signInError;
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể đăng nhập bằng Google");
       setLoading(false);
@@ -75,12 +89,18 @@ export default function LoginClient() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || checkingProviders || !googleAvailable}
             className="w-full inline-flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-sm font-semibold text-gray-800 hover:bg-gray-50 transition disabled:opacity-60"
           >
             <GoogleIcon />
-            {loading ? "Đang chuyển hướng..." : "Đăng nhập bằng Google"}
+            {loading ? "Đang chuyển hướng..." : checkingProviders ? "Đang kiểm tra..." : "Đăng nhập bằng Google"}
           </button>
+
+          {!checkingProviders && !googleAvailable && (
+            <p className="mt-4 text-xs leading-5 text-amber-700 bg-amber-50 border border-amber-100 px-4 py-3 rounded-xl">
+              Chưa có mã Google Client ID. Hãy copy từ Supabase dán vào GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET trong file .env.local rồi restart server.
+            </p>
+          )}
 
           <p className="mt-4 text-xs leading-5 text-gray-500">
             Sau khi đăng nhập, ảnh đại diện của bạn sẽ hiện ở góc phải trên thanh điều hướng.

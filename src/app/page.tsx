@@ -11,24 +11,42 @@ import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
 export const dynamic = "force-dynamic";
 
 async function getCourses(): Promise<Course[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
   try {
-    const res = await fetch(`${baseUrl}/api/courses`, { cache: "no-store" });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const res = await fetch(`${baseUrl}/api/courses`, { 
+      cache: "no-store",
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
     if (!res.ok) return [];
     return res.json();
-  } catch {
+  } catch (error) {
+    console.error("Error fetching courses:", error);
     return [];
   }
 }
 
 async function getExperts(): Promise<Expert[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3008";
   try {
-    const res = await fetch(`${baseUrl}/api/experts`, { next: { revalidate: 600 } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const res = await fetch(`${baseUrl}/api/experts`, { 
+      next: { revalidate: 600 },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
     if (!res.ok) return [];
     const experts = await res.json();
     return experts.filter((e: Expert) => e.published);
-  } catch {
+  } catch (error) {
+    console.error("Error fetching experts:", error);
     return [];
   }
 }

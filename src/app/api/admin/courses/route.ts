@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { buildCoursePayload, buildCurriculumPayload, groupCurriculumByCourseId, normalizeCourseRow, normalizeCourseRows, normalizeCurriculumRows } from "@/lib/course-data";
 
 export const dynamic = "force-dynamic";
@@ -10,48 +10,21 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const includeCurriculum = searchParams.get("includeCurriculum") === "1";
-    const supabase = createAdminWriteClient();
 
     if (!includeCurriculum) {
-      const { data, error } = await supabase
-        .from('courses')
-        .select(adminCourseColumns)
-        .order('start_date', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching courses:', error);
-        return NextResponse.json(
-          { error: error.message || 'Failed to fetch courses' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json(normalizeCourseRows((data || []) as Record<string, unknown>[]));
+      const { rows } = await query(
+        `SELECT ${adminCourseColumns} FROM courses ORDER BY start_date DESC`
+      );
+      return NextResponse.json(normalizeCourseRows((rows || []) as Record<string, unknown>[]));
     }
 
-    const [{ data, error }, { data: curriculumRows, error: curriculumError }] = await Promise.all([
-      supabase.from('courses').select('*').order('start_date', { ascending: false }),
-      supabase.from('course_curriculum').select('*').order('sort_order', { ascending: true }),
+    const [{ rows: courseRows }, { rows: curriculumRows }] = await Promise.all([
+      query("SELECT * FROM courses ORDER BY start_date DESC"),
+      query("SELECT * FROM course_curriculum ORDER BY sort_order ASC"),
     ]);
 
-    if (error) {
-      console.error('Error fetching courses:', error);
-      return NextResponse.json(
-        { error: error.message || 'Failed to fetch courses' },
-        { status: 500 }
-      );
-    }
-
-    if (curriculumError) {
-      console.error('Error fetching curriculum:', curriculumError);
-      return NextResponse.json(
-        { error: curriculumError.message || 'Failed to fetch curriculum' },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json(
-      normalizeCourseRows((data || []) as Record<string, unknown>[], groupCurriculumByCourseId((curriculumRows || []) as Record<string, unknown>[]))
+      normalizeCourseRows((courseRows || []) as Record<string, unknown>[], groupCurriculumByCourseId((curriculumRows || []) as Record<string, unknown>[]))
     );
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -64,36 +37,30 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const body = await req.json();
     const curriculum = Array.isArray(body.curriculum) ? body.curriculum : [];
     const normalized = buildCoursePayload(body);
+    const columns = Object.keys(normalized);
+    const values = Object.values(normalized);
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
 
-    const { data, error } = await supabase
-      .from('courses')
-      .insert([normalized])
-      .select('*')
-      .single();
+    const { rows } = await query(
+      `INSERT INTO courses (${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
+      values
+    );
 
-    if (error) {
-      console.error('Error creating course:', error);
-      return NextResponse.json(
-        { error: error.message || 'Failed to create course' },
-        { status: 500 }
-      );
-    }
-
+    const data = rows[0];
     const courseId = (data as Record<string, unknown>).id as string;
+    
     if (courseId && curriculum.length > 0) {
-      const { error: curriculumError } = await supabase
-        .from('course_curriculum')
-        .insert(buildCurriculumPayload(courseId, curriculum));
-
-      if (curriculumError) {
-        console.error('Error creating curriculum:', curriculumError);
-        return NextResponse.json(
-          { error: curriculumError.message || 'Failed to create curriculum' },
-          { status: 500 }
+      const curriculumRows = buildCurriculumPayload(courseId, curriculum);
+      for (const currRow of curriculumRows) {
+        const currCols = Object.keys(currRow);
+        const currVals = Object.values(currRow);
+        const currPlaceholders = currVals.map((_, i) => `$${i + 1}`).join(", ");
+        await query(
+          `INSERT INTO course_curriculum (${currCols.join(", ")}) VALUES (${currPlaceholders})`,
+          currVals
         );
       }
     }
@@ -110,7 +77,6 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const body = await req.json();
     const { id, ...data } = body;
 
@@ -118,37 +84,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const { data: existingCourseRow, error: existingCourseError } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (existingCourseError) {
-      console.error('Error loading course before update:', existingCourseError);
-      return NextResponse.json(
-        { error: existingCourseError.message || 'Failed to load course' },
-        { status: 500 }
-      );
-    }
+    const { rows: existingCourseRows } = await query("SELECT * FROM courses WHERE id = $1", [id]);
+    const existingCourseRow = existingCourseRows[0];
 
     if (!existingCourseRow) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const { data: existingCurriculumRows, error: existingCurriculumError } = await supabase
-      .from('course_curriculum')
-      .select('*')
-      .eq('course_id', id)
-      .order('sort_order', { ascending: true });
-
-    if (existingCurriculumError) {
-      console.error('Error loading curriculum before update:', existingCurriculumError);
-      return NextResponse.json(
-        { error: existingCurriculumError.message || 'Failed to load curriculum' },
-        { status: 500 }
-      );
-    }
+    const { rows: existingCurriculumRows } = await query(
+      "SELECT * FROM course_curriculum WHERE course_id = $1 ORDER BY sort_order ASC",
+      [id]
+    );
 
     const existingCurriculum = normalizeCurriculumRows((existingCurriculumRows || []) as Record<string, unknown>[]);
     const mergedCourse = {
@@ -160,73 +106,35 @@ export async function PUT(req: NextRequest) {
       ? data.curriculum
       : existingCurriculum;
 
-    const updateData = {
-      ...buildCoursePayload(mergedCourse, false),
-      updated_at: new Date().toISOString(),
-    };
+    const payload = buildCoursePayload(mergedCourse, false);
+    const columns = Object.keys(payload);
+    const values = Object.values(payload);
+    const setClause = columns.map((col, i) => `${col} = $${i + 2}`).join(", ");
 
-    const { data: updatedRows, error } = await supabase
-      .from('courses')
-      .update(updateData)
-      .eq('id', id)
-      .select('*');
+    const { rows: updatedRows } = await query(
+      `UPDATE courses SET ${setClause}, updated_at = now() WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
 
-    if (error) {
-      console.error('Error updating course:', error);
-      return NextResponse.json(
-        { error: error.message || 'Failed to update course' },
-        { status: 500 }
-      );
-    }
+    const updated = updatedRows[0];
 
     if (Object.prototype.hasOwnProperty.call(data, 'curriculum')) {
-      const { error: deleteCurriculumError } = await supabase
-        .from('course_curriculum')
-        .delete()
-        .eq('course_id', id);
-
-      if (deleteCurriculumError) {
-        console.error('Error clearing curriculum:', deleteCurriculumError);
-        return NextResponse.json(
-          { error: deleteCurriculumError.message || 'Failed to update curriculum' },
-          { status: 500 }
-        );
-      }
-
-      const { error: curriculumError } = await supabase
-        .from('course_curriculum')
-        .insert(buildCurriculumPayload(id, curriculum));
-
-      if (curriculumError) {
-        console.error('Error updating curriculum:', curriculumError);
-        return NextResponse.json(
-          { error: curriculumError.message || 'Failed to update curriculum' },
-          { status: 500 }
+      await query("DELETE FROM course_curriculum WHERE course_id = $1", [id]);
+      
+      const curriculumRows = buildCurriculumPayload(id, curriculum);
+      for (const currRow of curriculumRows) {
+        const currCols = Object.keys(currRow);
+        const currVals = Object.values(currRow);
+        const currPlaceholders = currVals.map((_, i) => `$${i + 1}`).join(", ");
+        await query(
+          `INSERT INTO course_curriculum (${currCols.join(", ")}) VALUES (${currPlaceholders})`,
+          currVals
         );
       }
     }
 
-    const updated = Array.isArray(updatedRows) ? updatedRows[0] : null;
     if (!updated) {
-      const { data: fallbackRow, error: fallbackError } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (fallbackError) {
-        console.error('Error reloading updated course:', fallbackError);
-        return NextResponse.json(
-          { error: fallbackError.message || 'Failed to load updated course' },
-          { status: 500 }
-        );
-      }
-
-      if (!fallbackRow) {
-        return NextResponse.json({ error: 'Course not found after update' }, { status: 404 });
-      }
-
-      return NextResponse.json(normalizeCourseRow(fallbackRow as Record<string, unknown>, curriculum));
+      return NextResponse.json({ error: 'Course not found after update' }, { status: 404 });
     }
 
     return NextResponse.json(normalizeCourseRow(updated as Record<string, unknown>, curriculum));
@@ -241,7 +149,6 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = createAdminWriteClient();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -249,31 +156,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const { error: deleteCurriculumError } = await supabase
-      .from('course_curriculum')
-      .delete()
-      .eq('course_id', id);
-
-    if (deleteCurriculumError) {
-      console.error('Error deleting curriculum:', deleteCurriculumError);
-      return NextResponse.json(
-        { error: deleteCurriculumError.message || 'Failed to delete curriculum' },
-        { status: 500 }
-      );
-    }
-
-    const { error } = await supabase
-      .from('courses')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting course:', error);
-      return NextResponse.json(
-        { error: error.message || 'Failed to delete course' },
-        { status: 500 }
-      );
-    }
+    await query("DELETE FROM course_curriculum WHERE course_id = $1", [id]);
+    await query("DELETE FROM courses WHERE id = $1", [id]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

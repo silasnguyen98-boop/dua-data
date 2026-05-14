@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ref, get, push, set } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { Quiz, QuizLeaderboardEntry } from "@/types/quiz";
-import { createClient } from "@supabase/supabase-js";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -47,20 +48,6 @@ function normalizeAnswers(input: any): Record<number, number> {
   }, {});
 }
 
-function createSupabaseAuthClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-}
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
@@ -85,18 +72,12 @@ export async function POST(
     }
 
     const body = await req.json().catch(() => ({}));
-    const authHeader = req.headers.get("authorization") || "";
-    const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-    if (!accessToken) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Bạn cần đăng nhập để xem kết quả" }, { status: 401 });
     }
 
-    const supabase = createSupabaseAuthClient();
-    const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
-    const user = userData.user;
-    if (userError || !user) {
-      return NextResponse.json({ error: "Bạn cần đăng nhập để xem kết quả" }, { status: 401 });
-    }
+    const user = session.user;
 
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const answers = normalizeAnswers(body.answers);
@@ -109,11 +90,7 @@ export async function POST(
       : new Date().toISOString();
     const now = new Date().toISOString();
     const participantEmail = String(user.email || "").trim();
-    const participantDisplayName = String(
-      user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        "Ẩn danh"
-    ).trim();
+    const participantDisplayName = String(user.name || "Ẩn danh").trim();
     const participantName = participantDisplayName || "Ẩn danh";
 
     const attemptRef = push(ref(db, `quiz_attempts/${params.id}`));

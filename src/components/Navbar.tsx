@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Session } from "@supabase/supabase-js";
+import { signOut, useSession } from "next-auth/react";
 import BrandLogo from "@/components/BrandLogo";
-import { createClient } from "@/lib/supabase-client";
 
 interface UpcomingCourse {
   slug: string;
@@ -13,22 +12,15 @@ interface UpcomingCourse {
   startDate: string;
 }
 
-type SessionUser = {
-  id: string;
-  email: string | null;
-  name: string;
-  avatarUrl: string;
-};
-
 export default function Navbar() {
   const pathname = usePathname();
   const [upcoming, setUpcoming] = useState<UpcomingCourse | null>(null);
   const [daysLeft, setDaysLeft] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const authLoading = status === "loading";
 
   useEffect(() => {
     fetch("/api/courses")
@@ -49,25 +41,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setAuthMenuOpen(false);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && !target.closest("[data-auth-menu]")) {
@@ -80,13 +53,13 @@ export default function Navbar() {
   }, []);
 
   const userDisplayName = useMemo(() => {
-    const metadata = session?.user.user_metadata || {};
-    return metadata.full_name || metadata.name || session?.user.email?.split("@")[0] || "Tài khoản";
+    const name = session?.user?.name;
+    const email = session?.user?.email || "";
+    return name || email.split("@")[0] || "Tài khoản";
   }, [session]);
 
   const userAvatarUrl = useMemo(() => {
-    const metadata = session?.user.user_metadata || {};
-    return metadata.avatar_url || metadata.picture || metadata.picture_url || "";
+    return session?.user?.image || "";
   }, [session]);
 
   const userInitial = useMemo(() => {
@@ -95,11 +68,8 @@ export default function Navbar() {
   }, [userDisplayName]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setSession(null);
+    await signOut({ callbackUrl: "/" });
     setAuthMenuOpen(false);
-    window.location.href = "/";
   };
 
   const navLinks = [
@@ -181,7 +151,7 @@ export default function Navbar() {
               <div className="hidden md:block relative" data-auth-menu>
                 {authLoading ? (
                   <div className="h-10 w-24 rounded-full bg-gray-100 animate-pulse" />
-                ) : session ? (
+                ) : session?.user ? (
                   <>
                     <button
                       type="button"
@@ -223,7 +193,7 @@ export default function Navbar() {
                           </span>
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-gray-900">{userDisplayName}</p>
-                            <p className="truncate text-xs text-gray-500">{session.user.email}</p>
+                            <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
                           </div>
                         </div>
                         <button
@@ -284,7 +254,7 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="px-4 pt-3">
-                {session ? (
+                {session?.user ? (
                   <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
                     <div className="flex items-center gap-3">
                       <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-sm font-bold text-white">
@@ -300,7 +270,7 @@ export default function Navbar() {
                       </span>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-gray-900">{userDisplayName}</p>
-                        <p className="truncate text-xs text-gray-500">{session.user.email}</p>
+                        <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
                       </div>
                     </div>
                     <button

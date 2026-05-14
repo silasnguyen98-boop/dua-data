@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { listAuthUsers } from "@/lib/auth-db";
+import { query } from "@/lib/db";
 import {
   getDefaultNewsletterSchedule,
   getNewsletterContent,
@@ -37,51 +38,15 @@ function requireNewsletterAccess(req: NextRequest) {
   return Boolean(role && ALLOWED_ROLES.has(role));
 }
 
-async function listAuthUsers() {
-  const supabase = createAdminWriteClient();
-  const users: Array<{ id: string; email: string; fullName: string }> = [];
-  const perPage = 100;
-
-  for (let page = 1; page <= 10; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-
-    const batch = data.users || [];
-    batch.forEach((user) => {
-      users.push({
-        id: user.id,
-        email: String(user.email || ""),
-        fullName:
-          String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "").trim(),
-      });
-    });
-
-    if (batch.length < perPage) break;
-  }
-
-  return users;
-}
-
 async function listRecipientSettings() {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("newsletter_recipients")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+  const { rows } = await query("SELECT * FROM newsletter_recipients ORDER BY updated_at DESC");
+  return rows || [];
 }
 
 async function loadSchedule() {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("newsletter_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+  const { rows } = await query("SELECT * FROM newsletter_settings WHERE id = 1 LIMIT 1");
+  const data = rows[0];
 
-  if (error) throw error;
   if (!data) return getDefaultNewsletterSchedule();
 
   return {
@@ -97,27 +62,28 @@ async function loadSchedule() {
 }
 
 async function upsertSchedule(schedule: NewsletterSchedule) {
-  const supabase = createAdminWriteClient();
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("newsletter_settings")
-    .upsert(
-      {
-        id: 1,
-        enabled: schedule.enabled,
-        day_of_week: schedule.dayOfWeek,
-        hour: schedule.hour,
-        minute: schedule.minute,
-        timezone: schedule.timezone || "Asia/Ho_Chi_Minh",
-        updated_at: now,
-      },
-      { onConflict: "id" },
-    )
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data;
+  const { rows } = await query(
+    `INSERT INTO newsletter_settings (id, enabled, day_of_week, hour, minute, timezone, updated_at)
+     VALUES (1, $1, $2, $3, $4, $5, $6)
+     ON CONFLICT (id) DO UPDATE SET
+       enabled = EXCLUDED.enabled,
+       day_of_week = EXCLUDED.day_of_week,
+       hour = EXCLUDED.hour,
+       minute = EXCLUDED.minute,
+       timezone = EXCLUDED.timezone,
+       updated_at = EXCLUDED.updated_at
+     RETURNING *`,
+    [
+      schedule.enabled,
+      schedule.dayOfWeek,
+      schedule.hour,
+      schedule.minute,
+      schedule.timezone || "Asia/Ho_Chi_Minh",
+      now
+    ]
+  );
+  return rows[0];
 }
 
 function mergeRecipients(
@@ -144,33 +110,36 @@ function mergeRecipients(
 }
 
 async function upsertRecipientSetting(recipient: NewsletterRecipient) {
-  const supabase = createAdminWriteClient();
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("newsletter_recipients")
-    .upsert(
-      {
-        user_id: recipient.userId,
-        email: recipient.email,
-        full_name: recipient.fullName,
-        selected: recipient.selected,
-        wants_resources: recipient.wantsResources,
-        last_sent_batch_key: recipient.lastSentBatchKey || null,
-        last_sent_at: recipient.lastSentAt || null,
-        updated_at: now,
-      },
-      { onConflict: "user_id" },
-    )
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data;
+  const { rows } = await query(
+    `INSERT INTO newsletter_recipients (user_id, email, full_name, selected, wants_resources, last_sent_batch_key, last_sent_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (user_id) DO UPDATE SET
+       email = EXCLUDED.email,
+       full_name = EXCLUDED.full_name,
+       selected = EXCLUDED.selected,
+       wants_resources = EXCLUDED.wants_resources,
+       last_sent_batch_key = EXCLUDED.last_sent_batch_key,
+       last_sent_at = EXCLUDED.last_sent_at,
+       updated_at = EXCLUDED.updated_at
+     RETURNING *`,
+    [
+      recipient.userId,
+      recipient.email,
+      recipient.fullName,
+      recipient.selected,
+      recipient.wantsResources,
+      recipient.lastSentBatchKey || null,
+      recipient.lastSentAt || null,
+      now
+    ]
+  );
+  return rows[0];
 }
 
 async function loadRecipientMap() {
   const settings = await listRecipientSettings();
-  return settings.reduce<Record<string, Record<string, unknown>>>((acc, row) => {
+  return (settings as any[]).reduce<Record<string, Record<string, unknown>>>((acc, row) => {
     acc[String(row.user_id)] = row as Record<string, unknown>;
     return acc;
   }, {});

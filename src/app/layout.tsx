@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/components/AuthProvider";
 import FloatingBanner from "@/components/FloatingBanner";
 import TopBanner from "@/components/TopBanner";
 
@@ -18,7 +19,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]"><TopBanner />{children}<FloatingBanner /></body>
+      <body className="min-h-screen bg-white font-[family-name:var(--font-inter)]">
+        <AuthProvider>
+          <TopBanner />
+          {children}
+          <FloatingBanner />
+        </AuthProvider>
+      </body>
     </html>
   );
 }

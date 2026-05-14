@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import { listMailTemplates, upsertMailTemplate } from "@/lib/mail-template";
 
 export const dynamic = "force-dynamic";
@@ -36,17 +36,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const supabase = createAdminWriteClient();
-    const coursesResult = await supabase
-      .from("courses")
-      .select("id, title, slug, course_type, price, hide_price")
-      .order("created_at", { ascending: false });
-
-    if (coursesResult.error) throw coursesResult.error;
+    const { rows: courses } = await query(
+      "SELECT id, title, slug, course_type, price, hide_price FROM courses ORDER BY created_at DESC"
+    );
 
     return NextResponse.json({
       templates: await listMailTemplates(),
-      courses: coursesResult.data || [],
+      courses: courses || [],
     });
   } catch (err) {
     console.error("GET /api/admin/mail-templates error:", err);
@@ -93,15 +89,12 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const id = normalizeText(body.id);
-    const supabase = createAdminWriteClient();
-    const { error } = await supabase
-      .from("course_mail_templates")
-      .update({
-        is_active: body.isActive === undefined ? true : Boolean(body.isActive),
-      })
-      .eq("id", id);
+    
+    await query(
+      "UPDATE course_mail_templates SET is_active = $1, updated_at = now() WHERE id = $2",
+      [body.isActive === undefined ? true : Boolean(body.isActive), id]
+    );
 
-    if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("PATCH /api/admin/mail-templates error:", err);
@@ -121,9 +114,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    const supabase = createAdminWriteClient();
-    const { error } = await supabase.from("course_mail_templates").delete().eq("id", id);
-    if (error) throw error;
+    await query("DELETE FROM course_mail_templates WHERE id = $1", [id]);
 
     return NextResponse.json({ success: true });
   } catch (err) {

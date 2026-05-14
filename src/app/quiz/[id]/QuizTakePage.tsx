@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Quiz, QuizAttemptRecord, QuizLeaderboardEntry } from "@/types/quiz";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { createClient } from "@/lib/supabase-client";
-import type { Session } from "@supabase/supabase-js";
+import { signIn, useSession } from "next-auth/react";
 
 type QuizState = "not-started" | "in-progress" | "completed";
 
@@ -99,8 +98,8 @@ export default function QuizTakePage({
   const [leaderboard, setLeaderboard] = useState<QuizLeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState("");
-  const [authSession, setAuthSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { data: authSession, status: authStatus } = useSession();
+  const authLoading = authStatus === "loading";
   const timeoutHandledRef = useRef(false);
   const leaderboardLoadedRef = useRef(false);
   const authAutoSyncRef = useRef(false);
@@ -113,8 +112,8 @@ export default function QuizTakePage({
   const questions = normalizeQuestions(quiz.questions);
   const total = questions.length;
   const currentQ = questions[currentIndex];
-  const isLoggedIn = Boolean(authSession);
-  const authDisplayName = authSession?.user.user_metadata?.full_name || authSession?.user.user_metadata?.name || "Tài khoản";
+  const isLoggedIn = authStatus === "authenticated";
+  const authDisplayName = authSession?.user.name || authSession?.user.email?.split("@")[0] || "Tài khoản";
   const authEmail = authSession?.user.email || "";
 
   function handleSelectAnswer(optionIndex: number) {
@@ -151,22 +150,8 @@ export default function QuizTakePage({
   }
 
   useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getSession().then(({ data }) => {
-      setAuthSession(data.session);
-      setAuthLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setAuthSession(nextSession);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    // Auth session is provided by next-auth useSession.
+  }, [authStatus]);
 
   function handleSubmit(byTimeout = false) {
     if (submitted) return;
@@ -208,12 +193,11 @@ export default function QuizTakePage({
     document.cookie = cookieParts.join("; ");
   }
 
-  async function saveAttemptToLeaderboard(sourceAttempt: QuizAttemptRecord, session: Session) {
+  async function saveAttemptToLeaderboard(sourceAttempt: QuizAttemptRecord) {
     setSavingAttempt(true);
     setLeaderboardError("");
 
     try {
-      const accessToken = session.access_token;
       const nextAttempt: QuizAttemptRecord = {
         ...sourceAttempt,
         participantName: authDisplayName || sourceAttempt.participantName || "Ẩn danh",
@@ -225,7 +209,6 @@ export default function QuizTakePage({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           answers: nextAttempt.answers,
@@ -276,7 +259,7 @@ export default function QuizTakePage({
       return;
     }
 
-    void saveAttemptToLeaderboard(nextAttempt, authSession);
+    void saveAttemptToLeaderboard(nextAttempt);
   }
 
   async function loadLeaderboard() {
@@ -334,18 +317,15 @@ export default function QuizTakePage({
     if (state !== "completed" || resultsVisible || authAutoSyncRef.current) return;
 
     authAutoSyncRef.current = true;
-    void saveAttemptToLeaderboard(
-      {
-        answers: initialAttempt?.answers ?? answers,
-        submittedByTimeout: Boolean(initialAttempt?.submittedByTimeout),
-        submittedAt: initialAttempt?.submittedAt || submittedAt || new Date().toISOString(),
-        participantName: authDisplayName || "",
-        participantEmail: authEmail || undefined,
-        participantDisplayName: authDisplayName || undefined,
-        elapsedSeconds: Number(initialAttempt?.elapsedSeconds ?? attemptElapsedSeconds),
-      },
-      authSession
-    );
+    void saveAttemptToLeaderboard({
+      answers: initialAttempt?.answers ?? answers,
+      submittedByTimeout: Boolean(initialAttempt?.submittedByTimeout),
+      submittedAt: initialAttempt?.submittedAt || submittedAt || new Date().toISOString(),
+      participantName: authDisplayName || "",
+      participantEmail: authEmail || undefined,
+      participantDisplayName: authDisplayName || undefined,
+      elapsedSeconds: Number(initialAttempt?.elapsedSeconds ?? attemptElapsedSeconds),
+    });
   }, [
     answers,
     attemptElapsedSeconds,
@@ -521,8 +501,7 @@ export default function QuizTakePage({
                                   submittedAt: submittedAt || new Date().toISOString(),
                                   participantName: authEmail || authDisplayName || "",
                                   elapsedSeconds: attemptElapsedSeconds,
-                                },
-                                authSession
+                                }
                               );
                             }
                           }}

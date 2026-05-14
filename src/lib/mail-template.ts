@@ -1,4 +1,4 @@
-import { createAdminWriteClient } from "@/lib/supabase-server";
+import { query } from "@/lib/db";
 import type { Course } from "@/types/course";
 import type { MailTemplateRecord } from "@/types/mail-template";
 
@@ -151,15 +151,12 @@ export function buildMailTemplateContext(params: {
 }
 
 export async function loadActiveMailTemplate(courseId: string) {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("course_mail_templates")
-    .select("*")
-    .eq("course_id", courseId)
-    .eq("is_active", true)
-    .maybeSingle();
+  const { rows } = await query(
+    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true LIMIT 1",
+    [courseId]
+  );
+  const data = rows[0];
 
-  if (error) throw error;
   if (!data) return null;
 
   return {
@@ -174,17 +171,10 @@ export async function loadActiveMailTemplate(courseId: string) {
 }
 
 export async function listMailTemplates() {
-  const supabase = createAdminWriteClient();
-  const [{ data: templates, error: templateError }, { data: courses, error: courseError }] = await Promise.all([
-    supabase
-      .from("course_mail_templates")
-      .select("id, course_id, subject, body, is_active, created_at")
-      .order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, title, slug, category, course_type, price, hide_price").order("created_at", { ascending: false }),
+  const [{ rows: templates }, { rows: courses }] = await Promise.all([
+    query("SELECT id, course_id, subject, body, is_active, created_at FROM course_mail_templates ORDER BY created_at DESC"),
+    query("SELECT id, title, slug, category, course_type, price, hide_price FROM courses ORDER BY created_at DESC"),
   ]);
-
-  if (templateError) throw templateError;
-  if (courseError) throw courseError;
 
   const courseById = new Map((courses || []).map((course: Record<string, unknown>) => [String(course.id || ""), course]));
 
@@ -215,74 +205,45 @@ export async function upsertMailTemplate(input: {
   body: string;
   isActive: boolean;
 }) {
-  const supabase = createAdminWriteClient();
-
   if (input.id) {
-    const { data, error } = await supabase
-      .from("course_mail_templates")
-      .update({
-        course_id: input.courseId,
-        subject: input.subject,
-        body: input.body,
-        is_active: input.isActive,
-      })
-      .eq("id", input.id)
-      .select("*")
-      .single();
-
-    if (error) throw error;
-    return data;
+    const { rows } = await query(
+      `UPDATE course_mail_templates 
+       SET course_id = $2, subject = $3, body = $4, is_active = $5, updated_at = now() 
+       WHERE id = $1 RETURNING *`,
+      [input.id, input.courseId, input.subject, input.body, input.isActive]
+    );
+    return rows[0];
   }
 
-  const { data: existing, error: existingError } = await supabase
-    .from("course_mail_templates")
-    .select("id")
-    .eq("course_id", input.courseId)
-    .maybeSingle();
-
-  if (existingError) throw existingError;
+  const { rows: existingRows } = await query(
+    "SELECT id FROM course_mail_templates WHERE course_id = $1 LIMIT 1",
+    [input.courseId]
+  );
+  const existing = existingRows[0];
 
   if (existing?.id) {
-    const { data, error } = await supabase
-      .from("course_mail_templates")
-      .update({
-        subject: input.subject,
-        body: input.body,
-        is_active: input.isActive,
-      })
-      .eq("id", existing.id)
-      .select("*")
-      .single();
-
-    if (error) throw error;
-    return data;
+    const { rows } = await query(
+      `UPDATE course_mail_templates 
+       SET subject = $2, body = $3, is_active = $4, updated_at = now() 
+       WHERE id = $1 RETURNING *`,
+      [existing.id, input.subject, input.body, input.isActive]
+    );
+    return rows[0];
   }
 
-  const { data, error } = await supabase
-    .from("course_mail_templates")
-    .insert({
-      course_id: input.courseId,
-      subject: input.subject,
-      body: input.body,
-      is_active: input.isActive,
-    })
-    .select("*")
-    .single();
+  const { rows } = await query(
+    `INSERT INTO course_mail_templates (course_id, subject, body, is_active) 
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [input.courseId, input.subject, input.body, input.isActive]
+  );
 
-  if (error) throw error;
-  return data;
+  return rows[0];
 }
 
 export async function findMailTemplateForCourse(courseId: string) {
-  const supabase = createAdminWriteClient();
-  const { data, error } = await supabase
-    .from("course_mail_templates")
-    .select("*")
-    .eq("course_id", courseId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) return null;
-  return data as Record<string, unknown>;
+  const { rows } = await query(
+    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true LIMIT 1",
+    [courseId]
+  );
+  return rows[0] as Record<string, unknown> | null;
 }
