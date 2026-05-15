@@ -58,7 +58,7 @@ export default function ApplyJobForm({ jobId, jobTitle, applicationLink }: Apply
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-3">Hồ sơ đã được gửi!</h3>
         <p className="text-gray-600 mb-6">
-          Dứa Data sẽ liên hệ với bạn sớm nhất khi có cơ hội phù hợp.
+          DUA Edu sẽ liên hệ với bạn sớm nhất khi có cơ hội phù hợp.
         </p>
         <button
           onClick={handleReset}
@@ -74,7 +74,7 @@ export default function ApplyJobForm({ jobId, jobTitle, applicationLink }: Apply
     <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-100">
       <h2 className="text-xl font-bold text-gray-900 mb-2">Ứng tuyển ngay</h2>
       <p className="text-sm text-gray-500 mb-6">
-        Để lại thông tin để Dứa Data kết nối bạn với nhà tuyển dụng
+        Để lại thông tin để DUA Edu kết nối bạn với nhà tuyển dụng
       </p>
 
       {error && (

@@ -40,11 +40,11 @@ function formatDate(dateStr: string) {
 }
 
 const categories = [
-  { key: "all", label: "Tất cả" },
-  { key: "Tutorial", label: "Hướng dẫn" },
-  { key: "Template", label: "Template" },
-  { key: "Tool", label: "Công cụ" },
-  { key: "Article", label: "Bài viết" },
+  { key: "all", label: "Tất cả", icon: "💎" },
+  { key: "Tutorial", label: "Hướng dẫn", icon: "📚" },
+  { key: "Template", label: "Template", icon: "📑" },
+  { key: "Tool", label: "Công cụ", icon: "🛠️" },
+  { key: "Article", label: "Bài viết", icon: "✍️" },
 ];
 
 function getPageHref(page: number) {
@@ -63,124 +63,118 @@ export default async function ResourcePage({
   const paginatedResources = resources.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-sans selection:bg-emerald-500 selection:text-white">
       <Navbar />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-emerald-50" />
-        <div className="absolute top-10 right-20 w-72 h-72 bg-green-200/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-64 h-64 bg-emerald-100/30 rounded-full blur-3xl" />
+      {/* HERO SECTION - MODERNIZED */}
+      <section className="relative pt-32 pb-24 overflow-hidden bg-slate-50/50">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] -z-10 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-green-500/5 rounded-full blur-[80px] -z-10" />
 
-        <div className="relative max-w-5xl mx-auto px-4 py-16 md:py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-            Resource Hub
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-display">
-            Tài nguyên <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">DUA Edu</span>
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 leading-[1.1] tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            Kho tài nguyên <br />
+            <span className="text-emerald-500">Thực chiến.</span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Tổng hợp các bài viết, template, công cụ và hướng dẫn miễn phí từ cộng đồng DUA Edu
+          <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium mb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+            Tổng hợp các bài viết chuyên sâu, template tối ưu và công cụ đắc lực
+            giúp bạn nâng tầm kỹ năng Dữ liệu mỗi ngày.
           </p>
-          <LeadResourceModal />
+
+          <div className="flex justify-center animate-in fade-in zoom-in duration-1000 delay-500">
+            <LeadResourceModal />
+          </div>
         </div>
       </section>
 
-      {/* Content */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
+      {/* CONTENT GRID */}
+      <section className="max-w-7xl mx-auto px-6 pb-32 pt-20">
         {resources.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Sắp ra mắt!</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              Đội ngũ DUA Edu đang chuẩn bị những tài nguyên chất lượng. Hãy quay lại sau nhé!
-            </p>
+          <div className="flex flex-col items-center justify-center py-40 bg-slate-50 rounded-[48px] border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-4xl shadow-sm mb-6 animate-bounce">📦</div>
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Đang kiện toàn kho báu...</h3>
+            <p className="text-slate-500 font-medium">Những tài liệu chất lượng nhất đang được chuẩn bị, quay lại sau bạn nhé!</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {paginatedResources.map((resource, i) => (
                 <Link
                   key={resource.id}
                   href={`/resource/${resource.slug}`}
-                  className="group bg-white rounded-3xl overflow-hidden shadow-md shadow-green-100/40 border border-green-50 hover:shadow-2xl hover:shadow-green-100/60 hover:-translate-y-2 transition-all duration-500 flex flex-col animate-fade-in-up"
-                  style={{ animationDelay: `${i * 0.1}s` }}
+                  className="group bg-white rounded-[40px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:border-emerald-100 hover:-translate-y-2 transition-all duration-500 flex flex-col h-full animate-in fade-in slide-in-from-bottom-8 duration-700"
+                  style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  {/* Image */}
-                  {resource.imageUrl ? (
-                    <div className="h-48 relative overflow-hidden">
+                  {/* Image Section */}
+                  <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
+                    {resource.imageUrl ? (
                       <img
                         src={resource.imageUrl}
                         alt={resource.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                      <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
-                        {resource.category}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="h-48 bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center relative">
-                      <svg className="w-16 h-16 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      <span className="absolute top-3 left-3 text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full shadow">
-                        {resource.category}
-                      </span>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl opacity-30">📄</div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+                    <span className="absolute top-4 left-4 text-[9px] font-black uppercase tracking-[0.2em] bg-white/90 backdrop-blur-md text-slate-900 px-3 py-1.5 rounded-full shadow-sm border border-white/20">
+                      {resource.category}
+                    </span>
+                  </div>
 
-                  {/* Content */}
-                  <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-gray-900 group-hover:text-green-600 transition-colors duration-300 mb-2 text-[17px] leading-snug line-clamp-2">
+                  {/* Content Section */}
+                  <div className="p-8 flex flex-col flex-1">
+                    <h3 className="text-xl font-black text-slate-900 group-hover:text-emerald-600 transition-colors duration-300 mb-4 leading-tight tracking-tight line-clamp-2">
                       {resource.title}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-3 leading-relaxed">
+                    <p className="text-sm text-slate-500 mb-8 line-clamp-3 leading-relaxed font-medium">
                       {resource.summary}
                     </p>
 
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100/80">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                    <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-black">
                           {resource.author.charAt(0)}
                         </div>
-                        <span>{resource.author}</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{formatDate(resource.createdAt)}</span>
+                        <div className="flex flex-col">
+                           <span className="text-[10px] font-black text-slate-900 leading-none mb-1">{resource.author}</span>
+                           <span className="text-[9px] font-bold text-slate-400 leading-none">{formatDate(resource.createdAt)}</span>
+                        </div>
                       </div>
-                      <svg className="w-4 h-4 text-green-500 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                      <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center transition-all group-hover:bg-emerald-500 group-hover:text-white">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
 
+            {/* PAGINATION */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-12">
+              <div className="flex items-center justify-center gap-4 mt-20">
                 <Link
                   href={getPageHref(page - 1)}
                   aria-disabled={page === 1}
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-medium transition ${
+                  className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all ${
                     page === 1
-                      ? "border-green-100 text-green-300 pointer-events-none"
-                      : "border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                      ? "opacity-20 pointer-events-none"
+                      : "border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"
                   }`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </Link>
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <Link
                     key={p}
                     href={getPageHref(p)}
-                    aria-current={p === page ? "page" : undefined}
-                    className={`w-10 h-10 rounded-xl text-sm font-medium flex items-center justify-center transition ${
+                    className={`w-12 h-12 rounded-2xl text-sm font-black flex items-center justify-center transition-all ${
                       p === page
-                        ? "bg-green-600 text-white shadow-lg shadow-green-200"
-                        : "border border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                        ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20"
+                        : "border border-slate-50 text-slate-400 hover:border-emerald-200 hover:text-emerald-600"
                     }`}
                   >
                     {p}
@@ -190,21 +184,19 @@ export default async function ResourcePage({
                 <Link
                   href={getPageHref(page + 1)}
                   aria-disabled={page === totalPages}
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-medium transition ${
+                  className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all ${
                     page === totalPages
-                      ? "border-green-100 text-green-300 pointer-events-none"
-                      : "border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800"
+                      ? "opacity-20 pointer-events-none"
+                      : "border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"
                   }`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </Link>
               </div>
             )}
 
-            <p className="text-center text-xs text-gray-400 mt-4">
-              Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, resources.length)} trong tổng số {resources.length} tài nguyên
+            <p className="text-center text-[10px] font-black text-slate-300 uppercase tracking-widest mt-12">
+               Page {page} of {totalPages} — Total {resources.length} resources
             </p>
           </>
         )}

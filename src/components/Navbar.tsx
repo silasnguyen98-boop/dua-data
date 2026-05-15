@@ -40,6 +40,8 @@ export default function Navbar() {
       .catch(() => {});
   }, []);
 
+
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
@@ -87,35 +89,50 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Upcoming Course Banner */}
+      {/* Upcoming Course — Collapsible Side-Tab Notification */}
       {upcoming && !dismissed && (
-        <div className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2210%22%20r%3D%221%22%20fill%3D%22white%22%20opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')] opacity-50" />
-          <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-center gap-4 relative text-sm">
-            <span className="inline-flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-              </span>
-              <span className="font-semibold">Sắp khai giảng!</span>
-            </span>
-            <span className="hidden sm:inline">
-              <strong>{upcoming.title}</strong> — khai giảng trong{" "}
-              <span className="bg-white/20 px-2 py-0.5 rounded font-bold">{daysLeft} ngày</span>
-            </span>
-            <Link
-              href={`/courses/${upcoming.slug}`}
-              className="bg-white text-green-700 px-4 py-1 rounded-full text-xs font-bold hover:bg-green-50 transition shadow-sm"
-            >
-              Xem ngay
-            </Link>
-            <button
-              onClick={() => setDismissed(true)}
-              className="absolute right-4 text-white/70 hover:text-white transition"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-[100] group">
+          <div className="relative flex items-start h-[180px]">
+            {/* The Trigger Tab (Expands Vertically) */}
+            <div className="w-14 bg-orange-500 rounded-r-2xl group-hover:rounded-r-none shadow-lg flex flex-col items-center pt-5 cursor-pointer relative z-30 transition-all duration-500 ease-in-out h-16 group-hover:h-[180px] overflow-hidden">
+              <div className="relative flex items-center justify-center mb-3">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                </span>
+              </div>
+
+              {/* Vertical Text — Slides up on hover */}
+              <div className="transition-all duration-700 delay-100 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100">
+                <span className="[writing-mode:vertical-lr] text-[11px] font-black text-white uppercase tracking-[0.25em] whitespace-nowrap">
+                  Còn {daysLeft} ngày
+                </span>
+              </div>
+            </div>
+
+            {/* The Main Content Card — Slides out horizontally */}
+            <div className="h-[180px] bg-white shadow-[20px_10px_60px_rgba(0,0,0,0.15)] border border-gray-100 rounded-r-[32px] flex items-center overflow-hidden transition-all duration-700 ease-in-out w-0 group-hover:w-[380px] sm:group-hover:w-[420px] relative -ml-14 z-10">
+              <div className="min-w-[380px] sm:min-w-[420px] pl-20 pr-10 py-4 flex items-center">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Sắp khai giảng</span>
+                  </div>
+                  <h4 className="text-[14px] font-black text-gray-900 line-clamp-2 leading-tight tracking-tight mb-4 pr-4">
+                    {upcoming.title}
+                  </h4>
+                  <Link
+                    href={`/courses/${upcoming.slug}`}
+                    className="inline-flex items-center gap-2 bg-orange-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    Xem chi tiết
+                  </Link>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       )}
@@ -156,9 +173,9 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => setAuthMenuOpen((value) => !value)}
-                      className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-sm hover:border-green-300 hover:shadow transition"
+                      className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-sm hover:border-emerald-300 hover:shadow transition"
                     >
-                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-xs font-bold text-white">
+                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-xs font-bold text-white">
                         {userAvatarUrl ? (
                           <img
                             src={userAvatarUrl}
@@ -180,7 +197,7 @@ export default function Navbar() {
                     {authMenuOpen && (
                       <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl shadow-gray-200/70">
                         <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2">
-                          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-sm font-bold text-white">
+                          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-sm font-bold text-white">
                             {userAvatarUrl ? (
                               <img
                                 src={userAvatarUrl}
@@ -209,7 +226,7 @@ export default function Navbar() {
                 ) : (
                   <Link
                     href={`/login?next=${encodeURIComponent(pathname)}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 transition"
+                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 transition"
                   >
                     <svg className="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
                       <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.655 32.659 29.348 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.956 3.043l5.657-5.657C34.041 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"/>
@@ -247,7 +264,7 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={`block py-3 px-4 text-sm font-medium ${
-                    isActive(link.href) ? "text-green-700 bg-green-50" : "text-gray-600 hover:bg-gray-50"
+                    isActive(link.href) ? "text-green-700 bg-emerald-50" : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   {link.label}
@@ -257,7 +274,7 @@ export default function Navbar() {
                 {session?.user ? (
                   <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-emerald-500 text-sm font-bold text-white">
+                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-sm font-bold text-white">
                         {userAvatarUrl ? (
                           <img
                             src={userAvatarUrl}

@@ -21,7 +21,7 @@ export default function StudentsView() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"online_paid" | "online_free" | "elearning">("online_paid");
-  
+
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [startDate, setStartDate] = useState("");
@@ -52,33 +52,25 @@ export default function StudentsView() {
     }
   };
 
-  const filteredData = useMemo(() => {
+  // 1. First, apply filters that are GLOBAL to all tabs (Time + Search)
+  const baseFilteredData = useMemo(() => {
     let data = students;
 
-    // 1. Tab Filter
-    data = data.filter((s) => {
-      if (activeTab === "elearning") return s.courseType === "elearning";
-      if (s.courseType !== "online") return false;
-      if (activeTab === "online_paid") return s.price > 0;
-      if (activeTab === "online_free") return s.price === 0;
-      return false;
-    });
-
-    // 2. Search Filter
+    // Search Filter
     if (search) {
       const s = search.toLowerCase();
-      data = data.filter(st => 
-        st.fullName.toLowerCase().includes(s) || 
-        st.email.toLowerCase().includes(s) || 
+      data = data.filter(st =>
+        st.fullName.toLowerCase().includes(s) ||
+        st.email.toLowerCase().includes(s) ||
         st.phone.includes(s) ||
         st.courseName.toLowerCase().includes(s)
       );
     }
 
-    // 3. Time Filter
+    // Time Filter
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
-    
+
     if (timeFilter === "today") {
       data = data.filter(s => s.registeredAt.startsWith(todayStr));
     } else if (timeFilter === "week") {
@@ -98,13 +90,25 @@ export default function StudentsView() {
     }
 
     return data;
-  }, [students, activeTab, timeFilter, startDate, endDate, search]);
+  }, [students, timeFilter, startDate, endDate, search]);
 
-  const stats = {
-    online_paid: students.filter((s) => s.courseType === "online" && s.price > 0).length,
-    online_free: students.filter((s) => s.courseType === "online" && s.price === 0).length,
-    elearning: students.filter((s) => s.courseType === "elearning").length,
-  };
+  // 2. Calculate Stats based on the base filtered data
+  const stats = useMemo(() => ({
+    online_paid: baseFilteredData.filter((s) => s.courseType === "online" && s.price > 0).length,
+    online_free: baseFilteredData.filter((s) => s.courseType === "online" && s.price === 0).length,
+    elearning: baseFilteredData.filter((s) => s.courseType === "elearning").length,
+  }), [baseFilteredData]);
+
+  // 3. Final Tab-specific filter for the table
+  const filteredData = useMemo(() => {
+    return baseFilteredData.filter((s) => {
+      if (activeTab === "elearning") return s.courseType === "elearning";
+      if (s.courseType !== "online") return false;
+      if (activeTab === "online_paid") return s.price > 0;
+      if (activeTab === "online_free") return s.price === 0;
+      return false;
+    });
+  }, [baseFilteredData, activeTab]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -125,8 +129,8 @@ export default function StudentsView() {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Tìm tên, email, sđt..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -136,7 +140,7 @@ export default function StudentsView() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button 
+          <button
             onClick={fetchStudents}
             className="p-3 bg-white border border-slate-200 hover:bg-slate-50 rounded-2xl transition-all shadow-sm active:scale-95"
           >
@@ -175,15 +179,15 @@ export default function StudentsView() {
           <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-left-4 duration-500">
              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Khoảng ngày</span>
             <div className="flex items-center gap-3">
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="px-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10"
               />
               <span className="text-slate-300 font-bold">→</span>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="px-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10"
@@ -204,8 +208,8 @@ export default function StudentsView() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-3 ${
-              activeTab === tab.id 
-                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50" 
+              activeTab === tab.id
+                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             }`}
           >
@@ -276,7 +280,7 @@ export default function StudentsView() {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <a 
+                        <a
                           href={`tel:${st.phone}`}
                           onClick={(e) => e.stopPropagation()}
                           className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-90 shadow-sm shadow-green-100"
@@ -284,7 +288,7 @@ export default function StudentsView() {
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                         </a>
-                        <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2 border border-slate-100 rounded-xl hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm active:scale-95">
+                        <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2 border border-slate-100 rounded-xl hover:bg-slate-900 hover:text-white hover:border-slate-900 hover:shadow-lg hover:shadow-slate-200/50 transition-all shadow-sm active:scale-95 hover:-translate-y-0.5">
                           Chi tiết
                         </button>
                       </div>
@@ -295,7 +299,7 @@ export default function StudentsView() {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
@@ -303,14 +307,14 @@ export default function StudentsView() {
               Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} / {filteredData.length} kết quả
             </p>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => p - 1)}
                 className="p-2.5 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
               >
                 <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
               </button>
-              
+
               <div className="flex items-center gap-1.5 px-2">
                 {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
                   let pageNum = i + 1;
@@ -318,14 +322,14 @@ export default function StudentsView() {
                     pageNum = currentPage - 3 + i + 1;
                   }
                   if (pageNum > totalPages) return null;
-                  
+
                   return (
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
                       className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
-                        currentPage === pageNum 
-                          ? "bg-green-600 text-white shadow-lg shadow-green-200" 
+                        currentPage === pageNum
+                          ? "bg-green-600 text-white shadow-lg shadow-green-200"
                           : "border border-slate-100 hover:bg-white text-slate-500"
                       }`}
                     >
@@ -335,7 +339,7 @@ export default function StudentsView() {
                 })}
               </div>
 
-              <button 
+              <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(p => p + 1)}
                 className="p-2.5 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
@@ -350,7 +354,7 @@ export default function StudentsView() {
       {/* Detail Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setSelectedStudent(null)}
           />
@@ -367,7 +371,7 @@ export default function StudentsView() {
                   </span>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedStudent(null)}
                 className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl hover:bg-slate-100 transition-all active:scale-90"
               >
@@ -407,14 +411,14 @@ export default function StudentsView() {
               </div>
 
               <div className="flex items-center gap-3">
-                <a 
+                <a
                   href={`tel:${selectedStudent.phone}`}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 text-white rounded-2xl font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  LIÊN HỆ HỖ TRỢ
+                  LIÊN HỆ TƯ VẤN
                 </a>
-                <button 
+                <button
                   onClick={() => setSelectedStudent(null)}
                   className="px-8 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all active:scale-95"
                 >

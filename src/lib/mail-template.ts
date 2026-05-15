@@ -84,14 +84,14 @@ export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateCont
       <div style="max-width:720px;margin:0 auto;padding:32px 16px;">
         <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:28px;overflow:hidden;box-shadow:0 12px 40px rgba(15,23,42,.08);">
           <div style="background:linear-gradient(135deg,#166534,#10b981);padding:28px 32px;color:#ffffff;">
-            <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;opacity:.9;">Dứa Data</div>
+            <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;opacity:.9;">DUA Edu</div>
             <h1 style="margin:10px 0 0;font-size:28px;line-height:1.2;">${safeCourse || "Xác nhận thông tin đăng ký"}</h1>
-            <p style="margin:10px 0 0;font-size:15px;opacity:.92;">Mail xác nhận từ Dứa Data</p>
+            <p style="margin:10px 0 0;font-size:15px;opacity:.92;">Mail xác nhận từ DUA Edu</p>
           </div>
 
           <div style="padding:32px;">
             <p style="margin:0 0 16px;font-size:16px;line-height:1.7;">Chào <strong>${safeName}</strong>,</p>
-            <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#475569;">Dứa đã nhận được thông tin đăng ký khóa học <strong>${safeCourse}</strong>.</p>
+            <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#475569;">DUA Edu đã nhận được thông tin đăng ký khóa học <strong>${safeCourse}</strong>.</p>
 
             <div style="border:1px solid #e5e7eb;border-radius:22px;padding:24px;background:#fbfdff;margin:24px 0;">
               ${bodyHtml}
@@ -207,8 +207,8 @@ export async function upsertMailTemplate(input: {
 }) {
   if (input.id) {
     const { rows } = await query(
-      `UPDATE course_mail_templates 
-       SET course_id = $2, subject = $3, body = $4, is_active = $5, updated_at = now() 
+      `UPDATE course_mail_templates
+       SET course_id = $2, subject = $3, body = $4, is_active = $5, updated_at = now()
        WHERE id = $1 RETURNING *`,
       [input.id, input.courseId, input.subject, input.body, input.isActive]
     );
@@ -223,8 +223,8 @@ export async function upsertMailTemplate(input: {
 
   if (existing?.id) {
     const { rows } = await query(
-      `UPDATE course_mail_templates 
-       SET subject = $2, body = $3, is_active = $4, updated_at = now() 
+      `UPDATE course_mail_templates
+       SET subject = $2, body = $3, is_active = $4, updated_at = now()
        WHERE id = $1 RETURNING *`,
       [existing.id, input.subject, input.body, input.isActive]
     );
@@ -232,7 +232,7 @@ export async function upsertMailTemplate(input: {
   }
 
   const { rows } = await query(
-    `INSERT INTO course_mail_templates (course_id, subject, body, is_active) 
+    `INSERT INTO course_mail_templates (course_id, subject, body, is_active)
      VALUES ($1, $2, $3, $4) RETURNING *`,
     [input.courseId, input.subject, input.body, input.isActive]
   );

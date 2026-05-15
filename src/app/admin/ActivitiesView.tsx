@@ -101,8 +101,8 @@ export default function ActivitiesView() {
 
     if (search) {
       const s = search.toLowerCase();
-      data = data.filter(item => 
-        (item.title || "").toLowerCase().includes(s) || 
+      data = data.filter(item =>
+        (item.title || "").toLowerCase().includes(s) ||
         (item.company || "").toLowerCase().includes(s) ||
         (item.category || "").toLowerCase().includes(s)
       );
@@ -163,14 +163,14 @@ export default function ActivitiesView() {
       jobs: "/api/jobs",
       community: "/api/activities"
     };
-    
+
     const method = editingItem.id ? "PUT" : "POST";
-    
+
     // Auto-slug for resources if missing
     if (activeTab === "resources" && !editingItem.slug) {
       editingItem.slug = slugify(editingItem.title);
     }
-    
+
     try {
       const res = await fetch(apiMap[activeTab], {
         method: method,
@@ -198,8 +198,8 @@ export default function ActivitiesView() {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Tìm kiếm nội dung..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -209,7 +209,7 @@ export default function ActivitiesView() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button 
+          <button
             onClick={openAddModal}
             className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-2xl font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95"
           >
@@ -230,8 +230,8 @@ export default function ActivitiesView() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-3 ${
-              activeTab === tab.id 
-                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50" 
+              activeTab === tab.id
+                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             }`}
           >
@@ -301,21 +301,21 @@ export default function ActivitiesView() {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => { setEditingItem(item); setIsModalOpen(true); }}
                           className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all"
                           title="Sửa"
                         >
                           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                         </button>
-                         <button 
+                         <button
                           onClick={() => window.open(activeTab === 'resources' ? `/resource/${item.slug}` : activeTab === 'jobs' ? `/job` : `/community`, '_blank')}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                           title="Xem"
                         >
                           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(item.id)}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                           title="Xóa"
@@ -335,7 +335,7 @@ export default function ActivitiesView() {
       {/* Unified Comprehensive Modal with Rich Text */}
       {isModalOpen && editingItem && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => { setIsModalOpen(false); setEditingItem(null); }}
           />
@@ -347,7 +347,7 @@ export default function ActivitiesView() {
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Cập nhật đầy đủ thông tin nội dung lên hệ thống.</p>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => { setIsModalOpen(false); setEditingItem(null); }}
                 className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl hover:bg-slate-100 transition-all"
@@ -360,8 +360,8 @@ export default function ActivitiesView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề nội dung *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={editingItem.title}
                     onChange={(e) => setEditingItem({...editingItem, title: e.target.value})}
@@ -373,8 +373,8 @@ export default function ActivitiesView() {
                   <>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Slug (URL)</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.slug}
                         onChange={(e) => setEditingItem({...editingItem, slug: e.target.value})}
                         placeholder="Để trống để tự tạo từ tiêu đề"
@@ -383,8 +383,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Danh mục</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.category}
                         onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -392,8 +392,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tác giả</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.author}
                         onChange={(e) => setEditingItem({...editingItem, author: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -406,8 +406,8 @@ export default function ActivitiesView() {
                   <>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Công ty *</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         required
                         value={editingItem.company}
                         onChange={(e) => setEditingItem({...editingItem, company: e.target.value})}
@@ -416,8 +416,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Địa điểm</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.location}
                         onChange={(e) => setEditingItem({...editingItem, location: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -425,8 +425,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mức lương</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.salary}
                         onChange={(e) => setEditingItem({...editingItem, salary: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -434,8 +434,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Link ứng tuyển</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={editingItem.applicationLink}
                         onChange={(e) => setEditingItem({...editingItem, applicationLink: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -448,7 +448,7 @@ export default function ActivitiesView() {
                   <>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cộng đồng *</label>
-                      <select 
+                      <select
                         value={editingItem.community}
                         onChange={(e) => setEditingItem({...editingItem, community: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner appearance-none"
@@ -459,8 +459,8 @@ export default function ActivitiesView() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày diễn ra</label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         value={editingItem.eventDate?.split('T')[0] || ""}
                         onChange={(e) => setEditingItem({...editingItem, eventDate: e.target.value})}
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-inner"
@@ -472,8 +472,8 @@ export default function ActivitiesView() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Link ảnh (Image URL)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingItem.imageUrl}
                   onChange={(e) => setEditingItem({...editingItem, imageUrl: e.target.value})}
                   placeholder="https://example.com/image.jpg"
@@ -483,7 +483,7 @@ export default function ActivitiesView() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mô tả ngắn *</label>
-                <textarea 
+                <textarea
                   required
                   value={editingItem.summary}
                   onChange={(e) => setEditingItem({...editingItem, summary: e.target.value})}
@@ -494,7 +494,7 @@ export default function ActivitiesView() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Nội dung chi tiết *</label>
-                <RichTextEditor 
+                <RichTextEditor
                   value={editingItem.content}
                   onChange={(content) => setEditingItem({...editingItem, content})}
                   placeholder="Nhập nội dung chi tiết bài viết..."
@@ -505,8 +505,8 @@ export default function ActivitiesView() {
 
               <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-[22px] border border-slate-100 shadow-inner">
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={editingItem.published}
                     onChange={(e) => setEditingItem({...editingItem, published: e.target.checked})}
                     className="h-6 w-6 rounded-lg border-slate-300 text-green-600 focus:ring-green-500 transition-all"
@@ -516,7 +516,7 @@ export default function ActivitiesView() {
               </div>
 
               <div className="pt-4 flex items-center gap-3">
-                <button 
+                <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-[22px] font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95 disabled:opacity-50"
@@ -530,7 +530,7 @@ export default function ActivitiesView() {
                     </>
                   )}
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setEditingItem(null); }}
                   className="px-8 py-4 bg-slate-100 text-slate-600 rounded-[22px] font-black text-sm hover:bg-slate-200 transition-all active:scale-95"

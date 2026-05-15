@@ -1,10 +1,14 @@
 "use client";
 
-import { initializeAppCheck, getToken, ReCaptchaV3Provider, type AppCheck } from "firebase/app-check";
-import { ReCaptchaEnterpriseProvider } from "firebase/app-check";
-import { app } from "./firebase";
+// Firebase App Check is disabled locally to avoid opening Firebase connections
+// during normal page usage. Keep this module as a no-op so existing forms can
+// submit without requiring Firebase client initialization.
 
-let appCheckInstance: AppCheck | null = null;
+// import { initializeAppCheck, getToken, ReCaptchaV3Provider, type AppCheck } from "firebase/app-check";
+// import { ReCaptchaEnterpriseProvider } from "firebase/app-check";
+// import { app } from "./firebase";
+
+// let appCheckInstance: AppCheck | null = null;
 
 function getSiteKey() {
   return process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY || "";
@@ -15,7 +19,7 @@ function getProviderType() {
 }
 
 export function isAppCheckEnabled() {
-  return Boolean(getSiteKey());
+  return false;
 }
 
 export function getAppCheckTokenHeaderName() {
@@ -23,26 +27,28 @@ export function getAppCheckTokenHeaderName() {
 }
 
 export async function getAppCheckHeaders() {
-  const siteKey = getSiteKey();
-  if (!siteKey || typeof window === "undefined") {
-    return {};
-  }
+  return {};
 
-  if (!appCheckInstance) {
-    const providerType = getProviderType();
-    const provider =
-      providerType === "enterprise"
-        ? new ReCaptchaEnterpriseProvider(siteKey)
-        : new ReCaptchaV3Provider(siteKey);
-
-    appCheckInstance = initializeAppCheck(app, {
-      provider,
-      isTokenAutoRefreshEnabled: true,
-    });
-  }
-
-  const tokenResponse = await getToken(appCheckInstance, false);
-  return {
-    [getAppCheckTokenHeaderName()]: tokenResponse.token,
-  };
+  // const siteKey = getSiteKey();
+  // if (!siteKey || typeof window === "undefined") {
+  //   return {};
+  // }
+  //
+  // if (!appCheckInstance) {
+  //   const providerType = getProviderType();
+  //   const provider =
+  //     providerType === "enterprise"
+  //       ? new ReCaptchaEnterpriseProvider(siteKey)
+  //       : new ReCaptchaV3Provider(siteKey);
+  //
+  //   appCheckInstance = initializeAppCheck(app, {
+  //     provider,
+  //     isTokenAutoRefreshEnabled: true,
+  //   });
+  // }
+  //
+  // const tokenResponse = await getToken(appCheckInstance, false);
+  // return {
+  //   [getAppCheckTokenHeaderName()]: tokenResponse.token,
+  // };
 }

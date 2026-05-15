@@ -73,9 +73,9 @@ export default function ShortlinksView() {
   const filtered = useMemo(() => {
     if (!search) return shortlinks;
     const s = search.toLowerCase();
-    return shortlinks.filter(l => 
-      l.title.toLowerCase().includes(s) || 
-      l.url.toLowerCase().includes(s) || 
+    return shortlinks.filter(l =>
+      l.title.toLowerCase().includes(s) ||
+      l.url.toLowerCase().includes(s) ||
       l.code.toLowerCase().includes(s)
     );
   }, [shortlinks, search]);
@@ -93,8 +93,8 @@ export default function ShortlinksView() {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Tìm kiếm link..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -104,7 +104,7 @@ export default function ShortlinksView() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-2xl font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95"
           >
@@ -168,7 +168,7 @@ export default function ShortlinksView() {
                         <code className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg font-mono text-xs font-bold">
                           {link.code}
                         </code>
-                        <button 
+                        <button
                           onClick={() => {
                             navigator.clipboard.writeText(`${window.location.origin}/s/${link.code}`);
                             // Optional: add a toast here
@@ -185,14 +185,14 @@ export default function ShortlinksView() {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => window.open(`/s/${link.code}`, '_blank')}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                           title="Mở link"
                         >
                           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDeleteLink(link.id)}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                           title="Xóa link"
@@ -212,14 +212,14 @@ export default function ShortlinksView() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setShowAddModal(false)}
           />
           <form onSubmit={handleAddLink} className="relative bg-white w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
             <div className="p-8 pb-0 flex items-center justify-between">
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Tạo Shortlink mới</h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
                 className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl hover:bg-slate-100 transition-all"
@@ -231,8 +231,8 @@ export default function ShortlinksView() {
             <div className="p-8 space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề (Ghi nhớ)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   placeholder="Ví dụ: Link Landing Page Khóa học A"
                   value={newLink.title}
@@ -243,8 +243,8 @@ export default function ShortlinksView() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Link gốc (URL)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   placeholder="https://example.com/very-long-url..."
                   value={newLink.url}
@@ -254,7 +254,7 @@ export default function ShortlinksView() {
               </div>
 
               <div className="pt-4 flex items-center gap-3">
-                <button 
+                <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-[22px] font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95 disabled:opacity-50"
@@ -268,7 +268,7 @@ export default function ShortlinksView() {
                     </>
                   )}
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   className="px-8 py-4 bg-slate-100 text-slate-600 rounded-[22px] font-black text-sm hover:bg-slate-200 transition-all active:scale-95"

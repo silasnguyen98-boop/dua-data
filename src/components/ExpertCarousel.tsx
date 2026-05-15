@@ -57,53 +57,53 @@ export default function ExpertCarousel({ experts }: { experts: Expert[] }) {
                 {slide.map((expert) => (
                   <div
                     key={expert.id}
-className="w-full max-w-[260px] min-h-[330px] bg-white rounded-2xl border border-green-100 shadow-lg shadow-green-100/40 p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col"
-               >
-                    <div className="flex justify-center mb-4">
+                    className="flex min-h-[280px] w-full max-w-[260px] flex-col rounded-[32px] border border-emerald-100 bg-white p-6 text-center shadow-sm shadow-emerald-100/50 transition hover:border-emerald-200 hover:shadow-md"
+                  >
+                    <div className="mb-4 flex justify-center">
                       {expert.avatarUrl ? (
                         <img
                           src={expert.avatarUrl}
                           alt={expert.name}
-                          className="w-24 h-24 rounded-full object-cover border-4 border-green-100 shadow-md"
+                          className="h-20 w-20 rounded-full border border-emerald-100 object-cover shadow-sm"
                         />
                       ) : (
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-green-100 shadow-md">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-100 bg-gradient-to-br from-emerald-500 to-emerald-400 text-2xl font-bold text-white shadow-sm">
                           {expert.name.charAt(0)}
                         </div>
                       )}
                     </div>
 
-                    <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-                      {expert.name}
+                    <h3 className="line-clamp-2 text-lg font-bold text-gray-950">
+                      {expert.name === "Dứa Data" ? "DUA Edu" : expert.name}
                     </h3>
 
-                    <p className="text-sm font-medium text-green-600 mt-1 line-clamp-2">
+                    <p className="mt-1 line-clamp-2 text-sm font-bold uppercase tracking-wider text-emerald-600">
                       {expert.position}
                     </p>
 
                     {expert.previousWork && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                      <p className="mt-2 line-clamp-2 text-sm leading-5 text-gray-400 font-light">
                         {expert.previousWork}
                       </p>
                     )}
 
                     <div className="mt-auto pt-4">
-  {expert.linkedin ? (
-    <a
-      href={expert.linkedin}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-green-200/60 transition hover:bg-green-700 hover:shadow-lg"
-    >
-      LinkedIn
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H8M17 7v9" />
-      </svg>
-    </a>
-  ) : (
-    <div className="h-10" />
-  )}
-</div>
+                      {expert.linkedin ? (
+                        <a
+                          href={expert.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-200 hover:bg-emerald-100"
+                        >
+                          LinkedIn
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H8M17 7v9" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <div className="h-9" />
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -117,7 +117,7 @@ className="w-full max-w-[260px] min-h-[330px] bg-white rounded-2xl border border
           <button
             type="button"
             onClick={goPrev}
-            className="absolute left-0 top-1/2 -translate-y-1/2 hidden md:flex w-10 h-10 items-center justify-center rounded-full bg-white border border-green-100 shadow-lg text-green-700 hover:bg-green-50 transition"
+            className="absolute left-0 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-emerald-100 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-50 md:flex"
             aria-label="Chuyên gia trước"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +128,7 @@ className="w-full max-w-[260px] min-h-[330px] bg-white rounded-2xl border border
           <button
             type="button"
             onClick={goNext}
-            className="absolute right-0 top-1/2 -translate-y-1/2 hidden md:flex w-10 h-10 items-center justify-center rounded-full bg-white border border-green-100 shadow-lg text-green-700 hover:bg-green-50 transition"
+            className="absolute right-0 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-emerald-100 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-50 md:flex"
             aria-label="Chuyên gia tiếp theo"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,8 +144,8 @@ className="w-full max-w-[260px] min-h-[330px] bg-white rounded-2xl border border
                 onClick={() => setCurrentSlide(index)}
                 className={`h-2.5 rounded-full transition-all ${
                   currentSlide === index
-                    ? "w-8 bg-green-600"
-                    : "w-2.5 bg-green-200 hover:bg-green-300"
+                    ? "w-8 bg-emerald-600"
+                    : "w-2.5 bg-emerald-200 hover:bg-emerald-300"
                 }`}
                 aria-label={`Đi tới slide ${index + 1}`}
               />

@@ -67,9 +67,9 @@ export default function LeadsView() {
     let data = leads.filter(l => l.source === activeTab);
     if (search) {
       const s = search.toLowerCase();
-      data = data.filter(l => 
-        l.fullName.toLowerCase().includes(s) || 
-        l.email.toLowerCase().includes(s) || 
+      data = data.filter(l =>
+        l.fullName.toLowerCase().includes(s) ||
+        l.email.toLowerCase().includes(s) ||
         (l.phone && l.phone.includes(s))
       );
     }
@@ -90,8 +90,8 @@ export default function LeadsView() {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Tìm kiếm tiềm năng..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -101,7 +101,7 @@ export default function LeadsView() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button 
+          <button
             onClick={fetchLeads}
             className="p-3 bg-white border border-slate-200 hover:bg-slate-50 rounded-2xl transition-all shadow-sm active:scale-95"
             title="Tải lại dữ liệu"
@@ -123,8 +123,8 @@ export default function LeadsView() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-3 ${
-              activeTab === tab.id 
-                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50" 
+              activeTab === tab.id
+                ? "bg-white text-green-700 shadow-lg shadow-slate-200/50"
                 : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
             }`}
           >
@@ -217,14 +217,14 @@ export default function LeadsView() {
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {lead.phone && (
-                          <a 
+                          <a
                             href={`tel:${lead.phone}`}
                             className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm active:scale-95"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                           </a>
                         )}
-                        <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2 border border-slate-100 rounded-xl hover:bg-slate-50 hover:text-slate-600 transition-all">
+                        <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2 border border-slate-100 rounded-xl hover:bg-slate-900 hover:text-white hover:border-slate-900 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95 hover:-translate-y-0.5">
                           Chi tiết
                         </button>
                       </div>

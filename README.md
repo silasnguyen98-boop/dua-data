@@ -1,4 +1,4 @@
-# Dứa Data — Duadata.net
+# DUA Edu — Duadata.net
 
 ## Dev
 

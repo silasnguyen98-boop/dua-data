@@ -208,14 +208,14 @@ function renderList(items: NewsletterContentItem[]) {
 
 export function buildNewsletterEmail(payload: NewsletterEmailPayload) {
   const dateLabel = getFriendlyDate();
-  const subject = `Dứa Data Letter - ${dateLabel}`;
+  const subject = `DUA Edu Letter - ${dateLabel}`;
   const baseUrl = getBaseUrl();
   const safeName = escapeHtml(payload.fullName || "bạn");
 
   const text = [
     `Chào ${payload.fullName || "bạn"},`,
     "",
-    `Đây là bản tin Dứa Data cập nhật cho ${dateLabel}.`,
+    `Đây là bản tin DUA Edu cập nhật cho ${dateLabel}.`,
     "",
     "Tài nguyên mới:",
     ...payload.content.resources.map((item) => `- ${item.title}: ${item.url}`),
@@ -226,18 +226,18 @@ export function buildNewsletterEmail(payload: NewsletterEmailPayload) {
     "Khóa học mới:",
     ...payload.content.courses.map((item) => `- ${item.title}: ${item.url}`),
     "",
-    "Cảm ơn bạn đã đồng hành cùng Dứa Data.",
+    "Cảm ơn bạn đã đồng hành cùng DUA Edu.",
     "",
-    "Dứa Data",
+    "DUA Edu",
   ].join("\n");
 
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a">
       <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden">
         <div style="padding:28px 32px;background:linear-gradient(135deg,#0f172a,#065f46);color:#fff">
-          <p style="margin:0 0 8px;text-transform:uppercase;letter-spacing:.18em;font-size:12px;color:#a7f3d0">Dứa Data Letter</p>
+          <p style="margin:0 0 8px;text-transform:uppercase;letter-spacing:.18em;font-size:12px;color:#a7f3d0">DUA Edu Letter</p>
           <h2 style="margin:0;font-size:28px;line-height:1.25">Chào ${safeName}, đây là bản tin mới nhất</h2>
-          <p style="margin:12px 0 0;color:#d1fae5">Cập nhật nhanh các tài nguyên, việc làm và khóa học mới từ Dứa Data.</p>
+          <p style="margin:12px 0 0;color:#d1fae5">Cập nhật nhanh các tài nguyên, việc làm và khóa học mới từ DUA Edu.</p>
         </div>
 
         <div style="padding:32px">
@@ -252,7 +252,7 @@ export function buildNewsletterEmail(payload: NewsletterEmailPayload) {
           </div>
 
           <div style="margin-bottom:20px">
-            <h3 style="margin:0 0 12px;font-size:20px">Khóa học mới từ Dứa</h3>
+            <h3 style="margin:0 0 12px;font-size:20px">Khóa học mới từ DUA Edu</h3>
             <table style="width:100%;border-collapse:collapse">${renderList(payload.content.courses)}</table>
           </div>
 

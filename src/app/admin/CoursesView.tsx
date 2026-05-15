@@ -140,7 +140,7 @@ export default function CoursesView() {
 
   const handleEdit = (course: Course) => {
     setEditing(course);
-    const { id, ...rest } = JSON.parse(JSON.stringify(course)); 
+    const { id, ...rest } = JSON.parse(JSON.stringify(course));
     setForm(rest);
     setShowForm(true);
     setEditingPhaseIndex(null);
@@ -313,7 +313,7 @@ export default function CoursesView() {
             </svg>
             Làm mới
           </button>
-          <button 
+          <button
             onClick={handleNew}
             className="bg-green-600 text-white px-6 py-2.5 rounded-2xl font-black text-sm hover:bg-green-700 transition-all shadow-xl shadow-green-100 flex items-center gap-2"
           >
@@ -334,7 +334,7 @@ export default function CoursesView() {
             <button onClick={fetchCourses} className="text-xs uppercase tracking-widest font-black hover:underline">Thử lại ngay</button>
           </div>
         )}
-        
+
         <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full text-left">
             <thead>
@@ -370,7 +370,7 @@ export default function CoursesView() {
                 <tr key={course.id} className="group hover:bg-slate-50/50 transition-all duration-300">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 rounded-3xl bg-slate-100 overflow-hidden border border-slate-100 shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-500">
+                      <div className="h-16 w-28 rounded-2xl bg-slate-100 overflow-hidden border border-slate-100 shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-500">
                         {course.imageUrl ? (
                           <img src={course.imageUrl} className="h-full w-full object-cover" alt="" />
                         ) : (
@@ -416,16 +416,16 @@ export default function CoursesView() {
                   </td>
                   <td className="px-8 py-6 text-right relative">
                     <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => handleEdit(course)} 
+                      <button
+                        onClick={() => handleEdit(course)}
                         className="h-10 px-4 rounded-xl bg-blue-50 text-blue-600 text-xs font-black hover:bg-blue-600 hover:text-white transition-all duration-300 flex items-center gap-2"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         SỬA
                       </button>
-                      
+
                       <div className="relative">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === course.id ? null : course.id); }}
                           className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${activeMenu === course.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
                         >
@@ -497,7 +497,7 @@ export default function CoursesView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase ml-1">Tiêu đề khóa học *</label>
-                    <input 
+                    <input
                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-medium outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
                       value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                       placeholder="Ví dụ: Data Analysis Professional"
@@ -505,7 +505,7 @@ export default function CoursesView() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase ml-1">Đường dẫn (Slug)</label>
-                    <input 
+                    <input
                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-medium outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
                       value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })}
                       placeholder="Ví dụ: data-analysis-pro"
@@ -514,7 +514,7 @@ export default function CoursesView() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase ml-1">Mô tả ngắn</label>
-                  <input 
+                  <input
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-medium outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
                     value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
                   />
@@ -555,7 +555,7 @@ export default function CoursesView() {
                   <div className="h-8 w-1.5 bg-purple-500 rounded-full"></div>
                   <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Lộ trình học tập</h3>
                 </div>
-                
+
                 <div className="space-y-4">
                   {form.curriculum.map((item, i) => (
                     <div key={i} className="space-y-4">
@@ -619,7 +619,7 @@ export default function CoursesView() {
                       )}
                     </div>
                   ))}
-                  
+
                   {/* Add New Phase Section */}
                   {editingPhaseIndex === null && (
                     <div className="bg-green-50/30 border border-green-100 rounded-[32px] p-8 space-y-4">

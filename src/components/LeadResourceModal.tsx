@@ -19,7 +19,7 @@ export default function LeadResourceModal() {
     setError("");
 
     if (!form.fullName || !form.email || !form.role || !form.resourceType) {
-      setError("Vui lòng điền đầy đủ thông tin");
+      setError("Vui lòng điền đầy đủ thông tin để Dứa gửi tài liệu nhé!");
       return;
     }
 
@@ -34,147 +34,151 @@ export default function LeadResourceModal() {
       if (res.ok) {
         setSuccess(true);
       } else {
-        setError(data.error || "Gửi thất bại, vui lòng thử lại");
+        setError(data.error || "Gửi thất bại, vui lòng thử lại sau ít phút");
       }
     } catch {
-      setError("Lỗi kết nối, vui lòng thử lại");
+      setError("Lỗi kết nối, hãy kiểm tra lại mạng của bạn nhé!");
     }
     setSubmitting(false);
   }
 
   function handleClose() {
     setOpen(false);
-    setSuccess(false);
-    setError("");
-    setForm({ fullName: "", email: "", role: "", resourceType: "" });
+    setTimeout(() => {
+        setSuccess(false);
+        setError("");
+        setForm({ fullName: "", email: "", role: "", resourceType: "" });
+    }, 300);
   }
 
   return (
     <>
-      {/* CTA Button */}
+      {/* CTA Button - PREMIUM STYLE */}
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 bg-green-700 text-white font-semibold px-8 py-4 rounded-full shadow-lg shadow-green-200 hover:bg-green-800 hover:shadow-xl hover:shadow-green-300 transition-all duration-300 text-lg mt-6"
+        className="px-12 py-5 border-2 border-emerald-500 text-emerald-600 font-black text-sm rounded-2xl hover:bg-emerald-50 transition-all hover:scale-105 active:scale-95 mt-6"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
         Nhận tài nguyên miễn phí
       </button>
 
-      {/* Modal */}
+      {/* Modal - REDESIGNED */}
       {open && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={handleClose}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={handleClose} />
+
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+            {/* Header decoration */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20" />
+
             {success ? (
-              <div className="p-8 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+              <div className="p-12 text-center space-y-8">
+                <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                  <span className="text-5xl">✨</span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Cảm ơn bạn!</h3>
-                <p className="text-gray-600 leading-relaxed mb-6">
-                  Chúng tôi sẽ gửi tài nguyên đến email của bạn sớm nhất.
-                </p>
+                <div className="space-y-4">
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">Tuyệt vời!</h3>
+                  <p className="text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+                    Tài liệu sẽ sớm hạ cánh xuống hòm thư <span className="text-emerald-600 font-black">{form.email}</span> của bạn.
+                  </p>
+                </div>
                 <button
                   onClick={handleClose}
-                  className="bg-green-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-green-700 transition-all"
+                  className="w-full py-5 bg-slate-900 text-white font-black rounded-2xl transition hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-900/10"
                 >
-                  Đóng
+                  Sẵn sàng khám phá 🚀
                 </button>
               </div>
             ) : (
               <>
-                <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-6 rounded-t-3xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Nhận tài nguyên miễn phí</h3>
-                      <p className="text-green-100 text-sm mt-1">Điền thông tin để nhận tài liệu từ DUA Edu</p>
-                    </div>
-                    <button onClick={handleClose} className="text-white/70 hover:text-white text-2xl font-light">×</button>
+                <div className="p-10 pb-0 flex justify-between items-start">
+                  <div className="space-y-2">
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">Tài liệu Thực chiến</h3>
+                    <p className="text-slate-400 font-medium">Để lại lời nhắn, Dứa gửi quà ngay!</p>
                   </div>
+                  <button onClick={handleClose} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 text-left">
+                <form onSubmit={handleSubmit} className="p-10 space-y-6">
                   {error && (
-                    <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+                    <div className="bg-red-50 text-red-600 text-[11px] font-black uppercase tracking-widest px-6 py-4 rounded-2xl border border-red-100 flex items-center gap-3">
+                      <span className="text-lg">⚠️</span>
                       {error}
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Họ tên <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                      placeholder="Nguyễn Văn A"
-                      value={form.fullName}
-                      onChange={e => setForm({ ...form, fullName: e.target.value })}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Họ tên</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
+                        placeholder="Nguyễn Văn A"
+                        value={form.fullName}
+                        onChange={e => setForm({ ...form, fullName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Email</label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
+                        placeholder="dua@edu.vn"
+                        value={form.email}
+                        onChange={e => setForm({ ...form, email: e.target.value })}
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                      placeholder="email@example.com"
-                      value={form.email}
-                      onChange={e => setForm({ ...form, email: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Đang là <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white"
-                      value={form.role}
-                      onChange={e => setForm({ ...form, role: e.target.value })}
-                    >
-                      <option value="">-- Chọn --</option>
-                      <option value="Sinh viên">Sinh viên</option>
-                      <option value="Người đi làm">Người đi làm</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Tài liệu muốn nhận <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white"
-                      value={form.resourceType}
-                      onChange={e => setForm({ ...form, resourceType: e.target.value })}
-                    >
-                      <option value="">-- Chọn --</option>
-                      <option value="Cơ bản">Cơ bản</option>
-                      <option value="Chuyên sâu">Chuyên sâu</option>
-                      <option value="Cả hai">Cả hai</option>
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Nghề nghiệp</label>
+                      <select
+                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all outline-none appearance-none"
+                        value={form.role}
+                        onChange={e => setForm({ ...form, role: e.target.value })}
+                      >
+                        <option value="">-- Chọn --</option>
+                        <option value="Sinh viên">Sinh viên</option>
+                        <option value="Người đi làm">Người đi làm</option>
+                        <option value="Khác">Khác</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Cấp độ tài liệu</label>
+                      <select
+                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all outline-none appearance-none"
+                        value={form.resourceType}
+                        onChange={e => setForm({ ...form, resourceType: e.target.value })}
+                      >
+                        <option value="">-- Chọn --</option>
+                        <option value="Cơ bản">Cơ bản (Beginner)</option>
+                        <option value="Chuyên sâu">Chuyên sâu (Pro)</option>
+                        <option value="Tất cả">Cần tất cả!</option>
+                      </select>
+                    </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold py-4 rounded-xl hover:from-green-700 hover:to-emerald-600 transition-all duration-300 shadow-lg shadow-green-200/60 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                    className="w-full py-5 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 mt-4"
                   >
                     {submitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Đang gửi...
-                      </span>
-                    ) : "Nhận tài nguyên"}
+                      </>
+                    ) : (
+                      "Gửi yêu cầu ngay"
+                    )}
                   </button>
 
-                  <p className="text-center text-xs text-gray-400">
-                    Thông tin của bạn được bảo mật và chỉ sử dụng để gửi tài nguyên
+                  <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                    DUA Edu cam kết bảo mật thông tin 100%
                   </p>
                 </form>
               </>

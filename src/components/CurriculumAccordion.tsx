@@ -13,29 +13,33 @@ export default function CurriculumAccordion({ items }: { items: CurriculumItem[]
         return (
           <div
             key={i}
-            className={`bg-white rounded-xl border transition-all duration-300 ${
-              isOpen ? "border-green-200 shadow-lg shadow-green-100/50" : "border-gray-100 shadow-sm hover:shadow-md"
+            className={`overflow-hidden rounded-lg border bg-white transition-all duration-200 ${
+              isOpen ? "border-green-200 shadow-sm shadow-green-100/50" : "border-gray-200 hover:border-green-100"
             }`}
           >
             <button
               onClick={() => setOpenIndex(isOpen ? null : i)}
-              className="w-full p-4 flex items-center justify-between text-left"
+              className={`flex w-full items-center justify-between gap-4 p-4 text-left transition-colors ${
+                isOpen ? "bg-green-50/70" : "bg-white hover:bg-green-50/40"
+              }`}
             >
-              <div className="flex items-center gap-4">
-                <span className={`w-10 h-10 font-bold rounded-xl flex items-center justify-center text-sm transition-colors duration-300 ${
+              <div className="flex min-w-0 items-center gap-4">
+                <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
                   isOpen ? "bg-green-600 text-white" : "bg-green-100 text-green-700"
                 }`}>
                   {i + 1}
                 </span>
-                <div>
-                  <p className="text-xs text-green-600 font-medium">{item.phase}</p>
-                  <p className="font-semibold text-gray-800">{item.title}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-green-700">{item.phase}</p>
+                  <p className="mt-0.5 font-semibold text-gray-900">{item.title}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-400 hidden sm:block">{item.lessons} bài</span>
+              <div className="flex flex-none items-center gap-3">
+                <span className="hidden rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-100 sm:block">
+                  {item.lessons} bài
+                </span>
                 <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                  className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-green-600" : ""}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -50,11 +54,11 @@ export default function CurriculumAccordion({ items }: { items: CurriculumItem[]
             >
               {item.topics && item.topics.length > 0 && (
                 <div className="px-4 pb-4 pt-0">
-                  <div className="border-t border-gray-100 pt-3">
+                  <div className="border-t border-green-100 pt-3">
                     <div className="flex flex-col gap-2">
                       {item.topics.map((topic, j) => (
-                        <div key={j} className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-100">
-                          <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div key={j} className="flex items-start gap-2 rounded-lg border border-green-100 bg-green-50/40 px-3 py-2.5 text-sm text-gray-700">
+                          <svg className="h-4 w-4 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
                           </svg>
                           <span>{topic}</span>

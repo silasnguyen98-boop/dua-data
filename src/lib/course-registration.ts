@@ -197,38 +197,38 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
     const text = [
       `Chào ${payload.participantName},`,
       "",
-      `Dứa đã nhận được thông tin bạn quan tâm đến khóa học ${payload.courseTitle} rồi nha.`,
+      `DUA Edu đã nhận được thông tin bạn quan tâm đến khóa học ${payload.courseTitle} rồi nha.`,
       "",
-      "Với khóa học này, Dứa Data sẽ tư vấn trực tiếp về học phí, hình thức học và các bước đăng ký tiếp theo để phù hợp hơn với nhu cầu của bạn.",
+      "Với khóa học này, DUA Edu sẽ tư vấn trực tiếp về học phí, hình thức học và các bước đăng ký tiếp theo để phù hợp hơn với nhu cầu của bạn.",
       "",
-      "Bạn vui lòng liên hệ fanpage Dứa Data để được hỗ trợ hoàn tất đăng ký:",
+      "Bạn vui lòng liên hệ fanpage DUA Edu để được hỗ trợ hoàn tất đăng ký:",
       "",
-      "Fanpage Dứa Data:",
+      "Fanpage DUA Edu:",
       "https://www.facebook.com/duadata",
       "",
-      "Sau khi thông tin được xác nhận, Dứa sẽ gửi bạn hướng dẫn tham gia khóa học trong thời gian sớm nhất.",
+      "Sau khi thông tin được xác nhận, DUA Edu sẽ gửi bạn hướng dẫn tham gia khóa học trong thời gian sớm nhất.",
       "",
-      "Cảm ơn bạn đã quan tâm đến Dứa Data.",
+      "Cảm ơn bạn đã quan tâm đến DUA Edu.",
       "",
-      "Dứa Data",
+      "DUA Edu",
     ].join("\n");
 
     const html = `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;background:#f8fafc;padding:24px">
         <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:24px;padding:32px">
-          <p style="margin:0 0 12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#059669;font-weight:700">Dứa Data</p>
+          <p style="margin:0 0 12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#059669;font-weight:700">DUA Edu</p>
           <h2 style="margin:0 0 16px;font-size:26px;color:#0f172a;line-height:1.25">Xác nhận thông tin đăng ký khóa học</h2>
           <p style="margin:0 0 14px">Chào <strong>${safeName}</strong>,</p>
-          <p style="margin:0 0 14px">Dứa đã nhận được thông tin bạn quan tâm đến khóa học <strong>${safeCourse}</strong> rồi nha.</p>
-          <p style="margin:0 0 14px">Với khóa học này, Dứa Data sẽ tư vấn trực tiếp về học phí, hình thức học và các bước đăng ký tiếp theo để phù hợp hơn với nhu cầu của bạn.</p>
+          <p style="margin:0 0 14px">DUA Edu đã nhận được thông tin bạn quan tâm đến khóa học <strong>${safeCourse}</strong> rồi nha.</p>
+          <p style="margin:0 0 14px">Với khóa học này, DUA Edu sẽ tư vấn trực tiếp về học phí, hình thức học và các bước đăng ký tiếp theo để phù hợp hơn với nhu cầu của bạn.</p>
           <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:20px;padding:18px;margin:24px 0">
-            <p style="margin:0 0 10px;color:#475569">Bạn vui lòng liên hệ fanpage Dứa Data để được hỗ trợ hoàn tất đăng ký:</p>
-            <p style="margin:0;font-weight:700;color:#0f172a">Fanpage Dứa Data:</p>
+            <p style="margin:0 0 10px;color:#475569">Bạn vui lòng liên hệ fanpage DUA Edu để được hỗ trợ hoàn tất đăng ký:</p>
+            <p style="margin:0;font-weight:700;color:#0f172a">Fanpage DUA Edu:</p>
             <p style="margin:6px 0 0"><a href="https://www.facebook.com/duadata" style="color:#059669;text-decoration:none">https://www.facebook.com/duadata</a></p>
           </div>
-          <p style="margin:0 0 14px">Sau khi thông tin được xác nhận, Dứa sẽ gửi bạn hướng dẫn tham gia khóa học trong thời gian sớm nhất.</p>
-          <p style="margin:0 0 14px;color:#475569">Cảm ơn bạn đã quan tâm đến Dứa Data.</p>
-          <p style="margin:24px 0 0;color:#0f172a">Dứa Data</p>
+          <p style="margin:0 0 14px">Sau khi thông tin được xác nhận, DUA Edu sẽ gửi bạn hướng dẫn tham gia khóa học trong thời gian sớm nhất.</p>
+          <p style="margin:0 0 14px;color:#475569">Cảm ơn bạn đã quan tâm đến DUA Edu.</p>
+          <p style="margin:24px 0 0;color:#0f172a">DUA Edu</p>
         </div>
       </div>
     `;
@@ -251,9 +251,9 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
     const text = [
       `Chào ${payload.participantName},`,
       "",
-      `Dứa đã nhận được thông tin bạn quan tâm đến khóa học ${payload.courseTitle} rồi nha.`,
+      `DUA Edu đã nhận được thông tin bạn quan tâm đến khóa học ${payload.courseTitle} rồi nha.`,
       "",
-      "Để Dứa có thể giữ chỗ và hoàn tất đăng ký cho bạn, bạn vui lòng chuyển khoản học phí/đặt cọc theo thông tin bên dưới:",
+      "Để DUA Edu có thể giữ chỗ và hoàn tất đăng ký cho bạn, bạn vui lòng chuyển khoản học phí/đặt cọc theo thông tin bên dưới:",
       "",
       `Số tiền cần thanh toán: ${paymentAmount}`,
       `Thông tin chuyển khoản:`,
@@ -262,28 +262,28 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
       `Chủ tài khoản: Pham Thi Thom`,
       "",
       `Nội dung chuyển khoản: ${paymentNote}`,
-      `Mã QR thanh toán: ${qrCode || "Vui lòng liên hệ fanpage Dứa Data để nhận mã QR thanh toán."}`,
+      `Mã QR thanh toán: ${qrCode || "Vui lòng liên hệ fanpage DUA Edu để nhận mã QR thanh toán."}`,
       "",
-      "Sau khi chuyển khoản xong, bạn chụp lại hóa đơn/giao dịch và inbox cho fanpage Dứa Data (https://www.facebook.com/duadata) để team kiểm tra và xác nhận đăng ký giúp bạn nhé.",
+      "Sau khi chuyển khoản xong, bạn chụp lại hóa đơn/giao dịch và inbox cho fanpage DUA Edu (https://www.facebook.com/duadata) để team kiểm tra và xác nhận đăng ký giúp bạn nhé.",
       "",
-      "Lưu ý nhỏ: Ở bước này, đăng ký sẽ được hoàn tất sau khi Dứa nhận được minh chứng chuyển khoản và đối soát thanh toán thành công.",
+      "Lưu ý nhỏ: Ở bước này, đăng ký sẽ được hoàn tất sau khi DUA Edu nhận được minh chứng chuyển khoản và đối soát thanh toán thành công.",
       "",
-      "Nếu bạn cần Dứa hỗ trợ thêm về lịch học, lộ trình hoặc hình thức tham gia, cứ nhắn lại cho Dứa nha.",
+      "Nếu bạn cần DUA Edu hỗ trợ thêm về lịch học, lộ trình hoặc hình thức tham gia, cứ nhắn lại cho DUA Edu nha.",
       "",
-      "Cảm ơn bạn đã tin tưởng và quan tâm đến Dứa Data.",
+      "Cảm ơn bạn đã tin tưởng và quan tâm đến DUA Edu.",
       "",
-      "Dứa Data",
+      "DUA Edu",
     ].join("\n");
 
     const html = `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;background:#f8fafc;padding:24px">
         <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:24px;padding:32px">
-          <p style="margin:0 0 12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#059669;font-weight:700">Dứa Data</p>
+          <p style="margin:0 0 12px;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#059669;font-weight:700">DUA Edu</p>
           <h2 style="margin:0 0 16px;font-size:26px;color:#0f172a;line-height:1.25">Xác nhận thông tin thanh toán khóa học</h2>
           <p style="margin:0 0 14px">Chào <strong>${safeName}</strong>,</p>
-          <p style="margin:0 0 14px">Dứa đã nhận được thông tin bạn quan tâm đến khóa học <strong>${safeCourse}</strong> rồi nha.</p>
+          <p style="margin:0 0 14px">DUA Edu đã nhận được thông tin bạn quan tâm đến khóa học <strong>${safeCourse}</strong> rồi nha.</p>
           <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:20px;padding:20px;margin:24px 0">
-            <p style="margin:0 0 10px;color:#475569">Để Dứa có thể giữ chỗ và hoàn tất đăng ký cho bạn, bạn vui lòng chuyển khoản học phí/đặt cọc theo thông tin bên dưới:</p>
+            <p style="margin:0 0 10px;color:#475569">Để DUA Edu có thể giữ chỗ và hoàn tất đăng ký cho bạn, bạn vui lòng chuyển khoản học phí/đặt cọc theo thông tin bên dưới:</p>
             <table style="width:100%;border-collapse:collapse">
               <tbody>
                 <tr><td style="padding:8px 0;color:#64748b;width:180px">Số tiền cần thanh toán</td><td style="padding:8px 0;font-weight:700;color:#0f172a">${safePaymentAmount}</td></tr>
@@ -291,15 +291,15 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
                 <tr><td style="padding:8px 0;color:#64748b"></td><td style="padding:0 0 8px;font-weight:700;color:#0f172a">Vietcombank</td></tr>
                 <tr><td style="padding:8px 0;color:#64748b"></td><td style="padding:0 0 8px;font-weight:700;color:#0f172a">Pham Thi Thom</td></tr>
                 <tr><td style="padding:8px 0;color:#64748b">Nội dung chuyển khoản</td><td style="padding:8px 0;font-weight:700;color:#0f172a">${safePaymentNote}</td></tr>
-                <tr><td style="padding:8px 0;color:#64748b;vertical-align:top">Mã QR thanh toán</td><td style="padding:8px 0;color:#0f172a">${safeQrCode ? `<a href="${safeQrCode}" style="color:#059669;text-decoration:none"><img src="${safeQrCode}" alt="QR thanh toán" style="max-width:240px;width:100%;height:auto;border-radius:16px;border:1px solid #e5e7eb;display:block" /></a>` : "Vui lòng liên hệ fanpage Dứa Data để nhận mã QR thanh toán."}</td></tr>
+                <tr><td style="padding:8px 0;color:#64748b;vertical-align:top">Mã QR thanh toán</td><td style="padding:8px 0;color:#0f172a">${safeQrCode ? `<a href="${safeQrCode}" style="color:#059669;text-decoration:none"><img src="${safeQrCode}" alt="QR thanh toán" style="max-width:240px;width:100%;height:auto;border-radius:16px;border:1px solid #e5e7eb;display:block" /></a>` : "Vui lòng liên hệ fanpage DUA Edu để nhận mã QR thanh toán."}</td></tr>
               </tbody>
             </table>
           </div>
-          <p style="margin:0 0 14px">Sau khi chuyển khoản xong, bạn chụp lại hóa đơn/giao dịch và inbox cho fanpage Dứa Data (<a href="https://www.facebook.com/duadata" style="color:#059669;text-decoration:none">https://www.facebook.com/duadata</a>) để team kiểm tra và xác nhận đăng ký giúp bạn nhé.</p>
-          <p style="margin:0 0 14px;color:#475569">Lưu ý nhỏ: Ở bước này, đăng ký sẽ được hoàn tất sau khi Dứa nhận được minh chứng chuyển khoản và đối soát thanh toán thành công.</p>
-          <p style="margin:0 0 14px;color:#475569">Nếu bạn cần Dứa hỗ trợ thêm về lịch học, lộ trình hoặc hình thức tham gia, cứ nhắn lại cho Dứa nha.</p>
-          <p style="margin:24px 0 0;color:#0f172a">Cảm ơn bạn đã tin tưởng và quan tâm đến Dứa Data.</p>
-          <p style="margin:8px 0 0;color:#0f172a;font-weight:700">Dứa Data</p>
+          <p style="margin:0 0 14px">Sau khi chuyển khoản xong, bạn chụp lại hóa đơn/giao dịch và inbox cho fanpage DUA Edu (<a href="https://www.facebook.com/duadata" style="color:#059669;text-decoration:none">https://www.facebook.com/duadata</a>) để team kiểm tra và xác nhận đăng ký giúp bạn nhé.</p>
+          <p style="margin:0 0 14px;color:#475569">Lưu ý nhỏ: Ở bước này, đăng ký sẽ được hoàn tất sau khi DUA Edu nhận được minh chứng chuyển khoản và đối soát thanh toán thành công.</p>
+          <p style="margin:0 0 14px;color:#475569">Nếu bạn cần DUA Edu hỗ trợ thêm về lịch học, lộ trình hoặc hình thức tham gia, cứ nhắn lại cho DUA Edu nha.</p>
+          <p style="margin:24px 0 0;color:#0f172a">Cảm ơn bạn đã tin tưởng và quan tâm đến DUA Edu.</p>
+          <p style="margin:8px 0 0;color:#0f172a;font-weight:700">DUA Edu</p>
         </div>
       </div>
     `;
@@ -312,7 +312,7 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
   const text = [
     `Xin chào ${payload.participantName},`,
     "",
-    `DUA đã nhận được đăng ký của bạn cho khóa học: ${payload.courseTitle}.`,
+    `DUA Edu đã nhận được đăng ký của bạn cho khóa học: ${payload.courseTitle}.`,
     `Link khóa học: ${courseUrl}`,
     `Email đăng nhập: ${payload.participantEmail}`,
     `Số điện thoại: ${payload.phone}`,
@@ -321,10 +321,10 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
     `Nhu cầu học: ${payload.learningNeeds || "Không có"}`,
     `Thời gian đăng ký: ${new Date(payload.registeredAt).toLocaleString("vi-VN")}`,
     "",
-    "Đội ngũ DUA sẽ sớm liên hệ với bạn qua Zalo/Facebook để xác nhận.",
+    "Đội ngũ DUA Edu sẽ sớm liên hệ với bạn qua Zalo/Facebook để xác nhận.",
     "",
     "Trân trọng,",
-    "DUA Data",
+    "DUA Edu",
   ].join("\n");
 
   const html = `
@@ -332,7 +332,7 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:20px;padding:32px">
         <h2 style="margin:0 0 16px;font-size:24px;color:#047857">Xác nhận đăng ký khóa học</h2>
         <p style="margin:0 0 12px">Xin chào <strong>${safeName}</strong>,</p>
-        <p style="margin:0 0 20px">DUA đã nhận được đăng ký của bạn cho khóa học <strong>${safeCourse}</strong>.</p>
+        <p style="margin:0 0 20px">DUA Edu đã nhận được đăng ký của bạn cho khóa học <strong>${safeCourse}</strong>.</p>
         <table style="width:100%;border-collapse:collapse">
           <tbody>
             <tr><td style="padding:8px 0;color:#6b7280;width:180px">Link khóa học</td><td style="padding:8px 0"><a href="${safeCourseLink}" style="color:#059669;text-decoration:none">${safeCourseLink}</a></td></tr>
@@ -344,7 +344,7 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
             <tr><td style="padding:8px 0;color:#6b7280">Thời gian đăng ký</td><td style="padding:8px 0">${safeRegisteredAt}</td></tr>
           </tbody>
         </table>
-        <p style="margin:20px 0 0;color:#374151">Đội ngũ DUA sẽ sớm liên hệ với bạn qua Zalo/Facebook để xác nhận.</p>
+        <p style="margin:20px 0 0;color:#374151">Đội ngũ DUA Edu sẽ sớm liên hệ với bạn qua Zalo/Facebook để xác nhận.</p>
         <p style="margin:8px 0 0;color:#374151">Nếu cần hỗ trợ thêm, bạn có thể phản hồi email này.</p>
       </div>
     </div>

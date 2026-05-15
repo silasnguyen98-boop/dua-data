@@ -13,12 +13,23 @@ export default function TopBanner() {
   const [ad, setAd] = useState<Ad | null>(null);
 
   useEffect(() => {
-    fetch("/api/ads?active=true&type=top_banner")
+    // Firebase-backed ads are disabled for now to avoid blocking page load.
+    return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+
+    fetch("/api/ads?active=true&type=top_banner", { signal: controller.signal })
       .then((r) => r.json())
       .then((ads: Ad[]) => {
         if (ads.length > 0) setAd(ads[0]);
       })
       .catch(() => {});
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, []);
 
   if (!ad) return null;

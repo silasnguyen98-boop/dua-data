@@ -196,7 +196,7 @@ export default function AdminMailTemplatePage() {
         form.body ||
           `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
             <p>Chào <strong>{{full_name}}</strong>,</p>
-            <p>Dứa đã nhận được thông tin bạn quan tâm đến khóa học <strong>{{course_title}}</strong>.</p>
+            <p>DUA Edu đã nhận được thông tin bạn quan tâm đến khóa học <strong>{{course_title}}</strong>.</p>
             <p>Fanpage hỗ trợ: <a href="{{fanpage_link}}">{{fanpage_link}}</a></p>
           </div>`,
         previewContext
@@ -513,7 +513,7 @@ export default function AdminMailTemplatePage() {
                 <div className="p-5 bg-slate-50">
                   <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 bg-gradient-to-r from-green-700 to-emerald-600 text-white">
-                      <p className="text-xs uppercase tracking-[0.18em] text-emerald-100">Dứa Data</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-emerald-100">DUA Edu</p>
                       <h4 className="text-xl font-bold mt-1">Xác nhận email cho {selectedCourse?.title || "khóa học"}</h4>
                       <p className="text-sm text-emerald-50 mt-1">
                         Template riêng theo khóa • {selectedCourse?.course_type || "online"}

@@ -47,31 +47,31 @@ export default function RegistrationCountdown({ courses }: { courses: Course[] }
   if (!timeLeft) return null;
 
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 text-center">
-      <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">
-        ⏰ Hạn đăng ký: {nearest.title}
+    <div className="bg-gradient-to-r from-emerald-50/50 to-white border border-emerald-100 rounded-[24px] p-6 text-center shadow-sm">
+      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">
+        Hạn đăng ký: {nearest.title}
       </p>
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-4">
         {timeLeft.days > 0 && (
           <div className="text-center">
-            <div className="text-2xl font-black text-gray-900">{timeLeft.days}</div>
-            <div className="text-[10px] text-gray-500 font-medium">Ngày</div>
+            <div className="text-3xl font-black text-gray-900 tracking-tighter">{timeLeft.days}</div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase">Ngày</div>
           </div>
         )}
-        <div className="text-2xl font-black text-gray-400">:</div>
+        {timeLeft.days > 0 && <div className="text-2xl font-black text-gray-200">:</div>}
         <div className="text-center">
-          <div className="text-2xl font-black text-gray-900">{pad(timeLeft.hours)}</div>
-          <div className="text-[10px] text-gray-500 font-medium">Giờ</div>
+          <div className="text-3xl font-black text-gray-900 tracking-tighter">{pad(timeLeft.hours)}</div>
+          <div className="text-[10px] text-gray-400 font-bold uppercase">Giờ</div>
         </div>
-        <div className="text-2xl font-black text-gray-400">:</div>
+        <div className="text-2xl font-black text-gray-200">:</div>
         <div className="text-center">
-          <div className="text-2xl font-black text-gray-900">{pad(timeLeft.mins)}</div>
-          <div className="text-[10px] text-gray-500 font-medium">Phút</div>
+          <div className="text-3xl font-black text-gray-900 tracking-tighter">{pad(timeLeft.mins)}</div>
+          <div className="text-[10px] text-gray-400 font-bold uppercase">Phút</div>
         </div>
-        <div className="text-2xl font-black text-gray-400">:</div>
+        <div className="text-2xl font-black text-gray-200">:</div>
         <div className="text-center">
-          <div className="text-2xl font-black text-gray-900">{pad(timeLeft.secs)}</div>
-          <div className="text-[10px] text-gray-500 font-medium">Giây</div>
+          <div className="text-3xl font-black text-gray-900 tracking-tighter">{pad(timeLeft.secs)}</div>
+          <div className="text-[10px] text-gray-400 font-bold uppercase">Giây</div>
         </div>
       </div>
     </div>

@@ -72,7 +72,7 @@ export default function MailView() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [courses, setCourses] = useState<CourseOption[]>([]);
-  
+
   // Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TemplateRow | null>(null);
@@ -82,7 +82,7 @@ export default function MailView() {
     body: "",
     isActive: true,
   });
-  
+
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testEmail, setTestEmail] = useState("silasnguyen98@gmail.com");
@@ -112,8 +112,8 @@ export default function MailView() {
 
   const selectedCourse = useMemo(() => courses.find(c => c.id === form.courseId), [courses, form.courseId]);
   const previewContext = useMemo(() => getPreviewContext(selectedCourse), [selectedCourse]);
-  
-  const previewHtml = useMemo(() => 
+
+  const previewHtml = useMemo(() =>
     renderMailTemplateHtml(form.body || "<p>Nội dung mẫu...</p>", previewContext),
     [form.body, previewContext]
   );
@@ -124,7 +124,7 @@ export default function MailView() {
     try {
       const res = await fetch("/api/admin/mail-templates", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           ...buildAuthHeader()
         },
@@ -145,7 +145,7 @@ export default function MailView() {
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa template này?")) return;
     try {
-      const res = await fetch(`/api/admin/mail-templates?id=${id}`, { 
+      const res = await fetch(`/api/admin/mail-templates?id=${id}`, {
         method: "DELETE",
         headers: buildAuthHeader()
       });
@@ -161,7 +161,7 @@ export default function MailView() {
     try {
       const res = await fetch("/api/admin/mail", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           ...buildAuthHeader()
         },
@@ -222,7 +222,7 @@ export default function MailView() {
       ) : (
         <div className="space-y-6">
           <div className="flex justify-end">
-            <button 
+            <button
               onClick={() => {
                 setEditingTemplate(null);
                 setForm({ courseId: courses[0]?.id || "", subject: "", body: "", isActive: true });
@@ -272,7 +272,7 @@ export default function MailView() {
                         </td>
                         <td className="px-8 py-5 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => {
                                 setEditingTemplate(template);
                                 setForm({
@@ -287,7 +287,7 @@ export default function MailView() {
                             >
                               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(template.id)}
                               className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                             >
@@ -308,7 +308,7 @@ export default function MailView() {
       {/* Template Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setIsModalOpen(false)}
           />
@@ -320,7 +320,7 @@ export default function MailView() {
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Sử dụng placeholders {`{{full_name}}`}, {`{{course_title}}`}... để cá nhân hóa nội dung.</p>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl transition-all"
@@ -334,7 +334,7 @@ export default function MailView() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Khóa học áp dụng</label>
-                  <select 
+                  <select
                     value={form.courseId}
                     onChange={(e) => setForm({ ...form, courseId: e.target.value })}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 transition-all appearance-none"
@@ -345,8 +345,8 @@ export default function MailView() {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề Mail</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={form.subject}
                     onChange={(e) => setForm({ ...form, subject: e.target.value })}
@@ -357,7 +357,7 @@ export default function MailView() {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Nội dung mẫu</label>
-                  <RichTextEditor 
+                  <RichTextEditor
                     value={form.body}
                     onChange={(body) => setForm({ ...form, body })}
                     minHeight="400px"
@@ -367,8 +367,8 @@ export default function MailView() {
 
                 <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-[22px] border border-slate-100 shadow-inner">
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={form.isActive}
                       onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                       className="h-6 w-6 rounded-lg text-green-600 focus:ring-green-500 transition-all"
@@ -383,14 +383,14 @@ export default function MailView() {
                 <div className="flex items-center justify-between px-1">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LIVE PREVIEW</span>
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       value={testEmail}
                       onChange={(e) => setTestEmail(e.target.value)}
                       placeholder="Email nhận test..."
                       className="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold focus:outline-none w-48"
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={handleTestMail}
                       disabled={testing}
@@ -425,14 +425,14 @@ export default function MailView() {
             </div>
 
             <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="px-8 py-4 bg-white border border-slate-200 text-slate-600 rounded-[22px] font-black text-sm hover:bg-slate-50 transition-all"
               >
                 HỦY
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={saving}
                 className="px-12 py-4 bg-green-600 text-white rounded-[22px] font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 disabled:opacity-50"

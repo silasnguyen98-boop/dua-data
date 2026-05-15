@@ -17,12 +17,23 @@ export default function FloatingBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    fetch("/api/ads?active=true&type=floating")
+    // Firebase-backed ads are disabled for now to avoid blocking page load.
+    return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+
+    fetch("/api/ads?active=true&type=floating", { signal: controller.signal })
       .then((r) => r.json())
       .then((ads: Ad[]) => {
         if (ads.length > 0) setAd(ads[0]);
       })
       .catch(() => {});
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

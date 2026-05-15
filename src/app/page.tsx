@@ -3,7 +3,6 @@ import { Course } from "@/types/course";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CourseImage from "@/components/CourseImage";
 import CourseCard from "@/components/CourseCard";
 import RegistrationCountdown from "@/components/RegistrationCountdown";
 import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
@@ -19,7 +18,6 @@ import path from "path";
 async function getCourses(): Promise<Course[]> {
   const publicCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
 
-  // Try reading from synced JSON first
   try {
     const filePath = path.join(process.cwd(), "src/data/courses.json");
     const stats = await fs.stat(filePath);
@@ -27,9 +25,7 @@ async function getCourses(): Promise<Course[]> {
       const data = await fs.readFile(filePath, "utf-8");
       return JSON.parse(data) as Course[];
     }
-  } catch (err) {
-    // Fallback to DB
-  }
+  } catch (err) {}
 
   try {
     const { rows } = await query(
@@ -56,15 +52,10 @@ async function getExperts(): Promise<Expert[]> {
   }
 }
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("vi-VN").format(price) + "đ";
-}
-
 const socialProofStats = [
   { number: "300+", label: "Học viên đã tham gia" },
   { number: "12", label: "Lớp đào tạo thực chiến" },
   { number: "70.000+", label: "Thành viên cộng đồng" },
-  { number: "98%", label: "Học viên hài lòng" },
 ];
 
 const whyChooseCards = [
@@ -81,7 +72,7 @@ const whyChooseCards = [
   {
     icon: "🚀",
     title: "Đồng hành xuyên suốt sự nghiệp",
-    desc: "Dứa không chỉ là nơi bắt đầu, mà là nơi bạn tiếp tục học, phát triển và nâng cấp kỹ năng Data.",
+    desc: "DUA Edu không chỉ là nơi bắt đầu, mà là nơi bạn tiếp tục học, phát triển và nâng cấp kỹ năng Data.",
   },
 ];
 
@@ -92,7 +83,7 @@ const testimonials = [
     name: "Đặng Hoàng Khôi",
     role: "Người mới bắt đầu với Data",
     initials: "K",
-    gradient: "from-green-400 to-emerald-600",
+    gradient: "from-emerald-400 to-green-600",
   },
   {
     stars: 5,
@@ -100,7 +91,7 @@ const testimonials = [
     name: "Vũ Thị Mai Lan",
     role: "Data Analyst",
     initials: "L",
-    gradient: "from-blue-400 to-indigo-600",
+    gradient: "from-blue-400 to-emerald-600",
   },
   {
     stars: 5,
@@ -108,23 +99,7 @@ const testimonials = [
     name: "Bùi Quốc Hưng",
     role: "Làm việc với Data",
     initials: "H",
-    gradient: "from-purple-400 to-pink-600",
-  },
-  {
-    stars: 5,
-    quote: "Cộng đồng Dứa rất hỗ trợ. Mỗi khi có vấn đề, luôn có người chia sẻ và giải đáp, giúp mình học nhanh hơn và không bị bỏ lại phía sau.",
-    name: "Trịnh Ngọc Yến",
-    role: "Thành viên cộng đồng Dứa Data",
-    initials: "Y",
-    gradient: "from-orange-400 to-red-500",
-  },
-];
-
-const valueBlocks = [
-  {
-    icon: "🧠",
-    title: "Hiểu Data từ gốc, không chỉ là công cụ",
-    desc: "Học cách tiếp cận vấn đề, phân tích dữ liệu và sử dụng Data để giải quyết bài toán thực tế.",
+    gradient: "from-emerald-500 to-emerald-600",
   },
 ];
 
@@ -133,7 +108,6 @@ function getCourseStatus(startDate: string): "upcoming" | "ongoing" | "completed
   const start = new Date(startDate);
   if (isNaN(start.getTime())) return "upcoming";
   if (start > now) return "upcoming";
-  // Assume course runs ~3 months
   const endEstimate = new Date(start);
   endEstimate.setMonth(endEstimate.getMonth() + 3);
   if (now <= endEstimate) return "ongoing";
@@ -175,416 +149,392 @@ export default async function HomePage() {
   const experts = await getExperts();
 
   return (
-    <div className="min-h-screen bg-white bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%200H0v40%22%20fill%3D%22none%22%20stroke%3D%22%2322c55e%22%20stroke-opacity%3D%220.04%22%2F%3E%3C%2Fsvg%3E')]">
+    <div className="min-h-screen bg-white relative">
       <Navbar />
 
-      {/* 1. Hero Section — Tech style */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-50 via-white to-emerald-50">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%200H0v40%22%20fill%3D%22none%22%20stroke%3D%22%2322c55e%22%20stroke-opacity%3D%220.08%22%2F%3E%3C%2Fsvg%3E')]" />
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-green-200/30 rounded-full blur-[120px]" />
-        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-emerald-200/30 rounded-full blur-[100px]" />
+      {/* 1. Hero Section — White Background */}
+      {/* 1. Hero Section — Clean & Minimalist Premium */}
+      <section className="relative pt-32 pb-32 overflow-hidden bg-white">
+        {/* Subtle Background Glow */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-green-50/50 rounded-full blur-[120px] -z-10" />
 
-        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-28">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left — Text */}
-            <div className="animate-fade-in-left">
-              <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 text-green-700 px-4 py-1.5 rounded-full text-sm font-mono mb-6">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                Data-driven learning platform
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-16 min-h-[600px]">
+            {/* Left — Content */}
+            <div className="flex-1 text-center lg:text-left animate-fade-in-up py-12">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-widest mb-8 border border-green-100">
+                Data Learning Hub
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 leading-tight font-display">
-                Dứa Data
+              <h1 className="text-6xl md:text-8xl font-black text-gray-900 mb-6 leading-[1] tracking-tighter">
+                DUA Edu
               </h1>
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent mb-6 leading-tight font-display">
-                Học Data để làm được việc thật
+              <h2 className="text-3xl md:text-5xl text-green-500 font-bold mb-8 leading-tight">
+                Nâng cấp năng lực <br className="hidden md:block" />
+                <span className="text-gray-900">bằng dữ liệu.</span>
               </h2>
-              <p className="text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
-                Giúp bạn không chỉ học Data, mà dùng dữ liệu để hiểu vấn đề và tạo ra quyết định có giá trị
+              <p className="text-xl text-gray-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Học cách thấu hiểu bản chất bài toán và đưa ra quyết định dựa trên dữ liệu thực tế.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                 <a
                   href="#courses"
-                  className="inline-flex items-center justify-center bg-green-600 text-white font-semibold px-8 py-3.5 rounded-lg shadow-lg shadow-green-600/20 hover:bg-green-700 hover:shadow-xl hover:shadow-green-600/30 transition-all duration-300"
+                  className="px-10 py-5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-green-500/20 hover:-translate-y-0.5 active:scale-95"
                 >
-                  Các khóa học
-                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  Bắt đầu ngay
                 </a>
                 <a
                   href="#about"
-                  className="inline-flex items-center justify-center text-green-700 font-semibold px-8 py-3.5 rounded-lg border border-green-300 hover:border-green-500 hover:bg-green-50 transition-all duration-300"
+                  className="px-10 py-5 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-2xl border border-gray-200 transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                 >
                   Tìm hiểu thêm
                 </a>
               </div>
             </div>
 
-            {/* Right — Data Analyst Dashboard SVG */}
-            <div className="hidden lg:flex items-center justify-center animate-fade-in-right">
-              <div className="relative w-full max-w-[540px] h-auto aspect-[540/446]">
-                <svg viewBox="0 0 460 380" className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  {/* Dashboard background */}
-                  <rect x="20" y="20" width="420" height="340" rx="16" fill="white" stroke="#16a34a" strokeWidth="1" strokeOpacity="0.2"/>
-                  <rect x="20" y="20" width="420" height="40" rx="16" fill="#f0fdf4"/>
-                  <rect x="20" y="44" width="420" height="16" fill="#f0fdf4"/>
+            {/* Right — Minimalist Green/White/Orange Isometric Illustration */}
+            <div className="flex-1 w-full max-w-xl relative lg:mt-0">
+              <div className="relative flex items-center justify-center">
 
-                  {/* Window dots */}
-                  <circle cx="44" cy="40" r="5" fill="#ef4444" opacity="0.7"/>
-                  <circle cx="62" cy="40" r="5" fill="#f59e0b" opacity="0.7"/>
-                  <circle cx="80" cy="40" r="5" fill="#22c55e" opacity="0.7"/>
+                {/* Clean Background Ambient */}
+                <div className="absolute inset-0 bg-green-500/5 rounded-full blur-[120px]" />
 
-                  {/* Title bar text */}
-                  <text x="230" y="44" textAnchor="middle" fill="#6b7280" fontSize="11" fontFamily="monospace">dashboard.analytics</text>
+                {/* The "Data Path" Isometric SVG */}
+                {/* Custom Styles for Squash & Stretch Interaction */}
+                <style>{`
+                  @keyframes bar-squash {
+                    0%, 100% { transform: scaleY(1); }
+                    50% { transform: scaleY(0.7); }
+                  }
+                  .animate-bar-squash {
+                    animation: bar-squash ease-in-out infinite;
+                    transform-origin: bottom;
+                    transform-box: fill-box;
+                  }
+                `}</style>
 
-                  {/* Bar chart */}
-                  <g transform="translate(50, 80)">
-                    <text x="0" y="12" fill="#6b7280" fontSize="10" fontFamily="monospace">Revenue</text>
-                    <rect x="0" y="25" width="28" height="80" rx="3" fill="#22c55e" opacity="0.3"><animate attributeName="height" from="0" to="80" dur="1.2s" fill="freeze"/></rect>
-                    <rect x="35" y="40" width="28" height="65" rx="3" fill="#22c55e" opacity="0.5"><animate attributeName="height" from="0" to="65" dur="1.4s" fill="freeze"/></rect>
-                    <rect x="70" y="15" width="28" height="90" rx="3" fill="#22c55e" opacity="0.7"><animate attributeName="height" from="0" to="90" dur="1.6s" fill="freeze"/></rect>
-                    <rect x="105" y="5" width="28" height="100" rx="3" fill="#22c55e"><animate attributeName="height" from="0" to="100" dur="1.8s" fill="freeze"/></rect>
-                    <rect x="140" y="20" width="28" height="85" rx="3" fill="#22c55e" opacity="0.8"><animate attributeName="height" from="0" to="85" dur="2s" fill="freeze"/></rect>
-                  </g>
-
-                  {/* Line chart */}
-                  <g transform="translate(240, 80)">
-                    <text x="0" y="12" fill="#6b7280" fontSize="10" fontFamily="monospace">Trend</text>
-                    <polyline points="0,95 30,80 60,85 90,50 120,60 150,30 180,20" stroke="#22c55e" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <animate attributeName="stroke-dashoffset" from="400" to="0" dur="2s" fill="freeze"/>
-                    </polyline>
-                    <polyline points="0,95 30,80 60,85 90,50 120,60 150,30 180,20" stroke="none" fill="url(#lineGrad)" opacity="0.15"/>
-                    {/* Data points */}
-                    <circle cx="90" cy="50" r="4" fill="#22c55e"><animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="1.2s" fill="freeze"/></circle>
-                    <circle cx="150" cy="30" r="4" fill="#22c55e"><animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="1.6s" fill="freeze"/></circle>
-                    <circle cx="180" cy="20" r="4" fill="#22c55e"><animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="1.8s" fill="freeze"/></circle>
-                  </g>
-
-                  {/* KPI Cards */}
-                  <g transform="translate(50, 210)">
-                    <rect x="0" y="0" width="110" height="55" rx="8" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1"/>
-                    <text x="12" y="22" fill="#6b7280" fontSize="9" fontFamily="monospace">Students</text>
-                    <text x="12" y="42" fill="#22c55e" fontSize="18" fontWeight="bold" fontFamily="system-ui">300+</text>
-                  </g>
-                  <g transform="translate(175, 210)">
-                    <rect x="0" y="0" width="110" height="55" rx="8" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1"/>
-                    <text x="12" y="22" fill="#6b7280" fontSize="9" fontFamily="monospace">Courses</text>
-                    <text x="12" y="42" fill="#4ade80" fontSize="18" fontWeight="bold" fontFamily="system-ui">12</text>
-                  </g>
-                  <g transform="translate(300, 210)">
-                    <rect x="0" y="0" width="110" height="55" rx="8" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1"/>
-                    <text x="12" y="22" fill="#6b7280" fontSize="9" fontFamily="monospace">Rating</text>
-                    <text x="12" y="42" fill="#fbbf24" fontSize="18" fontWeight="bold" fontFamily="system-ui">4.9★</text>
-                  </g>
-
-                  {/* Donut chart */}
-                  <g transform="translate(90, 310)">
-                    <circle cx="0" cy="0" r="22" fill="none" stroke="#e5e7eb" strokeWidth="6"/>
-                    <circle cx="0" cy="0" r="22" fill="none" stroke="#22c55e" strokeWidth="6" strokeDasharray="110 138" strokeLinecap="round" transform="rotate(-90)">
-                      <animate attributeName="stroke-dasharray" from="0 138" to="110 138" dur="1.5s" fill="freeze"/>
-                    </circle>
-                    <text x="0" y="5" textAnchor="middle" fill="#16a34a" fontSize="11" fontWeight="bold">80%</text>
-                  </g>
-                  <text x="125" y="305" fill="#6b7280" fontSize="9" fontFamily="monospace">Completion</text>
-                  <text x="125" y="320" fill="#374151" fontSize="11">Tỷ lệ hoàn thành khóa</text>
-
-                  {/* Mini table */}
-                  <g transform="translate(250, 280)">
-                    <rect x="0" y="0" width="170" height="70" rx="8" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1"/>
-                    <text x="10" y="18" fill="#6b7280" fontSize="8" fontFamily="monospace">RECENT ENROLLMENTS</text>
-                    <line x1="10" y1="24" x2="160" y2="24" stroke="#e5e7eb" strokeWidth="0.5"/>
-                    <text x="10" y="38" fill="#374151" fontSize="9">Hoàng Khôi</text>
-                    <text x="130" y="38" fill="#22c55e" fontSize="9" fontFamily="monospace">SQL</text>
-                    <text x="10" y="52" fill="#374151" fontSize="9">Mai Lan</text>
-                    <text x="130" y="52" fill="#4ade80" fontSize="9" fontFamily="monospace">DA</text>
-                    <text x="10" y="66" fill="#374151" fontSize="9">Quốc Hưng</text>
-                    <text x="130" y="66" fill="#86efac" fontSize="9" fontFamily="monospace">PBI</text>
-                  </g>
-
+                {/* The "Data Path" Combination Chart SVG */}
+                <svg viewBox="0 0 450 450" className="w-full h-auto relative z-10 drop-shadow-2xl overflow-visible max-h-[550px]">
+                  {/* Caro (Grid) Pattern Definition */}
                   <defs>
-                    <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4"/>
-                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
-                    </linearGradient>
+                    <pattern id="gridPattern" width="30" height="30" patternUnits="userSpaceOnUse">
+                      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#e5e7eb" strokeWidth="0.5" opacity="0.3"/>
+                    </pattern>
                   </defs>
-                </svg>
 
-                {/* Floating tech badges */}
-                <div className="absolute -top-2 -right-2 bg-white border border-green-200 rounded-lg px-3 py-1.5 text-xs font-mono text-green-700 shadow-lg animate-bounce" style={{ animationDelay: "0.5s", animationDuration: "3s" }}>
-                  SQL &middot; Python &middot; Power BI
-                </div>
-                <div className="absolute -bottom-2 -left-2 bg-white border border-green-200 rounded-lg px-3 py-1.5 text-xs font-mono text-green-700 shadow-lg animate-bounce" style={{ animationDelay: "1.5s", animationDuration: "3.5s" }}>
-                  Data Analytics
-                </div>
+                  {/* Grid Background */}
+                  <rect x="20" y="40" width="410" height="380" fill="url(#gridPattern)" />
+
+                  {/* Axis Labels (Numbers) */}
+                  {/* Y-Axis (Vertical) */}
+                  <g fill="#9ca3af" fontSize="8" fontWeight="bold">
+                    <text x="15" y="405" textAnchor="end">0%</text>
+                    <text x="15" y="315" textAnchor="end">25%</text>
+                    <text x="15" y="225" textAnchor="end">50%</text>
+                    <text x="15" y="135" textAnchor="end">75%</text>
+                    <text x="15" y="45" textAnchor="end">100%</text>
+                  </g>
+
+                  {/* X-Axis (Horizontal) */}
+                  <g fill="#9ca3af" fontSize="8" fontWeight="bold" textAnchor="middle">
+                    <text x="45" y="420">D</text>
+                    <text x="115" y="420">U</text>
+                    <text x="185" y="420">A</text>
+                    <text x="255" y="420">E</text>
+                    <text x="325" y="420">d</text>
+                    <text x="395" y="420">u</text>
+                  </g>
+
+                  {/* Subtle Grid Lines (Main axes) */}
+                  <line x1="20" y1="400" x2="430" y2="400" stroke="#9ca3af" strokeWidth="1" opacity="0.5" />
+                  <line x1="20" y1="40" x2="20" y2="400" stroke="#9ca3af" strokeWidth="1" opacity="0.5" />
+
+                  {/* Bar Chart Background (Green - Fluctuating with Squash Effect) */}
+                  {/* Bar: Excel */}
+                  <rect
+                    x="30" y="310" width="30" height="90" rx="4" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "0s", animationDuration: "2.5s" }}
+                  />
+                  {/* Bar 0 - Mindset */}
+                  <rect
+                    x="100" y="250" width="30" height="150" rx="4" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "0.2s", animationDuration: "2.1s" }}
+                  />
+                  {/* Bar 1 - SQL (Lower - Dip) */}
+                  <rect
+                    x="170" y="280" width="30" height="120" rx="4" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "0.5s", animationDuration: "2.8s" }}
+                  />
+                  {/* Bar 2 - Power BI (Higher - Peak) */}
+                  <rect
+                    x="240" y="160" width="30" height="240" rx="4" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "0.8s", animationDuration: "2.3s" }}
+                  />
+                  {/* Bar 3 - Python (Slight Dip) */}
+                  <rect
+                    x="310" y="190" width="30" height="210" rx="4" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "1.1s", animationDuration: "2.6s" }}
+                  />
+                  {/* Bar 4 - Data Careers (Highest - Goal) */}
+                  <rect
+                    x="380" y="80" width="30" height="320" rx="4" fill="#fff7ed" stroke="#f97316" strokeWidth="1" opacity="0.8"
+                    className="animate-bar-squash"
+                    style={{ animationDelay: "1.4s", animationDuration: "2.4s" }}
+                  />
+
+                  {/* Bouncing Milestones (Perfectly Aligned with Squashed Tops) */}
+                  {/* 0. Excel */}
+                  <g className="animate-bounce" style={{ animationDelay: "0s", animationDuration: "2.5s" }}>
+                    <circle cx="45" cy="313" r="24" fill="white" stroke="#22c55e" strokeWidth="1" />
+                    <circle cx="45" cy="313" r="18" fill="#f0fdf4" />
+                    <text x="45" y="317" fill="#16a34a" fontSize="7" fontWeight="900" textAnchor="middle">EXCEL</text>
+                  </g>
+
+                  {/* 1. Mindset */}
+                  <g className="animate-bounce" style={{ animationDelay: "0.2s", animationDuration: "2.1s" }}>
+                    <circle cx="115" cy="267" r="28" fill="white" stroke="#facc15" strokeWidth="1" />
+                    <circle cx="115" cy="267" r="20" fill="#fefce8" />
+                    <text x="115" y="271" fill="#ca8a04" fontSize="7" fontWeight="900" textAnchor="middle">MINDSET</text>
+                  </g>
+
+                  {/* 2. SQL */}
+                  <g className="animate-bounce" style={{ animationDelay: "0.5s", animationDuration: "2.8s" }}>
+                    <circle cx="185" cy="284" r="32" fill="white" stroke="#22c55e" strokeWidth="1" />
+                    <circle cx="185" cy="284" r="24" fill="#f0fdf4" />
+                    <text x="185" y="288" fill="#16a34a" fontSize="9" fontWeight="900" textAnchor="middle">SQL</text>
+                  </g>
+
+                  {/* 3. Power BI */}
+                  <g className="animate-bounce" style={{ animationDelay: "0.8s", animationDuration: "2.3s" }}>
+                    <circle cx="255" cy="194" r="38" fill="white" stroke="#22c55e" strokeWidth="1.5" />
+                    <circle cx="255" cy="194" r="28" fill="#f0fdf4" />
+                    <text x="255" y="198" fill="#16a34a" fontSize="9" fontWeight="900" textAnchor="middle">POWER BI</text>
+                  </g>
+
+                  {/* 4. Python */}
+                  <g className="animate-bounce" style={{ animationDelay: "1.1s", animationDuration: "2.6s" }}>
+                    <circle cx="325" cy="221" r="32" fill="white" stroke="#22c55e" strokeWidth="1" />
+                    <circle cx="325" cy="221" r="24" fill="#f0fdf4" />
+                    <text x="325" y="225" fill="#16a34a" fontSize="9" fontWeight="900" textAnchor="middle">PYTHON</text>
+                  </g>
+
+                  {/* 5. Data Careers */}
+                  <g className="animate-bounce" style={{ animationDelay: "1.4s", animationDuration: "2.4s" }}>
+                    <circle cx="395" cy="131" r="45" fill="#f97316" className="shadow-lg shadow-orange-500/30" />
+                    <text x="395" y="131" fill="white" fontSize="9" fontWeight="900" textAnchor="middle">
+                      <tspan x="395" dy="-2">DATA</tspan>
+                      <tspan x="395" dy="12">CAREERS</tspan>
+                    </text>
+                  </g>
+                </svg>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Social Proof */}
-      <section className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221.5%22%20fill%3D%22white%22%20opacity%3D%220.08%22%2F%3E%3C%2Fsvg%3E')]" />
-        <div className="max-w-7xl mx-auto px-4 relative">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      {/* 2. Stats — Grid Background */}
+      <section className="py-24 border-y border-gray-50 bg-blue-50/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%23007acc%22%20fill-opacity%3D%220.03%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {socialProofStats.map((stat, i) => (
-              <div key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.15}s` }}>
-                <p className="text-3xl md:text-4xl font-bold text-white font-display">{stat.number}</p>
-                <p className="text-green-200 text-sm mt-1">{stat.label}</p>
+              <div key={i} className="text-center group">
+                <div className="text-5xl lg:text-7xl font-extrabold text-gray-900 mb-4 tracking-tighter group-hover:text-green-500 transition-colors">
+                  {stat.number}
+                </div>
+                <div className="text-green-600/60 text-xs font-black uppercase tracking-[0.3em]">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 3. Registration Countdown */}
-      <section className="max-w-7xl mx-auto px-4 pt-12 pb-4">
-        <RegistrationCountdown courses={allCourses} />
+      {/* 3. Courses — White Background */}
+      <section id="courses" className="py-32 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-24">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-950 mb-6 font-display">
+              Khóa học thực chiến
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-xl font-light">
+              Thiết kế tinh gọn, tập trung vào kỹ năng bạn thực sự cần.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+            {courses.map((course, i) => (
+              <div key={course.id} className="bg-white rounded-[40px] p-2 shadow-sm border border-gray-50 hover:shadow-2xl transition-all duration-500">
+                <CourseCard course={course} index={i} />
+              </div>
+            ))}
+          </div>
+
+          {comingSoon && (
+            <div className="mt-20 max-w-4xl mx-auto p-12 rounded-[48px] bg-green-500 text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl shadow-green-500/20 overflow-hidden relative">
+              <div className="relative z-10">
+                <div className="inline-block px-4 py-1 rounded-full bg-green-500 text-xs font-bold mb-6 uppercase tracking-widest">
+                  Sắp ra mắt
+                </div>
+                <h3 className="text-3xl font-black mb-4">{comingSoon.title}</h3>
+                <p className="text-blue-50 text-lg opacity-80">{comingSoon.shortDescription}</p>
+              </div>
+              <Link
+                href={`/courses/${comingSoon.slug}`}
+                className="relative z-10 whitespace-nowrap px-10 py-5 bg-white text-green-600 font-bold rounded-full hover:bg-blue-50 transition-all shadow-xl"
+              >
+                Đăng ký sớm
+              </Link>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* 4. Featured Courses */}
-      <section id="courses" className="max-w-7xl mx-auto px-4 pb-20">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2">Courses</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Khóa học nổi bật</h2>
-          <p className="text-gray-500 max-w-2xl mx-auto">
-            Các chương trình được thiết kế xoay quanh bài toán thực tế — giúp bạn học cách sử dụng Data để làm việc và đưa ra quyết định
-          </p>
-        </div>
+      {/* 4. Why DUA Edu — Grid Background */}
+      <section id="about" className="py-32 bg-blue-50/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%2310b981%22%20fill-opacity%3D%220.03%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-24 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-black text-gray-950 mb-16 font-display leading-[1.3]">
+                Triết lý giáo dục
+              </h2>
+              <div className="space-y-16">
+                {whyChooseCards.map((card, i) => (
+                  <div key={i} className="group border-l-4 border-blue-50/50 hover:border-green-500 pl-10 transition-all duration-500">
+                    <h4 className="text-2xl font-bold text-gray-950 mb-4 group-hover:text-green-600 transition-colors">
+                      {card.title}
+                    </h4>
+                    <p className="text-gray-400 text-lg leading-relaxed font-light">{card.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <div className="bg-white rounded-[56px] p-16 shadow-[0_40px_100px_rgba(0,0,0,0.04)] border border-gray-100 relative z-10 overflow-hidden border-l-[12px] border-l-green-500">
+                {/* Subtle background glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-items-center">
-          {courses.map((course, i) => (
-            <div key={course.id} className="w-full max-w-sm">
-              <CourseCard course={course} index={i} />
+                <div className="relative z-10">
+                  <div className="text-4xl md:text-5xl font-black mb-12 leading-tight text-gray-950">
+                    "Học ít hơn, hiểu sâu hơn, làm được nhiều hơn."
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center text-white">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-1 4.5-4 5" />
+                        <path d="M13 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-1 4.5-4 5" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="font-black text-xl tracking-tight text-gray-950">DUA Edu</div>
+                      <div className="text-green-500 text-xs font-bold tracking-widest uppercase">Human-First Education</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-100 rounded-full blur-3xl opacity-30" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Testimonials — White Background */}
+      <section className="py-32 bg-white border-t border-gray-50">
+        <div className="max-w-7xl mx-auto px-6 text-center mb-24">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-950 mb-6 font-display leading-[1.3]">
+            Học viên nói gì
+          </h2>
+          <p className="text-gray-400 text-xl font-light">Những trải nghiệm thật từ cộng đồng DUA Edu.</p>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {testimonials.map((t, i) => (
+            <div key={i} className="flex flex-col h-full bg-white p-10 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex-1">
+                <div className="flex gap-1 mb-6">
+                  {[...Array(t.stars)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-green-500 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-600 text-lg leading-relaxed mb-10 font-normal">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+              </div>
+              <div className="flex items-center gap-4 pt-6 border-t border-gray-50">
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                  {t.initials}
+                </div>
+                <div className="text-left">
+                  <div className="font-bold text-gray-900">{t.name}</div>
+                  <div className="text-green-600 text-[10px] font-black tracking-widest uppercase">{t.role}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
-
-        {/* Coming Soon — latest one at bottom */}
-        {comingSoon && (
-          <div className="mt-8 max-w-6xl mx-auto">
-            <div className="border-2 border-dashed border-amber-300 bg-amber-50 rounded-2xl p-6 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-2xl">🚀</span>
-                <span className="text-sm font-bold text-amber-600 uppercase tracking-wider">Sắp ra mắt</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{comingSoon.title}</h3>
-              <p className="text-sm text-gray-500 mb-4">{comingSoon.shortDescription}</p>
-              <Link
-                href={`/courses/${comingSoon.slug}`}
-                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md"
-              >
-                Xem chi tiết
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {courses.length === 0 && (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-xl">Chưa có khóa học nào</p>
-            <p className="mt-2">Hãy thêm khóa học qua trang <Link href="/admin" className="text-green-600 underline">Admin</Link></p>
-          </div>
-        )}
-
-        {courses.length > 0 && (
-          <div className="text-center mt-10">
-            <Link href="/courses" className="inline-flex items-center gap-2 bg-green-700 text-white font-semibold px-8 py-3 rounded-xl hover:bg-green-800 transition-all shadow-lg shadow-green-200/50">
-              Xem tất cả khóa học
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-            </Link>
-          </div>
-        )}
       </section>
 
-      {/* 5. About Dứa Data — Editorial Minimal Layout */}
-      <section id="about" className="relative py-28 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-stone-50 to-white" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-200 to-transparent" />
-        <div className="absolute -top-24 left-1/3 w-96 h-96 rounded-full bg-emerald-100/40 blur-3xl" />
-        <div className="absolute -bottom-24 right-0 w-[28rem] h-[28rem] rounded-full bg-green-100/30 blur-3xl" />
-
-        <div className="max-w-7xl mx-auto px-4 relative">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-green-700 mb-4">
-              About us
-            </p>
-            <h2 className="text-3xl md:text-5xl font-semibold text-gray-950 leading-tight font-display">
-              Sứ mệnh của Dứa Data là làm cho Data trở nên gần gũi, thực tế và đáng tin cậy hơn
-            </h2>
-            <p className="mt-6 text-lg text-gray-600 leading-8 max-w-2xl">
-              Chúng tôi tin rằng một khóa học tốt không cần quá nhiều phô trương. Điều quan trọng là nội dung rõ ràng,
-              trải nghiệm học gọn gàng và những gì học viên mang về có thể áp dụng ngay vào công việc.
-            </p>
-          </div>
-
-          <div className="mt-12 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 items-stretch">
-            <div className="rounded-[2rem] border border-green-100 bg-white/90 backdrop-blur-sm shadow-[0_24px_80px_rgba(16,185,129,0.08)] p-8 md:p-10">
-              <div className="flex items-center justify-between gap-6 flex-wrap">
-                <div>
-                  <p className="text-sm font-medium text-green-700 uppercase tracking-[0.2em]">
-                    Triết lý giảng dạy
-                  </p>
-                  <h3 className="mt-2 text-2xl md:text-3xl font-semibold text-gray-950">
-                    Học ít hơn, hiểu sâu hơn, làm được nhiều hơn
-                  </h3>
-                </div>
-                <div className="rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800">
-                  Data-driven, but human-first
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4">
-                {whyChooseCards.map((card, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-stone-200 bg-stone-50/80 p-5 md:p-6 transition-all duration-300 hover:border-green-200 hover:bg-white"
-                  >
-                    <div className="flex items-start gap-5">
-                      <div className="min-w-12 pt-0.5">
-                        <div className="h-12 w-12 rounded-2xl border border-green-200 bg-white flex items-center justify-center text-base font-semibold text-green-700">
-                          0{i + 1}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-gray-950">{card.title}</h4>
-                        <p className="mt-2 text-sm md:text-base leading-7 text-gray-600">{card.desc}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-stone-200 bg-stone-950 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] p-8 md:p-10 flex flex-col justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/90">Cam kết</p>
-                <h3 className="mt-3 text-2xl md:text-3xl font-semibold leading-tight">
-                  Gọn gàng, có chiều sâu và tập trung vào kết quả thật
-                </h3>
-                <p className="mt-4 text-white/72 leading-7">
-                  Mỗi chương trình đều được thiết kế để người học hiểu bản chất, luyện tập trên tình huống thực tế và
-                  có một lộ trình đủ rõ để tiếp tục tiến lên.
-                </p>
-              </div>
-
-              <div className="mt-10 grid grid-cols-2 gap-4">
-                {socialProofStats.map((stat, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
-                  >
-                    <div className="text-2xl md:text-3xl font-semibold text-white">{stat.number}</div>
-                    <div className="mt-1 text-sm leading-6 text-white/65">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-10 border-t border-white/10 pt-6">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/45 mb-3">Dứa Data in one sentence</p>
-                <p className="text-xl md:text-2xl font-medium leading-relaxed text-white">
-                  Chúng tôi tạo ra những trải nghiệm học Data đủ tinh tế để đẹp, đủ thực tế để dùng, và đủ rõ ràng để
-                  tin.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Testimonials — Horizontal Card Blocks */}
-      <section className="bg-gradient-to-b from-green-50 via-white to-green-50/30 py-24">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-14">
-            <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2">Testimonials</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Học viên nói gì về Dứa Data</h2>
-            <p className="text-gray-500">
-              Những chia sẻ thật từ học viên đã đồng hành cùng Dứa
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials.map((t, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in-up flex flex-col"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                {/* Stars */}
-                <div className="flex items-center gap-1 mb-3 text-yellow-400">
-                  {Array.from({ length: t.stars }).map((_, j) => (
-                    <svg key={j} className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
-                  ))}
-                </div>
-                {/* Quote */}
-                <p className="text-gray-600 text-sm leading-relaxed flex-1 mb-4">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                {/* Avatar & info */}
-                <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0`}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{t.name}</p>
-                    <p className="text-xs text-gray-400">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Expert Team Section */}
-      <section className="py-20 bg-gradient-to-b from-green-50/50 to-white relative overflow-hidden">
-        <div className="absolute top-10 left-10 w-64 h-64 bg-green-200/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-48 h-48 bg-emerald-200/30 rounded-full blur-3xl" />
-        <div className="max-w-7xl mx-auto px-4 relative">
-          <div className="text-center mb-14">
-            <p className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-2">Our Team</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 font-display">Đội ngũ chuyên gia</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Những người đồng hành cùng bạn trên hành trình Data — giàu kinh nghiệm thực chiến và đam mê chia sẻ.</p>
-          </div>
-          <ExpertCarousel experts={experts} />
-        </div>
-      </section>
-
-      {/* 7. Final CTA */}
-      <section className="relative bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221.5%22%20fill%3D%22white%22%20opacity%3D%220.06%22%2F%3E%3C%2Fsvg%3E')]" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl" />
-
-        <div className="max-w-3xl mx-auto text-center px-4 relative">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-5 font-display">
-            Sẵn sàng bắt đầu hành trình với Data?
+      {/* 6. CTA — Grid Background */}
+      <section className="py-48 bg-blue-50/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%2310b981%22%20fill-opacity%3D%220.03%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-950 mb-12 font-display leading-[1.3]">
+            Sẵn sàng bắt đầu <br /> <span className="text-green-500">hành trình với Data?</span>
           </h2>
-          <p className="text-green-100 text-lg mb-10 max-w-xl mx-auto">
-            Tham gia cùng cộng đồng Dứa Data để học công cụ, hiểu bài toán và phát triển lâu dài trong sự nghiệp.
+          <p className="text-xl md:text-2xl text-gray-400 mb-16 max-w-3xl mx-auto font-light leading-relaxed">
+            Tham gia cùng cộng đồng DUA Edu để học công cụ, hiểu bài toán và phát triển lâu dài trong sự nghiệp.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row justify-center gap-6">
             <a
               href="#courses"
-              className="inline-flex items-center justify-center bg-white text-green-700 font-semibold px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:bg-green-50 transition-all duration-300"
+              className="px-14 py-6 bg-green-500 text-white font-bold rounded-full shadow-2xl shadow-green-500/20 hover:bg-green-600 transition-all hover:scale-105"
             >
-              Bắt đầu học ngay
-              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              Học ngay bây giờ
             </a>
             <Link
               href="/roadmap"
-              className="inline-flex items-center justify-center bg-transparent text-white font-semibold px-8 py-4 rounded-full border-2 border-white/30 hover:border-white hover:bg-white/10 transition-all duration-300"
+              className="px-14 py-6 bg-blue-50 text-green-600 font-bold rounded-full hover:bg-green-100 transition-all border border-green-100"
             >
-              Tìm hiểu lộ trình phù hợp
+              Lộ trình học
             </Link>
           </div>
         </div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] bg-blue-50/40 rounded-full blur-[180px] -z-0" />
       </section>
 
       <Footer />
+
+      {/* Floating Messenger Contact Button — Premium & Animated */}
+      <a
+        href="https://m.me/duadata"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-12 right-12 z-[101] group flex flex-row-reverse items-center gap-3"
+      >
+        <div className="relative">
+          {/* Pulse Effect */}
+          <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20 group-hover:opacity-40" />
+
+          <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-12 group-hover:shadow-[0_20px_50px_rgba(34,197,94,0.2)]">
+            <svg className="w-9 h-9 text-green-500 fill-current" viewBox="0 0 24 24">
+              <path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.91 1.453 5.503 3.735 7.234.195.148.31.378.31.625v2.855c0 .484.536.772.943.506l3.193-2.09c.162-.106.353-.153.546-.135 1.047.106 2.12.164 3.273.164 5.523 0 10-4.145 10-9.258S17.523 2 12 2zm4.774 7.158l-2.88 4.588a1.123 1.123 0 01-1.638.286l-2.285-1.713a.562.562 0 00-.674.004l-3.23 2.457c-.43.326-.983-.2-.733-.6l2.88-4.588a1.123 1.123 0 011.638-.286l2.285 1.713a.562.562 0 00.674-.004l3.23-2.457c.43-.326.983.2.733.6z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Hover Label — Now appears to the LEFT */}
+        <div className="bg-white px-4 py-2 rounded-xl shadow-xl border border-gray-100 opacity-0 translate-x-4 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
+          <span className="text-sm font-black text-gray-900 whitespace-nowrap">Chat với DUA Edu</span>
+        </div>
+      </a>
     </div>
   );
 }

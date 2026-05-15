@@ -2,17 +2,24 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import BrandLogo from "@/components/BrandLogo";
 import type { SaleRegistrationEntry, SaleRegistrationStatus } from "@/types/sale";
 
 const STATUS_LABELS: Record<SaleRegistrationStatus, string> = {
-  new: "Mới",
-  contacted: "Đã liên hệ",
-  consulting: "Đang tư vấn",
-  paid: "Đã thanh toán",
-  onboarded: "Đã onboard",
-  cancelled: "Đã hủy",
+  new: "🆕 Mới",
+  contacted: "📞 Đã liên hệ",
+  consulting: "💬 Đang tư vấn",
+  paid: "✅ Đã thanh toán",
+  onboarded: "🚀 Đã onboard",
+  cancelled: "❌ Đã hủy",
+};
+
+const LEARNER_GROUP_LABELS: Record<number, string> = {
+  1: "🎓 Học sinh / Sinh viên",
+  2: "💼 Người đi làm 0-2 năm",
+  3: "👔 Người đi làm 3-5 năm",
+  0: "🔄 Chuyển ngành / Khác",
 };
 
 const STATUS_STYLES: Record<SaleRegistrationStatus, string> = {
@@ -81,6 +88,8 @@ export default function SalePage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [courseFilter, setCourseFilter] = useState("all");
+  const [role, setRole] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState("");
 
   const fetchRegistrations = useCallback(async () => {
     setLoading(true);
@@ -107,11 +116,14 @@ export default function SalePage() {
       window.location.href = "/admin/login";
       return;
     }
-    const role = decodeStoredRole(safeGetSessionItem("admin_role"));
-    if (role !== "system_admin" && role !== "sales_executive") {
+    const storedRole = safeGetSessionItem("admin_role");
+    const roleDecoded = decodeStoredRole(storedRole);
+    if (roleDecoded !== "system_admin" && roleDecoded !== "sales_executive") {
       window.location.href = "/admin";
       return;
     }
+    setAdminName(safeGetSessionItem("admin_name") || "Sale");
+    setRole(roleDecoded);
     setAuthChecked(true);
   }, []);
 
@@ -119,9 +131,6 @@ export default function SalePage() {
     if (!authChecked) return;
     fetchRegistrations();
   }, [authChecked, fetchRegistrations]);
-
-  const role = useMemo(() => decodeStoredRole(safeGetSessionItem("admin_role")), []);
-  const adminName = useMemo(() => safeGetSessionItem("admin_name") || "Sale", []);
 
   const courseOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -164,26 +173,93 @@ export default function SalePage() {
   }, [registrations]);
 
   const exportExcel = () => {
-    const rows = filteredRegistrations.map((entry, index) => ({
-      STT: index + 1,
-      "Khóa học": entry.courseTitle,
-      "Mã khóa": entry.courseSlug,
-      "Học viên": entry.fullName,
-      Email: entry.email,
-      "Số điện thoại": entry.phone,
-      Facebook: entry.facebook || "",
-      "Học phí": formatPrice(entry.coursePrice),
-      "Lưu ý": entry.note,
-      "Nhóm học viên": entry.learnerGroup,
-      "Trạng thái": STATUS_LABELS[entry.status],
-      "Ngày tạo": formatDateTime(entry.createdAt),
-      "Cập nhật": formatDateTime(entry.updatedAt),
-    }));
+    const header = [
+      "STT", "Khóa học", "Mã khóa", "Học viên", "Email",
+      "Số điện thoại", "Facebook", "Học phí", "Lưu ý",
+      "Nhóm học viên", "Trạng thái", "Ngày tạo", "Cập nhật"
+    ];
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const data = filteredRegistrations.map((entry, index) => [
+      index + 1,
+      entry.courseTitle,
+      entry.courseSlug,
+      entry.fullName,
+      entry.email,
+      entry.phone,
+      entry.facebook || "",
+      formatPrice(entry.coursePrice),
+      entry.note || "",
+      LEARNER_GROUP_LABELS[entry.learnerGroup] || "Khác",
+      STATUS_LABELS[entry.status],
+      formatDateTime(entry.createdAt),
+      formatDateTime(entry.updatedAt),
+    ]);
+
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet([header, ...data]);
+
+    // Define styles
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+      fill: { fgColor: { rgb: "10A37F" } }, // DUA Emerald
+      alignment: { horizontal: "center", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { auto: 1 } },
+        bottom: { style: "thin", color: { auto: 1 } },
+        left: { style: "thin", color: { auto: 1 } },
+        right: { style: "thin", color: { auto: 1 } }
+      }
+    };
+
+    const cellStyle = {
+      font: { sz: 10 },
+      alignment: { vertical: "center" },
+      border: {
+        top: { style: "thin", color: { auto: 1 } },
+        bottom: { style: "thin", color: { auto: 1 } },
+        left: { style: "thin", color: { auto: 1 } },
+        right: { style: "thin", color: { auto: 1 } }
+      }
+    };
+
+    const centerStyle = {
+      ...cellStyle,
+      alignment: { horizontal: "center", vertical: "center" }
+    };
+
+    // Apply styles to all cells
+    const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1:M1");
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!worksheet[cellRef]) continue;
+
+        if (R === 0) {
+          // Header row
+          worksheet[cellRef].s = headerStyle;
+        } else {
+          // Data rows
+          if (C === 0 || C === 5 || C === 10) {
+            // STT, Phone, Status columns centered
+            worksheet[cellRef].s = centerStyle;
+          } else {
+            worksheet[cellRef].s = cellStyle;
+          }
+        }
+      }
+    }
+
+    // Set column widths
+    const wscols = [
+      { wch: 6 }, { wch: 35 }, { wch: 15 }, { wch: 25 }, { wch: 30 },
+      { wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 50 }, { wch: 25 },
+      { wch: 20 }, { wch: 20 }, { wch: 20 },
+    ];
+    worksheet["!cols"] = wscols;
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sale Registrations");
-    XLSX.writeFile(workbook, `sale-registrations-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(workbook, `DUA-Data-Sale-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const updateStatus = async (id: string, status: SaleRegistrationStatus) => {
@@ -212,195 +288,201 @@ export default function SalePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_30%),linear-gradient(to_bottom,#fbfdff,#f7faf8)] text-gray-900">
-      <header className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <BrandLogo href="/admin/sale" showText={false} imageClassName="h-9 w-9" />
+    <div className="min-h-screen bg-white font-sans selection:bg-green-100 selection:text-green-900">
+      {/* Subtle Technical Background */}
+      <div className="absolute inset-0 opacity-[0.4] pointer-events-none"
+           style={{ backgroundImage: 'radial-gradient(#10a37f 0.5px, transparent 0.5px)', backgroundSize: '32px 32px' }}></div>
+
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <BrandLogo href="/admin/sale" showText={false} imageClassName="h-10 w-10" />
             <div className="min-w-0">
-              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-green-700">Sale Dashboard</div>
-              <h1 className="truncate text-lg font-bold text-gray-950 sm:text-xl">
-                Quản lý đăng ký khóa học có phí
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-100 mb-1">
+                Sale Operations
+              </div>
+              <h1 className="text-xl font-black text-gray-950 truncate tracking-tight">
+                Quản lý đăng ký khóa học
               </h1>
-              <p className="truncate text-xs text-gray-500 sm:text-sm">
-                Xin chào {adminName} {role ? `• ${role}` : ""}
+              <p className="text-xs text-gray-400 font-medium truncate">
+                Xin chào <span className="text-gray-900 font-bold">{adminName || "Đang tải..."}</span> {role ? `• ${role}` : ""}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="hidden rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 sm:inline-flex"
+              className="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors"
             >
-              Về Admin
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              Hệ thống v2
             </Link>
             <button
               onClick={exportExcel}
               disabled={filteredRegistrations.length === 0}
-              className="inline-flex items-center rounded-xl bg-green-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gray-950 text-white text-sm font-black rounded-2xl hover:bg-gray-800 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Export Excel
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              Xuất Excel
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-12">
         {message && (
-          <div className="mb-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            {message}
+          <div className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <p className="text-sm font-bold text-green-700">{message}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tổng đăng ký</p>
-            <p className="mt-2 text-3xl font-black text-gray-950">{stats.total}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Mới</p>
-            <p className="mt-2 text-3xl font-black text-amber-600">{stats.newCount}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Đã thanh toán</p>
-            <p className="mt-2 text-3xl font-black text-emerald-600">{stats.paidCount}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Đã onboard</p>
-            <p className="mt-2 text-3xl font-black text-green-700">{stats.onboardedCount}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Doanh thu</p>
-            <p className="mt-2 text-2xl font-black text-gray-950">{formatPrice(stats.revenue)}</p>
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+          <StatBox title="Tổng đăng ký" value={stats.total} color="slate" />
+          <StatBox title="Đăng ký mới" value={stats.newCount} color="amber" />
+          <StatBox title="Đã thanh toán" value={stats.paidCount} color="emerald" />
+          <StatBox title="Đã onboard" value={stats.onboardedCount} color="green" />
+          <StatBox title="Tổng doanh thu" value={formatPrice(stats.revenue)} color="dark" />
         </div>
 
-        <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Tìm kiếm</label>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm theo tên, email, phone, khóa học..."
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-              />
+        {/* Filters Section */}
+        <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Tìm kiếm thông tin</label>
+              <div className="relative">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tên, Email, SĐT..."
+                  className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500/20 transition-all placeholder:text-gray-300"
+                />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Lọc theo trạng thái</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Lọc trạng thái</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500/20 transition-all appearance-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái</option>
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Lọc theo khóa học</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Lọc khóa học</label>
               <select
                 value={courseFilter}
                 onChange={(e) => setCourseFilter(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500/20 transition-all appearance-none cursor-pointer"
               >
-                <option value="all">Tất cả khóa</option>
+                <option value="all">Tất cả khóa học</option>
                 {courseOptions.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                  </option>
+                  <option key={course.id} value={course.id}>{course.title}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
+        {/* Data List/Table */}
         {loading ? (
-          <div className="py-20 text-center text-gray-500">Đang tải dữ liệu đăng ký...</div>
+          <div className="py-32 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-4" />
+            <p className="text-gray-400 font-medium italic">Đang tải dữ liệu nghiệp vụ...</p>
+          </div>
         ) : filteredRegistrations.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-gray-200 bg-white py-20 text-center text-gray-500">
-            <p className="text-lg font-semibold text-gray-900">Chưa có đăng ký khóa có phí</p>
-            <p className="mt-2 text-sm">Dữ liệu sale sẽ hiển thị tại đây khi học viên đăng ký các khóa học có phí.</p>
+          <div className="bg-white rounded-[40px] border border-dashed border-gray-200 py-32 text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy dữ liệu</h3>
+            <p className="text-gray-400">Vui lòng điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.</p>
           </div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <div className="bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-[1180px] w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Khóa học</th>
-                    <th className="px-4 py-3 text-left font-semibold">Học viên</th>
-                    <th className="px-4 py-3 text-left font-semibold">Liên hệ</th>
-                    <th className="px-4 py-3 text-left font-semibold">Học phí</th>
-                    <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                    <th className="px-4 py-3 text-left font-semibold">Ghi chú</th>
-                    <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
-                    <th className="px-4 py-3 text-center font-semibold">Hành động</th>
+              <table className="w-full text-left border-collapse min-w-[1200px]">
+                <thead>
+                  <tr className="border-b border-gray-50 bg-gray-50/30">
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Khóa học & Học viên</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Thông tin liên hệ</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Học phí</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Trạng thái</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Ghi chú & Thời gian</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-50">
                   {filteredRegistrations.map((entry) => (
-                    <tr key={entry.id} className="align-top hover:bg-gray-50/70">
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-gray-950">{entry.courseTitle}</div>
-                        <div className="mt-1 text-xs text-gray-500">Slug: {entry.courseSlug}</div>
+                    <tr key={entry.id} className="group hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="font-black text-gray-950 mb-1 leading-tight">{entry.fullName}</div>
+                        <div className="text-xs text-gray-400 mb-2">{entry.email}</div>
+                        <div className="inline-flex items-center px-2.5 py-1 rounded-lg bg-green-50 text-[10px] font-black text-green-700 uppercase tracking-wider border border-green-100/50 shadow-sm">
+                          {entry.courseTitle}
+                        </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-gray-950">{entry.fullName}</div>
-                        <div className="mt-1 text-xs text-gray-500">Email: {entry.email}</div>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-gray-800">{entry.phone}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 italic">Nhóm: {LEARNER_GROUP_LABELS[entry.learnerGroup] || "Khác"}</div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-gray-700">{getDisplayContact(entry)}</div>
-                        <div className="mt-1 text-xs text-gray-500">Nhóm: {entry.learnerGroup}</div>
+                      <td className="px-8 py-6">
+                        <div className="text-lg font-black text-gray-950 leading-none">
+                          {formatPrice(entry.coursePrice)}
+                        </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-base font-semibold text-gray-950">{formatPrice(entry.coursePrice)}</div>
-                      </td>
-                      <td className="px-4 py-4">
+                      <td className="px-8 py-6">
                         <select
                           value={entry.status}
                           onChange={(e) => updateStatus(entry.id, e.target.value as SaleRegistrationStatus)}
                           disabled={savingId === entry.id}
-                          className={`min-w-44 rounded-xl border px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-green-500/20 ${getStatusClass(entry.status)}`}
+                          className={`rounded-2xl border-none px-4 py-2 text-xs font-black outline-none focus:ring-4 focus:ring-green-500/10 transition-all cursor-pointer ${getStatusClass(entry.status)}`}
                         >
                           {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
+                            <option key={value} value={value}>{label}</option>
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-4">
-                        <p className="max-w-[280px] whitespace-pre-wrap text-gray-700">{entry.note || "—"}</p>
+                      <td className="px-8 py-6">
+                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 max-w-[300px] relative group-hover:bg-white transition-colors">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                            <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                              {entry.note || "Không có ghi chú từ học viên"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2 px-1">
+                          <div className="w-1 h-1 rounded-full bg-gray-300" />
+                          <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                            Cập nhật: {formatDateTime(entry.updatedAt)}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-4 py-4 text-gray-600">
-                        <div>{formatDateTime(entry.updatedAt)}</div>
-                        <div className="mt-1 text-xs text-gray-500">{formatDateTime(entry.createdAt)}</div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-col items-center gap-2">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center justify-center gap-2">
                           <button
-                            type="button"
                             onClick={() => navigator.clipboard?.writeText(entry.phone)}
-                            className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-100"
+                            className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-all border border-transparent hover:border-green-100"
+                            title="Copy SĐT"
                           >
-                            Copy SĐT
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                           </button>
-                          {entry.facebook ? (
+                          {entry.facebook && (
                             <a
                               href={entry.facebook.startsWith("http") ? entry.facebook : `https://${entry.facebook}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-transparent hover:border-blue-100"
+                              title="Facebook"
                             >
-                              Facebook
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" /></svg>
                             </a>
-                          ) : (
-                            <span className="text-xs text-gray-400">Không có FB</span>
                           )}
                         </div>
                       </td>
@@ -412,6 +494,23 @@ export default function SalePage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function StatBox({ title, value, color }: { title: string, value: string | number, color: string }) {
+  const colors: Record<string, string> = {
+    slate: "text-slate-600 bg-slate-50 border-slate-100",
+    amber: "text-amber-600 bg-amber-50 border-amber-100",
+    emerald: "text-emerald-600 bg-emerald-50 border-emerald-100",
+    green: "text-green-600 bg-green-50 border-green-100",
+    dark: "text-gray-950 bg-gray-50 border-gray-100 ring-2 ring-gray-950/5",
+  };
+
+  return (
+    <div className={`rounded-[32px] p-8 border shadow-sm transition-all hover:shadow-md ${colors[color] || colors.slate}`}>
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-3">{title}</p>
+      <p className="text-3xl font-black tracking-tighter">{value}</p>
     </div>
   );
 }

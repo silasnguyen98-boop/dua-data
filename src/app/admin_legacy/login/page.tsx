@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
         "admin_username",
         String(data.username || username).trim()
       );
-      router.push("/admin");
+      router.push("/adminv2");
     } catch {
       setError("Lỗi kết nối. Vui lòng thử lại.");
     } finally {
@@ -68,10 +68,10 @@ export default function AdminLoginPage() {
       {/* Left Column: Technical Branding Section */}
       <div className="flex-1 bg-slate-900 relative flex flex-col justify-center px-12 lg:px-24 xl:px-32 overflow-hidden">
         {/* Complex Technical Background */}
-        <div className="absolute inset-0 opacity-[0.15] pointer-events-none"
+        <div className="absolute inset-0 opacity-[0.15] pointer-events-none" 
              style={{ backgroundImage: 'linear-gradient(#10a37f 1px, transparent 1px), linear-gradient(90deg, #10a37f 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-green-900/20"></div>
-
+        
         {/* Moving Scanline Effect */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="w-full h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent absolute top-0 animate-scanline"></div>
@@ -93,8 +93,8 @@ export default function AdminLoginPage() {
                <span className="text-xs font-black text-green-400 uppercase tracking-[0.5em] drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]">Data Ops Center</span>
             </div>
             <h1 className="text-6xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter">
-              Nâng cấp <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300">năng lực</span> <br />
+              Nâng cấp <br /> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300">năng lực</span> <br /> 
               bằng dữ liệu
             </h1>
             <div className="flex flex-wrap gap-3 pt-6">
@@ -111,9 +111,9 @@ export default function AdminLoginPage() {
       {/* Right Column: High-End Login Section */}
       <div className="flex-1 bg-[#0a0f18] flex items-center justify-center p-8 relative">
         {/* Technical Dot Grid Background */}
-        <div className="absolute inset-0 opacity-[0.2] pointer-events-none"
+        <div className="absolute inset-0 opacity-[0.2] pointer-events-none" 
              style={{ backgroundImage: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
-
+        
         <div className="w-full max-w-[480px] bg-[#161b22] rounded-[54px] p-12 lg:p-16 border border-white/5 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-1000">
           <div className="mb-12">
             <div className="flex items-center gap-3 mb-6">
