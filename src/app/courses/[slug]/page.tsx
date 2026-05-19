@@ -70,12 +70,14 @@ export default async function CourseDetailPage({
   const totalTopics = course.curriculum.reduce((sum, item) => sum + (item.topics?.length || 0), 0);
   const shouldHidePrice = course.hidePrice === true;
   const status = getCourseStatus(course);
+  const shortDescription = course.shortDescription?.trim();
+  const hasReviews = course.reviews > 0;
 
   const heroStats = [
-    { label: "Bài học", value: course.totalLessons.toString(), icon: "📚" },
-    { label: "Giai đoạn", value: course.curriculum.length.toString(), icon: "🗺️" },
-    { label: "Chủ đề", value: totalTopics.toString(), icon: "🎯" },
-    { label: "Học viên", value: course.students.toString(), icon: "👥" },
+    { label: "Bài học", value: course.totalLessons.toString() },
+    { label: "Giai đoạn", value: course.curriculum.length.toString() },
+    { label: "Chủ đề", value: totalTopics.toString() },
+    { label: "Học viên", value: course.students.toString() },
   ];
 
   const courseInfo = [
@@ -124,17 +126,24 @@ export default async function CourseDetailPage({
 
               <div className="flex items-center gap-6 mb-8 py-6 border-y border-slate-200/60">
                  <div className="flex items-center gap-2">
-                    <span className="text-amber-400 text-lg">★★★★★</span>
-                    <span className="text-sm font-black text-slate-900">{course.rating}</span>
-                    <span className="text-sm font-bold text-slate-400">({course.reviews} reviews)</span>
+                    {hasReviews ? (
+                      <>
+                        <span className="text-sm font-black text-slate-900">{course.rating}</span>
+                        <span className="text-sm font-bold text-slate-400">({course.reviews} đánh giá)</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-bold text-slate-500">Chưa có đánh giá</span>
+                    )}
                  </div>
                  <div className="w-px h-4 bg-slate-300" />
                  <div className="text-sm font-bold text-slate-500">Giảng viên: <span className="text-slate-900">{course.instructor}</span></div>
               </div>
 
-              <p className="text-lg leading-relaxed text-slate-500 font-medium max-w-2xl italic">
-                "{course.shortDescription}"
-              </p>
+              {shortDescription && (
+                <p className="text-lg leading-relaxed text-slate-500 font-medium max-w-2xl">
+                  {shortDescription}
+                </p>
+              )}
             </div>
 
             <div className="relative animate-in fade-in zoom-in duration-1000 delay-200">
@@ -161,7 +170,7 @@ export default async function CourseDetailPage({
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {heroStats.map((stat) => (
                 <div key={stat.label} className="group rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1">
-                  <div className="text-3xl mb-3">{stat.icon}</div>
+                  <div className="mb-5 h-1 w-10 rounded-full bg-emerald-500/80" />
                   <p className="text-3xl font-black text-slate-900">{stat.value}</p>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">{stat.label}</p>
                 </div>
@@ -240,31 +249,33 @@ export default async function CourseDetailPage({
             </div>
           </div>
 
-          {/* SIDEBAR - BOARDING PASS */}
+          {/* SIDEBAR */}
           <aside className="lg:sticky lg:top-32 h-fit animate-in fade-in slide-in-from-right-8 duration-700">
             <div className="rounded-[40px] border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/50">
-              <div className="rounded-[36px] bg-slate-900 p-8 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
+              <div className="relative overflow-hidden rounded-[36px] border border-emerald-100 bg-emerald-50 p-8 text-slate-900">
+                <div className="absolute inset-0 opacity-[0.32] [background-image:linear-gradient(45deg,#86efac_25%,transparent_25%,transparent_75%,#86efac_75%,#86efac),linear-gradient(45deg,#86efac_25%,transparent_25%,transparent_75%,#86efac_75%,#86efac)] [background-position:0_0,12px_12px] [background-size:24px_24px]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-emerald-50/85 to-sky-50/70" />
+                <div className="absolute inset-x-0 bottom-0 h-px bg-emerald-200" />
 
                 {course.comingSoon ? (
                   <div className="relative z-10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-2">Coming Soon</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700 mb-2">Sắp mở</p>
                     <h3 className="text-3xl font-black mb-4">Sắp khởi hành</h3>
-                    <p className="text-slate-400 text-sm font-medium leading-relaxed">Đăng ký vào danh sách chờ để nhận ưu đãi sớm nhất.</p>
+                    <p className="text-slate-600 text-sm font-medium leading-relaxed">Đăng ký vào danh sách chờ để nhận ưu đãi sớm nhất.</p>
                   </div>
                 ) : shouldHidePrice ? (
                   <div className="relative z-10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-2">Consulting</p>
-                    <h3 className="text-3xl font-black mb-4">Liên hệ tư vấn</h3>
-                    <p className="text-slate-400 text-sm font-medium leading-relaxed">Nhận lộ trình học cá nhân hóa phù hợp với mục tiêu của bạn.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700 mb-2">Tư vấn lộ trình</p>
+                    <h3 className="text-3xl font-black mb-4">Chọn khóa học phù hợp</h3>
+                    <p className="text-slate-600 text-sm font-medium leading-relaxed">Trao đổi với đội ngũ DUA Edu để xác định mục tiêu, nền tảng hiện tại và lịch học phù hợp.</p>
                   </div>
                 ) : (
                   <div className="relative z-10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-4">Boarding Ticket</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700 mb-4">Thông tin đăng ký</p>
                     <div className="flex items-end gap-3 mb-4">
                       <span className="text-4xl font-black tracking-tighter">{formatPrice(course.price)}</span>
                       {course.price > 0 && course.originalPrice > course.price && (
-                        <span className="text-lg text-slate-500 line-through pb-1">{formatPrice(course.originalPrice)}</span>
+                        <span className="text-lg text-slate-400 line-through pb-1">{formatPrice(course.originalPrice)}</span>
                       )}
                     </div>
                     {course.price > 0 && course.discount > 0 && (
@@ -297,7 +308,7 @@ export default async function CourseDetailPage({
                         rel="noopener noreferrer"
                         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white px-5 py-5 text-sm font-black text-slate-800 transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95 shadow-sm"
                       >
-                        <span className="text-lg">💬</span> Tư vấn miễn phí
+                        Tư vấn miễn phí
                       </a>
                     </div>
                   )}
@@ -314,13 +325,12 @@ export default async function CourseDetailPage({
                 </div>
 
                 <div className="pt-6 border-t border-slate-100 space-y-4">
-                   <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50">
-                      <span className="text-xl">✅</span>
-                      Hỗ trợ 1-1 trong suốt hành trình
-                   </div>
-                   <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50">
-                      <span className="text-xl">🎓</span>
-                      Chứng chỉ hoàn thành từ DUA Edu
+                   <div className="rounded-2xl border border-emerald-100/70 bg-emerald-50/60 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Bao gồm</p>
+                      <div className="mt-3 space-y-3 text-xs font-bold leading-relaxed text-slate-600">
+                        <p className="border-l-2 border-emerald-400 pl-3">Hỗ trợ 1-1 trong suốt hành trình</p>
+                        <p className="border-l-2 border-emerald-400 pl-3">Chứng chỉ hoàn thành từ DUA Edu</p>
+                      </div>
                    </div>
                 </div>
               </div>

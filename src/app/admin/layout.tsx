@@ -32,6 +32,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
@@ -40,8 +41,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true); // For mobile
   const [collapsed, setCollapsed] = useState(false); // For desktop mini-sidebar
   const currentView = searchParams.get("view") || "dashboard";
+  const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
+    if (isLoginPage) {
+      setCheckingAuth(false);
+      return;
+    }
+
     const auth = sessionStorage.getItem("admin_auth");
     if (!auth) {
       router.replace("/admin/login");
@@ -51,7 +58,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       setAdminRole(sessionStorage.getItem("admin_username") === "admin" ? "Super Admin" : "Sale");
     }
     setCheckingAuth(false);
-  }, [router]);
+  }, [isLoginPage, router]);
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   if (checkingAuth) {
     return (
@@ -185,7 +196,16 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+            <p className="text-sm font-bold text-slate-300">Đang tải trang quản trị...</p>
+          </div>
+        </div>
+      }
+    >
       <LayoutContent>{children}</LayoutContent>
     </Suspense>
   );

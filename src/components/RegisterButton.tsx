@@ -62,7 +62,7 @@ export default function RegisterButton({ courseId, courseTitle, coursePath, endD
 
   if (status === "expired") {
     return (
-      <div className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-5 py-3.5 text-center text-sm font-semibold text-gray-500">
+      <div className="w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-5 py-4 text-center text-sm font-black text-slate-500">
         Đã hết hạn đăng ký
       </div>
     );
@@ -70,7 +70,7 @@ export default function RegisterButton({ courseId, courseTitle, coursePath, endD
 
   if (status === "ended") {
     return (
-      <div className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-5 py-3.5 text-center text-sm font-semibold text-gray-500">
+      <div className="w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-5 py-4 text-center text-sm font-black text-slate-500">
         Khóa học đã kết thúc
       </div>
     );
@@ -81,7 +81,7 @@ export default function RegisterButton({ courseId, courseTitle, coursePath, endD
       <button
         onClick={handleRegisterClick}
         disabled={authStatus === "loading"}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {authStatus === "loading" ? "Đang kiểm tra..." : "Đăng ký ngay"}
       </button>

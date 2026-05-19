@@ -22,7 +22,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const MIN_FORM_AGE_MS = Number(process.env.REGISTER_MIN_FORM_AGE_MS || 2500);
+const MIN_FORM_AGE_MS = Number(process.env.REGISTER_MIN_FORM_AGE_MS || 800);
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -109,7 +109,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dữ liệu đăng ký không hợp lệ" }, { status: 400 });
     }
 
-    if (Number.isFinite(formStartedAt) && Date.now() - formStartedAt < MIN_FORM_AGE_MS) {
+    const formAgeMs = Date.now() - formStartedAt;
+    if (
+      MIN_FORM_AGE_MS > 0 &&
+      Number.isFinite(formStartedAt) &&
+      formStartedAt > 0 &&
+      formAgeMs >= 0 &&
+      formAgeMs < MIN_FORM_AGE_MS
+    ) {
       return NextResponse.json(
         { error: "Bạn thao tác quá nhanh, vui lòng thử lại sau vài giây" },
         { status: 429 },

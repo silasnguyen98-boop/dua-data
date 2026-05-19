@@ -396,7 +396,37 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 4. Why DUA Edu — Grid Background */}
+      {/* 4. Experts — Light Grid Background */}
+      {experts.length > 0 && (
+        <section className="py-32 bg-emerald-50/30 relative overflow-hidden border-y border-emerald-50">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%2310b981%22%20fill-opacity%3D%220.04%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="mb-20 grid gap-8 lg:grid-cols-[1fr_420px] lg:items-end">
+              <div>
+                <p className="mb-4 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+                  Mentor Network
+                </p>
+                <h2 className="text-4xl md:text-5xl font-black text-gray-950 mb-6 font-display leading-[1.2]">
+                  Đội ngũ chuyên gia
+                </h2>
+                <p className="text-gray-500 max-w-2xl text-xl font-light leading-relaxed">
+                  Những người đồng hành cùng bạn trong quá trình học, thực hành và kết nối bài toán dữ liệu với công việc thật.
+                </p>
+              </div>
+              <div className="rounded-[32px] border border-emerald-100 bg-white/80 p-6 shadow-sm">
+                <div className="text-4xl font-black tracking-tighter text-gray-950">{experts.length}</div>
+                <div className="mt-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-600">
+                  Chuyên gia đồng hành
+                </div>
+              </div>
+            </div>
+
+            <ExpertCarousel experts={experts} />
+          </div>
+        </section>
+      )}
+
+      {/* 5. Why DUA Edu — Grid Background */}
       <section id="about" className="py-32 bg-blue-50/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%2310b981%22%20fill-opacity%3D%220.03%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -445,7 +475,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 5. Testimonials — White Background */}
+      {/* 6. Testimonials — White Background */}
       <section className="py-32 bg-white border-t border-gray-50">
         <div className="max-w-7xl mx-auto px-6 text-center mb-24">
           <h2 className="text-4xl md:text-5xl font-black text-gray-950 mb-6 font-display leading-[1.3]">
@@ -482,7 +512,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 6. CTA — Grid Background */}
+      {/* 7. CTA — Grid Background */}
       <section className="py-48 bg-blue-50/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M40%2040H0V0h40v40zM1%2039V1h38v38H1z%22%20fill%3D%22%2310b981%22%20fill-opacity%3D%220.03%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
