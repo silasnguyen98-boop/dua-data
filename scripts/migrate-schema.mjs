@@ -134,6 +134,7 @@ async function runMigration() {
         linkedin text,
         display_order integer DEFAULT 0,
         published boolean DEFAULT false,
+        expert_group text DEFAULT 'home',
         created_at timestamptz DEFAULT now(),
         updated_at timestamptz DEFAULT now()
       );
@@ -172,6 +173,10 @@ async function runMigration() {
         -- Add missing column if not exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='courses' AND column_name='registration_deadline') THEN
           ALTER TABLE public.courses ADD COLUMN registration_deadline timestamptz;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='experts' AND column_name='expert_group') THEN
+          ALTER TABLE public.experts ADD COLUMN expert_group text DEFAULT 'home';
         END IF;
       END $$;
     `;

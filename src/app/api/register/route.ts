@@ -32,6 +32,12 @@ function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeCourseType(value: unknown) {
+  const raw = normalizeText(value).toLowerCase();
+  if (raw === "e_learning" || raw === "e-learning") return "elearning";
+  return raw || "online";
+}
+
 async function getCourseById(courseId: string) {
   const { rows } = await query(
     "SELECT id, slug, title, students, price, hide_price, course_type FROM courses WHERE id = $1 LIMIT 1",
@@ -65,7 +71,7 @@ export async function GET() {
       String(course.id),
       {
         title: String(course.title || ""),
-        courseType: String(course.course_type || "online"),
+        courseType: normalizeCourseType(course.course_type),
         price: Number(course.price || 0),
       },
     ])

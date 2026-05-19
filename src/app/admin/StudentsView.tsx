@@ -20,7 +20,7 @@ type TimeFilter = "all" | "today" | "week" | "custom";
 export default function StudentsView() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"online_paid" | "online_free" | "elearning">("online_paid");
+  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "online_free" | "elearning">("all");
 
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
@@ -41,9 +41,10 @@ export default function StudentsView() {
     setLoading(true);
     try {
       const res = await fetch("/api/register");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       // Filter for onboarded students only
-      const onboarded = (data as Student[]).filter(s => s.status === "onboarded");
+      const onboarded = (Array.isArray(data) ? data : []).filter((s: Student) => s.status === "onboarded");
       setStudents(onboarded);
     } catch (err) {
       console.error("Failed to fetch students", err);
@@ -94,19 +95,22 @@ export default function StudentsView() {
 
   // 2. Calculate Stats based on the base filtered data
   const stats = useMemo(() => ({
-    online_paid: baseFilteredData.filter((s) => s.courseType === "online" && s.price > 0).length,
-    online_free: baseFilteredData.filter((s) => s.courseType === "online" && s.price === 0).length,
-    elearning: baseFilteredData.filter((s) => s.courseType === "elearning").length,
+    all: baseFilteredData.length,
+    online_paid: baseFilteredData.filter((s) => s.courseType === "online" && Number(s.price || 0) > 0).length,
+    online_free: baseFilteredData.filter((s) => s.courseType === "online" && Number(s.price || 0) === 0).length,
+    elearning: baseFilteredData.filter((s) => s.courseType === "elearning" || s.courseType === "e_learning").length,
   }), [baseFilteredData]);
 
   // 3. Final Tab-specific filter for the table
   const filteredData = useMemo(() => {
     return baseFilteredData.filter((s) => {
-      if (activeTab === "elearning") return s.courseType === "elearning";
-      if (s.courseType !== "online") return false;
-      if (activeTab === "online_paid") return s.price > 0;
-      if (activeTab === "online_free") return s.price === 0;
-      return false;
+      const courseType = s.courseType === "e_learning" ? "elearning" : s.courseType;
+      if (activeTab === "all") return true;
+      if (activeTab === "elearning") return courseType === "elearning";
+      if (courseType !== "online") return false;
+      if (activeTab === "online_paid") return Number(s.price || 0) > 0;
+      if (activeTab === "online_free") return Number(s.price || 0) === 0;
+      return true;
     });
   }, [baseFilteredData, activeTab]);
 
@@ -200,6 +204,7 @@ export default function StudentsView() {
       {/* Tabs */}
       <div className="flex p-1.5 bg-slate-100 rounded-[24px] w-fit">
         {[
+          { id: "all", label: "Tất cả", count: stats.all },
           { id: "online_paid", label: "Online (Có phí)", count: stats.online_paid },
           { id: "online_free", label: "Online (Miễn phí)", count: stats.online_free },
           { id: "elearning", label: "E-learning", count: stats.elearning },

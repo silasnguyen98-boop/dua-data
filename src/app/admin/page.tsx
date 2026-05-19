@@ -13,12 +13,14 @@ import ShortlinksView from "./ShortlinksView";
 import LeadsView from "./LeadsView";
 import ActivitiesView from "./ActivitiesView";
 import MailView from "./MailView";
+import ExpertsView from "./ExpertsView";
 
 interface Stats {
   totalStudents: number;
   totalLeads: number;
   totalCourses: number;
   totalWaitlist: number;
+  totalAuthUsers: number;
   growth: number;
 }
 
@@ -31,6 +33,7 @@ function AdminContent() {
     totalLeads: 0,
     totalCourses: 0,
     totalWaitlist: 0,
+    totalAuthUsers: 0,
     growth: 12.5
   });
 
@@ -42,17 +45,19 @@ function AdminContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [regRes, leadRes, courseRes, waitRes] = await Promise.all([
+      const [regRes, leadRes, courseRes, waitRes, authRes] = await Promise.all([
         fetch("/api/register"),
         fetch("/api/lead-resource"),
         fetch("/api/admin/courses"),
-        fetch("/api/wait-list")
+        fetch("/api/wait-list"),
+        fetch("/api/admin/auth-users")
       ]);
 
       const regData = await regRes.json().catch(() => []);
       const leadData = await leadRes.json().catch(() => []);
       const courseData = await courseRes.json().catch(() => []);
       const waitData = await waitRes.json().catch(() => []);
+      const authData = await authRes.json().catch(() => []);
 
       const sortedRegs = Array.isArray(regData)
         ? [...regData].sort((a, b) => {
@@ -79,7 +84,15 @@ function AdminContent() {
           }))
         : [];
 
-      const combinedLeads = [...freeCourseLeads, ...resourceLeads];
+      const authLeads = Array.isArray(authData)
+        ? authData.map((item: any) => ({
+            ...item,
+            createdAt: item.createdAt || new Date().toISOString(),
+            source: "auth_user",
+          }))
+        : [];
+
+      const combinedLeads = [...freeCourseLeads, ...resourceLeads, ...authLeads];
 
       setAllRegistrations(sortedRegs);
       setAllLeads(combinedLeads);
@@ -88,6 +101,7 @@ function AdminContent() {
         totalLeads: combinedLeads.length,
         totalCourses: Array.isArray(courseData) ? courseData.length : 0,
         totalWaitlist: Array.isArray(waitData) ? waitData.length : 0,
+        totalAuthUsers: Array.isArray(authData) ? authData.length : 0,
         growth: 15.2
       });
 
@@ -225,6 +239,10 @@ function AdminContent() {
     return <MailView />;
   }
 
+  if (view === "experts") {
+    return <ExpertsView />;
+  }
+
   if (view !== "dashboard") {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-3xl border border-slate-200 border-dashed">
@@ -252,9 +270,10 @@ function AdminContent() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard title="Học viên đăng ký" value={stats.totalStudents} icon="Users" color="green" trend="+12%" />
         <StatCard title="Tiềm năng" value={stats.totalLeads} icon="LightBulb" color="blue" trend="+5%" />
+        <StatCard title="Người dùng Auth" value={stats.totalAuthUsers} icon="Key" color="emerald" trend="New" />
         <StatCard title="Khóa học" value={stats.totalCourses} icon="BookOpen" color="purple" trend="Stable" />
         <StatCard title="Danh sách chờ" value={stats.totalWaitlist} icon="Clock" color="orange" trend="+8%" />
       </div>
@@ -400,7 +419,8 @@ function StatCard({ title, value, icon, color, trend }: { title: string, value: 
     green: "bg-green-50 text-green-600",
     blue: "bg-blue-50 text-blue-600",
     purple: "bg-purple-50 text-purple-600",
-    orange: "bg-orange-50 text-orange-600"
+    orange: "bg-orange-50 text-orange-600",
+    emerald: "bg-emerald-50 text-emerald-600"
   };
 
   return (
@@ -409,7 +429,7 @@ function StatCard({ title, value, icon, color, trend }: { title: string, value: 
         <div className={`p-3 rounded-2xl ${colorMap[color] || "bg-slate-50"}`}>
           <Icon name={icon} className="h-6 w-6" />
         </div>
-        <span className={`text-xs font-bold px-2 py-1 rounded-full ${trend.startsWith('+') ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}`}>
+        <span className={`text-xs font-bold px-2 py-1 rounded-full ${trend.startsWith('+') ? "bg-green-100 text-green-700" : trend === "New" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
           {trend}
         </span>
       </div>
@@ -427,6 +447,7 @@ function Icon({ name, className }: { name: string, className?: string }) {
     case "LightBulb": return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>;
     case "BookOpen": return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>;
     case "Clock": return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    case "Key": return <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>;
     default: return null;
   }
 }

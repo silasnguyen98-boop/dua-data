@@ -26,6 +26,7 @@ export default function Footer() {
               <Link href="/roadmap" className="block text-sm transition hover:text-green-700">Lộ trình</Link>
               <Link href="/resource" className="block text-sm transition hover:text-green-700">Tài nguyên</Link>
               <Link href="/community" className="block text-sm transition hover:text-green-700">Cộng đồng</Link>
+              <Link href="/genzlamdata" className="block text-sm transition hover:text-green-700">GenZ làm Data</Link>
             </div>
           </div>
           <div>

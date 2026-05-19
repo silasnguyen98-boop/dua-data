@@ -79,7 +79,8 @@ export default function Navbar() {
     { href: "/courses", label: "Khóa học" },
     { href: "/roadmap", label: "Lộ trình" },
     { href: "/resource", label: "Tài nguyên" },
-    { href: "/community", label: "Cộng đồng"}
+    { href: "/community", label: "Cộng đồng" },
+    { href: "/genzlamdata", label: "GenZ làm Data" }
   ];
 
   const isActive = (href: string) => {
@@ -148,12 +149,12 @@ export default function Navbar() {
             />
 
             {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-5 lg:gap-8">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-medium transition-colors ${
+                  className={`text-xs lg:text-sm font-medium transition-colors ${
                     isActive(link.href)
                       ? "text-green-700 border-b-2 border-green-600 pb-1"
                       : "text-gray-600 hover:text-green-700"
