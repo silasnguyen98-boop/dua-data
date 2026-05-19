@@ -5,11 +5,14 @@ import type { MailLogStatus } from "@/types/mail";
 export interface SendLoggedMailOptions {
   registrationId?: string | null;
   recipientEmail: string;
+  cc?: string;
+  bcc?: string;
   mailType: string;
   subject: string;
   text: string;
   html?: string;
   body?: string;
+  profile?: "noreply" | "hello";
 }
 
 function normalizeText(value: unknown) {
@@ -85,11 +88,29 @@ export async function sendLoggedMail(options: SendLoggedMailOptions) {
   const logId = String(logRow.id || "");
 
   try {
+    let finalHtml = options.html;
+    
+    // Inject tracking pixel if HTML is provided
+    if (finalHtml) {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://duadata.net";
+      const trackingUrl = `${baseUrl.replace(/\/+$/, "")}/api/mail/track/${logId}`;
+      const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none" alt="" />`;
+      
+      if (finalHtml.includes("</body>")) {
+        finalHtml = finalHtml.replace("</body>", `${trackingPixel}</body>`);
+      } else {
+        finalHtml = finalHtml + trackingPixel;
+      }
+    }
+
     await sendMail({
       to: options.recipientEmail,
+      cc: options.cc,
+      bcc: options.bcc,
       subject: options.subject,
       text: options.text,
-      html: options.html,
+      html: finalHtml,
+      profile: options.profile,
     });
 
     const sentAt = new Date().toISOString();

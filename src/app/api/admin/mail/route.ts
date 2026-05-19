@@ -32,11 +32,21 @@ function requireMailAccess(req: NextRequest) {
   return Boolean(role && ALLOWED_ROLES.has(role));
 }
 
-async function loadLogs(limit = 100) {
+async function loadLogs(filter = "all", limit = 100) {
+  let whereClause = "";
+  if (filter === "day") {
+    whereClause = "WHERE created_at >= now() - interval '1 day'";
+  } else if (filter === "week") {
+    whereClause = "WHERE created_at >= now() - interval '1 week'";
+  } else if (filter === "month") {
+    whereClause = "WHERE created_at >= now() - interval '1 month'";
+  }
+
   const [{ rows: logsData }, { rows: registrationsData }, { rows: coursesData }] = await Promise.all([
     query(
-      `SELECT id, registration_id, recipient_email, mail_type, subject, status, error_message, sent_at, created_at, body 
+      `SELECT id, registration_id, recipient_email, mail_type, subject, status, error_message, sent_at, created_at, body, opened_at, open_count 
        FROM mail_logs 
+       ${whereClause}
        ORDER BY created_at DESC 
        LIMIT $1`,
       [limit]
@@ -80,6 +90,8 @@ async function loadLogs(limit = 100) {
       sentAt: row.sent_at ? String(row.sent_at) : null,
       createdAt: String(row.created_at || ""),
       body: String(row.body || ""),
+      openedAt: row.opened_at ? String(row.opened_at) : null,
+      openCount: Number(row.open_count || 0),
       registration: registrationId ? registrationById.get(registrationId) || null : null,
     };
   });
@@ -106,7 +118,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { logs, stats } = await loadLogs();
+    const filter = req.nextUrl.searchParams.get("filter") || "all";
+    const { logs, stats } = await loadLogs(filter);
     return NextResponse.json({ logs, stats });
   } catch (err) {
     console.error("GET /api/admin/mail error:", err);
@@ -123,11 +136,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const logId = normalizeText(body.logId);
     const recipientEmail = normalizeText(body.recipientEmail);
+    const cc = normalizeText(body.cc);
+    const bcc = normalizeText(body.bcc);
     const subject = normalizeText(body.subject);
     const mailType = normalizeText(body.mailType) || "manual";
     const rawBody = normalizeText(body.body);
     const html = normalizeText(body.html);
     const text = normalizeText(body.text) || rawBody;
+    const profile = normalizeText(body.profile) as "noreply" | "hello" | "";
 
     let targetEmail = recipientEmail;
     let targetSubject = subject;
@@ -136,6 +152,7 @@ export async function POST(req: NextRequest) {
     let targetHtml = html || (rawBody ? rawBody.replace(/\n/g, "<br />") : "");
     let targetMailType = mailType;
     let registrationId: string | null = normalizeText(body.registrationId) || null;
+    let targetProfile: "noreply" | "hello" | undefined = (profile === "hello" || profile === "noreply") ? profile : undefined;
 
     if (logId) {
       const { rows } = await query("SELECT * FROM mail_logs WHERE id = $1 LIMIT 1", [logId]);
@@ -164,11 +181,14 @@ export async function POST(req: NextRequest) {
     const sent = await sendLoggedMail({
       registrationId,
       recipientEmail: targetEmail,
+      cc: cc || undefined,
+      bcc: bcc || undefined,
       mailType: targetMailType,
       subject: targetSubject,
       text: targetText,
       html: targetHtml || undefined,
       body: targetBody || targetText,
+      profile: targetProfile,
     });
 
     return NextResponse.json({ success: true, logId: sent.logId });

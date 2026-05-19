@@ -15,6 +15,7 @@ const emptyExpert: ExpertForm = {
   linkedin: "",
   order: 0,
   published: true,
+  group: "home",
 };
 
 function decodeStoredRole(stored: string | null): string | null {
@@ -101,6 +102,7 @@ export default function AdminExpertsPage() {
       linkedin: expert.linkedin || "",
       order: expert.order || 0,
       published: expert.published !== false,
+      group: expert.group || "home",
     });
     setShowForm(true);
   }
@@ -121,6 +123,7 @@ export default function AdminExpertsPage() {
       linkedin: form.linkedin?.trim() || "",
       order: Number(form.order) || 0,
       published: form.published !== false,
+      group: form.group?.trim() || "home",
     };
 
     const res = await fetch("/api/experts", {
@@ -165,6 +168,7 @@ export default function AdminExpertsPage() {
         linkedin: expert.linkedin || "",
         order: Number(expert.order) || 0,
         published: !expert.published,
+        group: expert.group || "home",
       }),
     });
 
@@ -272,6 +276,10 @@ export default function AdminExpertsPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span>Thứ tự</span>
                       <span className="font-semibold text-gray-900">{expert.order || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Nhóm</span>
+                      <span className="font-semibold text-gray-900">{expert.group || "home"}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span>LinkedIn</span>
@@ -390,6 +398,18 @@ export default function AdminExpertsPage() {
                   onChange={(e) => setForm({ ...form, order: Number(e.target.value) || 0 })}
                   className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-green-500 focus:bg-white"
                 />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700">Nhóm hiển thị</span>
+                <select
+                  value={form.group || "home"}
+                  onChange={(e) => setForm({ ...form, group: e.target.value })}
+                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-green-500 focus:bg-white"
+                >
+                  <option value="home">Trang chủ</option>
+                  <option value="genzlamdata">GenZ làm Data</option>
+                </select>
               </label>
 
               <div className="flex items-end">

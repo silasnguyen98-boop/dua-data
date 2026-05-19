@@ -12,7 +12,7 @@
     "originalPrice": 10000000,
     "discount": 30,
     "totalLessons": 50,
-    "students": 17,
+    "students": 18,
     "rating": 0,
     "reviews": 0,
     "startDate": "2026-06-20",
@@ -20,7 +20,158 @@
     "hours": "-",
     "category": "Data Analytics",
     "courseType": "online",
-    "curriculum": [],
+    "curriculum": [
+      {
+        "phase": "Buổi 1",
+        "title": "Làm quen với PBI",
+        "lessons": 3,
+        "topics": [
+          "Hiểu giao diện và hệ sinh thái Power BI",
+          "Kết nối và import dữ liệu cơ bản",
+          "Thực hành tạo biểu đồ đầu tiên"
+        ]
+      },
+      {
+        "phase": "Buổi 2",
+        "title": "Làm sạch dữ liệu",
+        "lessons": 3,
+        "topics": [
+          "Làm quen Power Query",
+          "Xử lý dữ liệu Excel/CSV cơ bản",
+          "Hiểu quy trình chuẩn hóa dữ liệu trước khi visualize"
+        ]
+      },
+      {
+        "phase": "Buổi 3",
+        "title": "Thiết kế biểu đồ trực quan",
+        "lessons": 3,
+        "topics": [
+          "Hiểu ý nghĩa từng loại biểu đồ",
+          "Thiết kế bố cục dashboard cơ bản",
+          "Thực hành kéo thả nhiều chart khác nhau"
+        ]
+      },
+      {
+        "phase": "Buổi 4",
+        "title": "Tổng hợp dữ liệu",
+        "lessons": 3,
+        "topics": [
+          "Làm quen công thức DAX cơ bản",
+          "Tạo các chỉ số tính toán mới",
+          "Hiểu logic measure và calculated column"
+        ]
+      },
+      {
+        "phase": "Buổi 5",
+        "title": "Merge & Append",
+        "lessons": 3,
+        "topics": [
+          "Hiểu cách nối và gộp dữ liệu",
+          "Xử lý nhiều file dữ liệu cùng lúc",
+          "Thực hành Merge & Append trong Power Query"
+        ]
+      },
+      {
+        "phase": "Buổi 6",
+        "title": "Sơ đô quan hệ",
+        "lessons": 3,
+        "topics": [
+          "Hiểu mô hình dữ liệu trong Power BI",
+          "Thiết kế quan hệ giữa các bảng",
+          "Chuyển file raw thành data model chuẩn"
+        ]
+      },
+      {
+        "phase": "Buổi 7",
+        "title": "Giải case thực chiến",
+        "lessons": 3,
+        "topics": [
+          "Thực hành xử lý dữ liệu thô từ file excel Coffee shop",
+          "Xử lý và làm sạch dữ liệu thông qua các công cụ kéo Power Query",
+          "Tự động hoá quy trình xử lý dữ liệu"
+        ]
+      },
+      {
+        "phase": "Buổi 8",
+        "title": "Giải case thực chiến",
+        "lessons": 0,
+        "topics": [
+          "Hiểu cách đọc và phân tích dashboard Coffee shop",
+          "Thực hành filter và drill down dữ liệu",
+          "Phân tích dữ liệu theo nhiều góc nhìn"
+        ]
+      },
+      {
+        "phase": "Buổi 9",
+        "title": "Làm quen SQL",
+        "lessons": 3,
+        "topics": [
+          "Làm quen DBeaver và môi trường SQL",
+          "Viết câu lệnh SELECT cơ bản",
+          "Query dữ liệu từ database"
+        ]
+      },
+      {
+        "phase": "Buổi 10",
+        "title": "Điều kiện lọc",
+        "lessons": 3,
+        "topics": [
+          "Sử dụng WHERE và điều kiện lọc",
+          "Tạo cột tính toán cơ bản",
+          "Kết hợp nhiều điều kiện dữ liệu"
+        ]
+      },
+      {
+        "phase": "Buổi 11",
+        "title": "Tính toán trên hàng",
+        "lessons": 3,
+        "topics": [
+          "Sử dụng hàm xử lý dữ liệu",
+          "Tạo cột mới từ dữ liệu có sẵn",
+          "Thực hành CASE WHEN và function cơ bản"
+        ]
+      },
+      {
+        "phase": "Buổi 12",
+        "title": "Tổng hợp dữ liệu",
+        "lessons": 3,
+        "topics": [
+          "Hiểu cách hoạt động của GROUP BY",
+          "Tính tổng hợp dữ liệu theo nhóm",
+          "Thực hành các hàm SUM, COUNT, AVG"
+        ]
+      },
+      {
+        "phase": "Buổi 13",
+        "title": "Đồ án cuối khóa",
+        "lessons": 3,
+        "topics": [
+          "Chữa bài và review dashboard",
+          "Góp ý hướng cải thiện bài làm",
+          "Hướng dẫn trình bày final project"
+        ]
+      },
+      {
+        "phase": "Buổi 14",
+        "title": "Đồ án cuối khóa",
+        "lessons": 3,
+        "topics": [
+          "Review logic phân tích dữ liệu",
+          "Góp ý storytelling và insight",
+          "Công bố kết quả và đánh giá"
+        ]
+      },
+      {
+        "phase": "Buổi 15",
+        "title": "Đồ án cuối khóa",
+        "lessons": 3,
+        "topics": [
+          "Tổng kết kiến thức toàn khóa",
+          "Review định hướng học tiếp theo",
+          "Chia sẻ kinh nghiệm làm dự án thực tế"
+        ]
+      }
+    ],
     "outcomes": [
       "Hiểu tư duy phân tích dữ liệu và biết cách ứng dụng Data vào công việc thực tế.",
       "Biết sử dụng các công cụ cơ bản như Excel, SQL và Power BI để xử lý, phân tích và trực quan hóa dữ liệu.",
@@ -36,10 +187,10 @@
     ],
     "published": true,
     "comingSoon": false,
-    "isHidden": true,
-    "hidePrice": false,
+    "isHidden": false,
+    "hidePrice": true,
     "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 20:18:31 GMT+0700 (Indochina Time)"
+    "updatedAt": "Sun May 17 2026 04:38:22 GMT+0700 (Indochina Time)"
   },
   {
     "id": "9ead0008-f0e1-4ac6-b4dd-7f6f3e09d25d",
@@ -54,7 +205,7 @@
     "originalPrice": 10000000,
     "discount": 30,
     "totalLessons": 48,
-    "students": 29,
+    "students": 33,
     "rating": 0,
     "reviews": 0,
     "startDate": "2026-06-20",
@@ -232,7 +383,7 @@
     "isHidden": false,
     "hidePrice": true,
     "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 20:33:52 GMT+0700 (Indochina Time)"
+    "updatedAt": "Tue May 19 2026 01:02:39 GMT+0700 (Indochina Time)"
   },
   {
     "id": "41994308-2491-4201-a7f7-dde260ddd059",
@@ -242,7 +393,7 @@
     "description": "<p>Bình dân học Data là khóa học giúp người mới hiểu cách dữ liệu được sử dụng trong công việc hằng ngày. Khóa học tập trung vào tư duy dữ liệu, SQL cơ bản, Excel/Google Sheets, dashboard đơn giản và cách đọc số liệu để ra quyết định.</p>",
     "image": "",
     "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71",
-    "instructor": "DUA Edu Team",
+    "instructor": "Dứa Data Team",
     "price": 1500000,
     "originalPrice": 3000000,
     "discount": 50,
@@ -420,11 +571,11 @@
     "image": "python",
     "imageUrl": "https://i.ibb.co/Swyvxyyq/Thie-t-ke-chu-a-co-te-n-21-2.png",
     "instructor": "Nguyễn Mạnh Tuấn",
-    "price": 4500000,
+    "price": 4100000,
     "originalPrice": 5000000,
     "discount": 10,
     "totalLessons": 12,
-    "students": 37,
+    "students": 38,
     "rating": 0,
     "reviews": 0,
     "startDate": "2026-05-20",
@@ -558,261 +709,20 @@
     "published": true,
     "comingSoon": false,
     "isHidden": false,
-    "hidePrice": true,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 17:10:32 GMT+0700 (Indochina Time)"
-  },
-  {
-    "id": "999078f6-387d-42c2-a5bf-4e550686f348",
-    "slug": "mentoring-data-analyst-1-1",
-    "title": "Mentoring Data Analyst 1-1",
-    "shortDescription": "",
-    "description": "",
-    "image": "python",
-    "imageUrl": "https://i.ibb.co/fzk99yKV/Thumnail-Web-Du-a.png",
-    "instructor": "Việt Nguyễn",
-    "price": 7000000,
-    "originalPrice": 10000000,
-    "discount": 30,
-    "totalLessons": 48,
-    "students": 2,
-    "rating": 0,
-    "reviews": 0,
-    "startDate": "2026-05-06",
-    "schedule": "20:00 - 22:00",
-    "hours": "Thứ 3, 5",
-    "category": "Data Analytics",
-    "courseType": "online",
-    "curriculum": [
-      {
-        "phase": "Buổi 1",
-        "title": "DA 101: Tổng quan về Phân tích dữ liệu",
-        "lessons": 4,
-        "topics": [
-          "Giới thiệu về DA; Vai trò, chức năng của DA",
-          "Hướng dẫn cài đặt",
-          "Các loại dữ liệu",
-          "tạo bảng"
-        ]
-      },
-      {
-        "phase": "Buổi 2",
-        "title": "Truy vấn có điều kiện",
-        "lessons": 2,
-        "topics": [
-          "Các hàm xử lý dữ liệu thông dụng",
-          "Thực hành trên bảng dữ liệu thưc tế"
-        ]
-      },
-      {
-        "phase": "Buổi 3",
-        "title": "Truy vấn nâng cao",
-        "lessons": 2,
-        "topics": [
-          "Các hàm xử lý dữ liệu thông dụng",
-          "Thực hành với dữ liệu thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 4",
-        "title": "GROUP BY, HAVING",
-        "lessons": 3,
-        "topics": [
-          "Group by",
-          "Having",
-          "Thực hành áp dụng kiến thức giải bài tập nghiệp vụ thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 5",
-        "title": "Các loại JOIN",
-        "lessons": 2,
-        "topics": [
-          "Các loại Join",
-          "Thực hành giải bài tập thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 6",
-        "title": "Thực hành 1",
-        "lessons": 0,
-        "topics": [
-          "Củng cố kiến thức từ bài tập thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 7",
-        "title": "Truy vấn lồng (Subquery)",
-        "lessons": 2,
-        "topics": [
-          "Truy vấn lồng",
-          "Thực hành áp dụng truy vấn lồng trên bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 8",
-        "title": "Các hàm thống kê",
-        "lessons": 2,
-        "topics": [
-          "Các hàm thống kê",
-          "Thực hành sử dụng hàm thống kê trên bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 9",
-        "title": "Thực hành 2",
-        "lessons": 2,
-        "topics": [
-          "Bài tập tổng hợp",
-          "Thực hành trên bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 10",
-        "title": "Thực hành 3",
-        "lessons": 0,
-        "topics": [
-          "Bài tập tổng hợp",
-          "Thực hành trên bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 11",
-        "title": "Trực quan hóa dữ liệu với PowerBI",
-        "lessons": 2,
-        "topics": [
-          "Giới thiệu về PowerBI;",
-          "Tạo view kết nối với SQL, Excel"
-        ]
-      },
-      {
-        "phase": "Buổi 12",
-        "title": "Làm quen với các dạng biểu đồ trực quan dữ liệu",
-        "lessons": 2,
-        "topics": [
-          "Tìm hiểu các dạng biểu đồ trực quan dữ liệu",
-          "Thực hành với các dạng biểu đồ dữ liệu: Linechart, PieChart,..."
-        ]
-      },
-      {
-        "phase": "Buổi 3",
-        "title": "Thực hành 4 - Tổng hợp kiến thức cơ bản",
-        "lessons": 2,
-        "topics": [
-          "Tổng hợp kiến thức cơ bản",
-          "Thực hành áp dụng kiến thức vào bài toán thực tế ở mức cơ bản"
-        ]
-      },
-      {
-        "phase": "Buổi 14",
-        "title": "Làm quen với bộ dữ liệu thực chiến",
-        "lessons": 2,
-        "topics": [
-          "Giới thiệu bộ dữ liệu",
-          "Phân tích nghiệp vụ cơ bản liên quan bộ dữ liệu"
-        ]
-      },
-      {
-        "phase": "Buổi 15",
-        "title": "Sử dụng SQL để giải quyết bộ dữ liệu thực chiến",
-        "lessons": 2,
-        "topics": [
-          "Sử dụng SQL để giải các bài toán ngân hàng",
-          "Làm quen với các bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 16",
-        "title": "Thủ tục cơ bản (Stored Procedure) ",
-        "lessons": 2,
-        "topics": [
-          "Thủ tục cơ bản",
-          "Chuyển từ câu Select sang SQL"
-        ]
-      },
-      {
-        "phase": "Buổi 17",
-        "title": "Thực hành 5 - Thủ tục",
-        "lessons": 2,
-        "topics": [
-          "Thủ tục dạng 01",
-          "Thực hành áp dụng thủ tục dạng 01 để giải bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 18",
-        "title": "Thực hành 2 - Thủ tục nâng cao",
-        "lessons": 2,
-        "topics": [
-          "Thủ tục dạng 02",
-          "Thực hành áp dụng thủ tục dạng 02 để giải bài toán thực tế"
-        ]
-      },
-      {
-        "phase": "Buổi 19",
-        "title": "Câu lệnh DAX cơ bản",
-        "lessons": 2,
-        "topics": [
-          "Làm quen với câu lệnh DAX",
-          "Hướng dẫn viết Các câu lệnh DAX căn bản"
-        ]
-      },
-      {
-        "phase": "Buổi 20",
-        "title": "Chức năng Navigator",
-        "lessons": 2,
-        "topics": [
-          "Làm quen các chức năng Navigator",
-          "Sử dụng các chức năng Navigator"
-        ]
-      },
-      {
-        "phase": "Buổi 21",
-        "title": "Xây dựng biểu đồ nâng cao",
-        "lessons": 2,
-        "topics": [
-          "Phân tích bài toán trực quan hóa dữ liệu",
-          "Xây dựng biểu đồ nâng cao"
-        ]
-      },
-      {
-        "phase": "Buổi 22",
-        "title": "Hướng dẫn trình bày dự án bằng Notion",
-        "lessons": 1,
-        "topics": [
-          "Trình bày và Storytelling dữ liệu trên Notion"
-        ]
-      },
-      {
-        "phase": "Buổi 23",
-        "title": "Tổng kết khóa học",
-        "lessons": 3,
-        "topics": [
-          "Nhìn lại hành trình học",
-          "Hệ thống kiến thức",
-          "Áp dụng khóa học vào công việc trong tương lai"
-        ]
-      }
-    ],
-    "outcomes": [],
-    "targetAudience": [],
-    "published": true,
-    "comingSoon": true,
-    "isHidden": true,
     "hidePrice": false,
     "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 19:36:15 GMT+0700 (Indochina Time)"
+    "updatedAt": "Fri May 15 2026 15:18:03 GMT+0700 (Indochina Time)"
   },
   {
     "id": "71e9a74a-8968-437b-9edb-8ea69ac583e9",
     "slug": "thuc-chien-phan-tich-du-lieu-tu-co-ban-den-nang-cao",
-    "title": "Thực chiến phân tích dữ liệu từ Cơ Bản đến Nâng Cao",
+    "title": "Thực chiến phân tích dữ liệu (Nền tảng + Nâng Cao)",
     "shortDescription": "",
     "description": "",
     "image": "python",
     "imageUrl": "https://i.ibb.co/vxhZD77j/a42eaf0b-266f-459f-b2c2-c5af6c1f026f.png",
     "instructor": "Nguyễn Mạnh Tuấn",
-    "price": 8000000,
+    "price": 8100000,
     "originalPrice": 10000000,
     "discount": 20,
     "totalLessons": 48,
@@ -1041,9 +951,9 @@
     "published": true,
     "comingSoon": false,
     "isHidden": false,
-    "hidePrice": true,
+    "hidePrice": false,
     "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 17:10:32 GMT+0700 (Indochina Time)"
+    "updatedAt": "Fri May 15 2026 15:15:42 GMT+0700 (Indochina Time)"
   },
   {
     "id": "1f196051-8636-4855-9886-38f00924da58",
@@ -1287,14 +1197,255 @@
     "updatedAt": "Thu May 14 2026 19:36:24 GMT+0700 (Indochina Time)"
   },
   {
+    "id": "999078f6-387d-42c2-a5bf-4e550686f348",
+    "slug": "mentoring-data-analyst-1-1",
+    "title": "Mentoring Data Analyst 1-1",
+    "shortDescription": "",
+    "description": "",
+    "image": "python",
+    "imageUrl": "https://i.ibb.co/fzk99yKV/Thumnail-Web-Du-a.png",
+    "instructor": "Việt Nguyễn",
+    "price": 7000000,
+    "originalPrice": 10000000,
+    "discount": 30,
+    "totalLessons": 48,
+    "students": 2,
+    "rating": 0,
+    "reviews": 0,
+    "startDate": "2026-05-06",
+    "schedule": "20:00 - 22:00",
+    "hours": "Thứ 3, 5",
+    "category": "Data Analytics",
+    "courseType": "online",
+    "curriculum": [
+      {
+        "phase": "Buổi 1",
+        "title": "DA 101: Tổng quan về Phân tích dữ liệu",
+        "lessons": 4,
+        "topics": [
+          "Giới thiệu về DA; Vai trò, chức năng của DA",
+          "Hướng dẫn cài đặt",
+          "Các loại dữ liệu",
+          "tạo bảng"
+        ]
+      },
+      {
+        "phase": "Buổi 2",
+        "title": "Truy vấn có điều kiện",
+        "lessons": 2,
+        "topics": [
+          "Các hàm xử lý dữ liệu thông dụng",
+          "Thực hành trên bảng dữ liệu thưc tế"
+        ]
+      },
+      {
+        "phase": "Buổi 3",
+        "title": "Truy vấn nâng cao",
+        "lessons": 2,
+        "topics": [
+          "Các hàm xử lý dữ liệu thông dụng",
+          "Thực hành với dữ liệu thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 4",
+        "title": "GROUP BY, HAVING",
+        "lessons": 3,
+        "topics": [
+          "Group by",
+          "Having",
+          "Thực hành áp dụng kiến thức giải bài tập nghiệp vụ thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 5",
+        "title": "Các loại JOIN",
+        "lessons": 2,
+        "topics": [
+          "Các loại Join",
+          "Thực hành giải bài tập thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 6",
+        "title": "Thực hành 1",
+        "lessons": 0,
+        "topics": [
+          "Củng cố kiến thức từ bài tập thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 7",
+        "title": "Truy vấn lồng (Subquery)",
+        "lessons": 2,
+        "topics": [
+          "Truy vấn lồng",
+          "Thực hành áp dụng truy vấn lồng trên bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 8",
+        "title": "Các hàm thống kê",
+        "lessons": 2,
+        "topics": [
+          "Các hàm thống kê",
+          "Thực hành sử dụng hàm thống kê trên bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 9",
+        "title": "Thực hành 2",
+        "lessons": 2,
+        "topics": [
+          "Bài tập tổng hợp",
+          "Thực hành trên bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 10",
+        "title": "Thực hành 3",
+        "lessons": 0,
+        "topics": [
+          "Bài tập tổng hợp",
+          "Thực hành trên bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 11",
+        "title": "Trực quan hóa dữ liệu với PowerBI",
+        "lessons": 2,
+        "topics": [
+          "Giới thiệu về PowerBI;",
+          "Tạo view kết nối với SQL, Excel"
+        ]
+      },
+      {
+        "phase": "Buổi 12",
+        "title": "Làm quen với các dạng biểu đồ trực quan dữ liệu",
+        "lessons": 2,
+        "topics": [
+          "Tìm hiểu các dạng biểu đồ trực quan dữ liệu",
+          "Thực hành với các dạng biểu đồ dữ liệu: Linechart, PieChart,..."
+        ]
+      },
+      {
+        "phase": "Buổi 3",
+        "title": "Thực hành 4 - Tổng hợp kiến thức cơ bản",
+        "lessons": 2,
+        "topics": [
+          "Tổng hợp kiến thức cơ bản",
+          "Thực hành áp dụng kiến thức vào bài toán thực tế ở mức cơ bản"
+        ]
+      },
+      {
+        "phase": "Buổi 14",
+        "title": "Làm quen với bộ dữ liệu thực chiến",
+        "lessons": 2,
+        "topics": [
+          "Giới thiệu bộ dữ liệu",
+          "Phân tích nghiệp vụ cơ bản liên quan bộ dữ liệu"
+        ]
+      },
+      {
+        "phase": "Buổi 15",
+        "title": "Sử dụng SQL để giải quyết bộ dữ liệu thực chiến",
+        "lessons": 2,
+        "topics": [
+          "Sử dụng SQL để giải các bài toán ngân hàng",
+          "Làm quen với các bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 16",
+        "title": "Thủ tục cơ bản (Stored Procedure) ",
+        "lessons": 2,
+        "topics": [
+          "Thủ tục cơ bản",
+          "Chuyển từ câu Select sang SQL"
+        ]
+      },
+      {
+        "phase": "Buổi 17",
+        "title": "Thực hành 5 - Thủ tục",
+        "lessons": 2,
+        "topics": [
+          "Thủ tục dạng 01",
+          "Thực hành áp dụng thủ tục dạng 01 để giải bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 18",
+        "title": "Thực hành 2 - Thủ tục nâng cao",
+        "lessons": 2,
+        "topics": [
+          "Thủ tục dạng 02",
+          "Thực hành áp dụng thủ tục dạng 02 để giải bài toán thực tế"
+        ]
+      },
+      {
+        "phase": "Buổi 19",
+        "title": "Câu lệnh DAX cơ bản",
+        "lessons": 2,
+        "topics": [
+          "Làm quen với câu lệnh DAX",
+          "Hướng dẫn viết Các câu lệnh DAX căn bản"
+        ]
+      },
+      {
+        "phase": "Buổi 20",
+        "title": "Chức năng Navigator",
+        "lessons": 2,
+        "topics": [
+          "Làm quen các chức năng Navigator",
+          "Sử dụng các chức năng Navigator"
+        ]
+      },
+      {
+        "phase": "Buổi 21",
+        "title": "Xây dựng biểu đồ nâng cao",
+        "lessons": 2,
+        "topics": [
+          "Phân tích bài toán trực quan hóa dữ liệu",
+          "Xây dựng biểu đồ nâng cao"
+        ]
+      },
+      {
+        "phase": "Buổi 22",
+        "title": "Hướng dẫn trình bày dự án bằng Notion",
+        "lessons": 1,
+        "topics": [
+          "Trình bày và Storytelling dữ liệu trên Notion"
+        ]
+      },
+      {
+        "phase": "Buổi 23",
+        "title": "Tổng kết khóa học",
+        "lessons": 3,
+        "topics": [
+          "Nhìn lại hành trình học",
+          "Hệ thống kiến thức",
+          "Áp dụng khóa học vào công việc trong tương lai"
+        ]
+      }
+    ],
+    "outcomes": [],
+    "targetAudience": [],
+    "published": true,
+    "comingSoon": true,
+    "isHidden": true,
+    "hidePrice": false,
+    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 19:36:15 GMT+0700 (Indochina Time)"
+  },
+  {
     "id": "fbcc3e63-c7d6-45c8-9e41-fda6ac3907da",
     "slug": "lop-tu-hoc-python-thang-4-cho-dua-va-cong-dong-genz-lam-data",
-    "title": "Lớp tự học python Tháng 4 cho DUA Edu & cộng đồng GenZ làm Data",
+    "title": "Lớp tự học python Tháng 4 cho Dứa & cộng đồng GenZ làm Data",
     "shortDescription": "",
     "description": "",
     "image": "python",
     "imageUrl": "https://i.ibb.co/8gXnYrz8/THU-C-CHIE-N-PHA-N-TI-CH-DU-LIE-U-TU-CO-BA-N-E-N-NA-NG-CAO-10.png",
-    "instructor": "DUA Edu Team",
+    "instructor": "Dứa Data Team",
     "price": 0,
     "originalPrice": 0,
     "discount": 0,
@@ -1346,17 +1497,17 @@
   {
     "id": "bc77eaf0-2495-43be-b902-8692a53531d3",
     "slug": "lop-tu-hoc-python-thang-5-cho-dua-va-cong-dong-genz-lam-data",
-    "title": "Lớp tự học python Tháng 5 cho DUA Edu & cộng đồng GenZ làm Data",
+    "title": "Lớp tự học python Tháng 5 cho Dứa & cộng đồng GenZ làm Data",
     "shortDescription": "",
     "description": "",
     "image": "python",
     "imageUrl": "https://i.ibb.co/SwtKxmsH/Chat-GPT-Image-Apr-24-2026-12-50-09-PM.png",
-    "instructor": "DUA Edu Team",
+    "instructor": "Dứa Data Team",
     "price": 0,
     "originalPrice": 0,
     "discount": 0,
     "totalLessons": 45,
-    "students": 417,
+    "students": 430,
     "rating": 0,
     "reviews": 0,
     "startDate": "2026-03-27",
@@ -1398,7 +1549,7 @@
     "isHidden": false,
     "hidePrice": false,
     "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 17:10:32 GMT+0700 (Indochina Time)"
+    "updatedAt": "Tue May 19 2026 15:19:17 GMT+0700 (Indochina Time)"
   },
   {
     "id": "a171c624-86e4-4cb1-a15a-b6b5a10bed9f",
@@ -1408,7 +1559,7 @@
     "description": "",
     "image": "python",
     "imageUrl": "https://i.ibb.co/Mxpgczf5/f6821f6a-6a6c-49c4-a023-56938a737fa4-1-1.png",
-    "instructor": "DUA Edu",
+    "instructor": "Dứa Data",
     "price": 399000,
     "originalPrice": 799000,
     "discount": 50,
@@ -1561,7 +1712,7 @@
       },
       {
         "phase": "Lesson 23:",
-        "title": "Lời cám ơn từ DUA Edu",
+        "title": "Lời cám ơn từ Dứa",
         "lessons": 1,
         "topics": []
       }

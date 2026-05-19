@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const { rows } = await query(
-      "SELECT id, name, position, previous_work, avatar_url, linkedin, display_order, published FROM experts"
+      "SELECT id, name, position, previous_work, avatar_url, linkedin, display_order, published, expert_group, created_at, updated_at FROM experts"
     );
 
     const experts = normalizeExpertRows(rows as Record<string, unknown>[]).sort(

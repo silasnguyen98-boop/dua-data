@@ -182,8 +182,8 @@ export async function listMailTemplates() {
     const course = courseById.get(String(template.course_id || "")) as Record<string, unknown> | undefined;
     return {
       id: String(template.id || ""),
-      courseId: String(template.course_id || ""),
-      courseTitle: course ? String(course.title || "") : "",
+      courseId: template.course_id ? String(template.course_id) : "system",
+      courseTitle: course ? String(course.title || "") : "Template chung",
       courseSlug: course ? String(course.slug || "") : "",
       courseCategory: course ? String(course.category || "") : "",
       courseType: course ? String(course.course_type || "") : "",
@@ -205,19 +205,21 @@ export async function upsertMailTemplate(input: {
   body: string;
   isActive: boolean;
 }) {
+  const targetCourseId = input.courseId === "system" ? null : input.courseId;
+
   if (input.id) {
     const { rows } = await query(
       `UPDATE course_mail_templates
        SET course_id = $2, subject = $3, body = $4, is_active = $5, updated_at = now()
        WHERE id = $1 RETURNING *`,
-      [input.id, input.courseId, input.subject, input.body, input.isActive]
+      [input.id, targetCourseId, input.subject, input.body, input.isActive]
     );
     return rows[0];
   }
 
   const { rows: existingRows } = await query(
-    "SELECT id FROM course_mail_templates WHERE course_id = $1 LIMIT 1",
-    [input.courseId]
+    "SELECT id FROM course_mail_templates WHERE course_id IS NOT DISTINCT FROM $1 LIMIT 1",
+    [targetCourseId]
   );
   const existing = existingRows[0];
 
@@ -234,7 +236,7 @@ export async function upsertMailTemplate(input: {
   const { rows } = await query(
     `INSERT INTO course_mail_templates (course_id, subject, body, is_active)
      VALUES ($1, $2, $3, $4) RETURNING *`,
-    [input.courseId, input.subject, input.body, input.isActive]
+    [targetCourseId, input.subject, input.body, input.isActive]
   );
 
   return rows[0];

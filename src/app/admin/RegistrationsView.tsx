@@ -20,6 +20,7 @@ type TimeFilter = "all" | "today" | "week" | "custom";
 
 const STATUS_OPTIONS = [
   { id: "new", label: "Mới", color: "bg-blue-50 text-blue-600 border-blue-100" },
+  { id: "responded", label: "Đã phản hồi", color: "bg-cyan-50 text-cyan-600 border-cyan-100" },
   { id: "contacted", label: "Đã liên hệ", color: "bg-orange-50 text-orange-600 border-orange-100" },
   { id: "paid", label: "Đã đóng tiền", color: "bg-green-50 text-green-600 border-green-100" },
   { id: "onboarded", label: "Đã onboard", color: "bg-purple-50 text-purple-600 border-purple-100" },
@@ -29,7 +30,7 @@ const STATUS_OPTIONS = [
 export default function RegistrationsView() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"online_paid" | "elearning">("online_paid");
+  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "elearning">("all");
 
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
@@ -53,8 +54,9 @@ export default function RegistrationsView() {
     setLoading(true);
     try {
       const res = await fetch("/api/register");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setRegistrations(data);
+      setRegistrations(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch registrations", err);
     } finally {
@@ -92,10 +94,14 @@ export default function RegistrationsView() {
 
     // 1. Tab Filter
     data = data.filter((r) => {
-      if (activeTab === "elearning") return r.courseType === "elearning";
-      if (r.courseType !== "online") return false;
-      if (activeTab === "online_paid") return r.price > 0;
-      return false;
+      const courseType = r.courseType === "e_learning" ? "elearning" : r.courseType;
+      const isOnlineFree = courseType === "online" && Number(r.price || 0) === 0;
+      if (isOnlineFree) return false;
+      if (activeTab === "all") return true;
+      if (activeTab === "elearning") return courseType === "elearning";
+      if (courseType !== "online") return false;
+      if (activeTab === "online_paid") return Number(r.price || 0) > 0;
+      return true;
     });
 
     // 2. Search Filter
@@ -151,8 +157,12 @@ export default function RegistrationsView() {
   }, [activeTab, timeFilter, search, startDate, endDate, courseFilter]);
 
   const stats = {
-    online_paid: registrations.filter((r) => r.courseType === "online" && r.price > 0).length,
-    elearning: registrations.filter((r) => r.courseType === "elearning").length,
+    all: registrations.filter((r) => {
+      const courseType = r.courseType === "e_learning" ? "elearning" : r.courseType;
+      return !(courseType === "online" && Number(r.price || 0) === 0);
+    }).length,
+    online_paid: registrations.filter((r) => r.courseType === "online" && Number(r.price || 0) > 0).length,
+    elearning: registrations.filter((r) => (r.courseType === "elearning" || r.courseType === "e_learning")).length,
   };
 
   return (
@@ -254,6 +264,7 @@ export default function RegistrationsView() {
         {/* Tab Selection */}
         <div className="flex p-1.5 bg-slate-100 rounded-[24px] w-fit">
           {[
+            { id: "all", label: "Tất cả", count: stats.all },
             { id: "online_paid", label: "Online (Có phí)", count: stats.online_paid },
             { id: "elearning", label: "E-learning", count: stats.elearning },
           ].map((tab) => (

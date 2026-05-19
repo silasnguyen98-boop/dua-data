@@ -9,6 +9,7 @@ export interface Expert {
   linkedin?: string;
   order?: number;
   published?: boolean;
+  group?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -53,6 +54,7 @@ export function normalizeExpertRow(row: Row): Expert {
     linkedin: getString(row, ["linkedin"], "") || undefined,
     order: getNumber(row, ["display_order", "order"]),
     published: getBoolean(row, ["published"], true),
+    group: getString(row, ["expert_group", "group"], "") || undefined,
     createdAt: getString(row, ["created_at", "createdAt"], "") || undefined,
     updatedAt: getString(row, ["updated_at", "updatedAt"], "") || undefined,
   };
@@ -74,6 +76,7 @@ export function buildExpertPayload(data: Row, includeTimestamps = true) {
     linkedin: getString(data, ["linkedin"], "") || null,
     display_order: getNumber(data, ["order", "display_order"]),
     published: getBoolean(data, ["published"], true),
+    expert_group: getString(data, ["group", "expert_group"], "") || null,
     ...(includeTimestamps
       ? {
           created_at: getString(data, ["createdAt", "created_at"], now) || now,
@@ -82,4 +85,3 @@ export function buildExpertPayload(data: Row, includeTimestamps = true) {
       : {}),
   };
 }
-

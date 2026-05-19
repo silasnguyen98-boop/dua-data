@@ -1,0 +1,122 @@
+[
+  {
+    "id": "c790ee56-93cf-42b3-bf93-a1f478dadbe1",
+    "name": "Tuấn Trần",
+    "position": "Đơn vị phát triển",
+    "previousWork": "Xây dựng định hướng học Data thực chiến cho cộng đồng người trẻ.",
+    "order": 1,
+    "published": true,
+    "group": "genzlamdata",
+    "createdAt": "Tue May 19 2026 16:58:22 GMT+0700 (Indochina Time)",
+    "updatedAt": "Tue May 19 2026 17:05:07 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "cfc5cd67-5cd1-4985-8f53-29b1812ecc4a",
+    "name": "Content Team",
+    "position": "Nội dung & tài nguyên",
+    "previousWork": "Biên tập bài viết, roadmap, tài liệu và các góc nhìn ứng dụng Data.",
+    "order": 2,
+    "published": true,
+    "group": "genzlamdata",
+    "createdAt": "Tue May 19 2026 16:58:22 GMT+0700 (Indochina Time)",
+    "updatedAt": "Tue May 19 2026 16:58:22 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "6604af6b-6678-427c-bffc-4e568c807645",
+    "name": "Community Team",
+    "position": "Vận hành cộng đồng",
+    "previousWork": "Kết nối thành viên, điều phối thảo luận và giữ không gian chia sẻ tích cực.",
+    "order": 3,
+    "published": true,
+    "group": "genzlamdata",
+    "createdAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)",
+    "updatedAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "06e4b103-80d8-4e87-89e0-12a5c1a7f81e",
+    "name": "Mentor Network",
+    "position": "Cố vấn chuyên môn",
+    "previousWork": "Đồng hành qua kinh nghiệm thực tế trong phân tích, xử lý và mô hình hóa dữ liệu.",
+    "order": 4,
+    "published": true,
+    "group": "genzlamdata",
+    "createdAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)",
+    "updatedAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "65a5b73b-7bf5-4e55-90f2-e478c4779121",
+    "name": "Learning Support",
+    "position": "Hỗ trợ học tập",
+    "previousWork": "Gợi ý bài tập, dự án thực hành và cách áp dụng Data vào bối cảnh thực tế.",
+    "order": 5,
+    "published": true,
+    "group": "genzlamdata",
+    "createdAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)",
+    "updatedAt": "Tue May 19 2026 16:58:23 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "ace5b7e4-4e1c-4735-ab03-9d6c71101946",
+    "name": "Dứa Data",
+    "position": "Founder Dứa Data",
+    "previousWork": "Thạc sĩ Khoa học Dữ liệu",
+    "avatarUrl": "https://i.ibb.co/8gMBCjzb/1732521331887.jpg",
+    "linkedin": "https://www.linkedin.com/in/thompham2801/",
+    "order": 0,
+    "published": true,
+    "group": "home",
+    "createdAt": "Thu Apr 23 2026 14:02:08 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 17:12:33 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "a89a3471-4ad3-4578-a2a9-13cd4c43e63c",
+    "name": "Mạnh Tuấn",
+    "position": "Chuyên viên CNTT - Công ty Quản lý tài sản - Ngân hàng Nhà nước Việt Nam",
+    "previousWork": "Head of Education, Dứa Data",
+    "avatarUrl": "https://i.ibb.co/rRCfv9BZ/aacf3b6799d917874ec8.jpg",
+    "linkedin": "https://duadata.net/",
+    "order": 1,
+    "published": true,
+    "group": "home",
+    "createdAt": "Fri Mar 27 2026 07:27:01 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 17:12:33 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "034debf7-275b-4965-a3f7-1cee02a8fba8",
+    "name": "Việt Trần",
+    "position": "sr.DA tại @Onpoint E-commerce",
+    "previousWork": "BIS tại Bizzi Vietnam, DA tại @A Dong ADG Corporation",
+    "avatarUrl": "https://i.ibb.co/b5pXZB94/Chat-GPT-Image-01-55-57-20-thg-10-2025.png",
+    "linkedin": "https://www.linkedin.com/in/qu%E1%BB%91c-vi%E1%BB%87t-tr%E1%BA%A7n-ba4228216/",
+    "order": 2,
+    "published": true,
+    "group": "home",
+    "createdAt": "Thu Apr 23 2026 14:10:33 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 17:12:33 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "ab5fd7dc-1c07-4937-87ea-1e437cc1791a",
+    "name": "Minh Phạm (Hero)",
+    "position": "Admin GenZ làm Data",
+    "previousWork": "sr.Data Analyst",
+    "avatarUrl": "https://i.ibb.co/VZTrhkJ/Screenshot-2026-03-29-at-11-09-48.png",
+    "linkedin": "https://duadata.net/",
+    "order": 3,
+    "published": true,
+    "group": "home",
+    "createdAt": "Sun Mar 29 2026 11:05:42 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 17:12:33 GMT+0700 (Indochina Time)"
+  },
+  {
+    "id": "f16539f3-fd69-4f25-b81f-201c51c3a8de",
+    "name": "Silas Nguyễn",
+    "position": "Marketing Manager tại getX, founder Code MeLy",
+    "previousWork": "Founder tại Code MeLy, CGO tại Dứa Data, ex-CM Lead tại OpenEdu",
+    "avatarUrl": "https://i.ibb.co/gZMtmb3Y/470185782-1754964535353945-3752454252701382000-n-2.jpg",
+    "linkedin": "https://www.linkedin.com/in/thainguyen289/",
+    "order": 4,
+    "published": true,
+    "group": "home",
+    "createdAt": "Fri Mar 27 2026 07:26:15 GMT+0700 (Indochina Time)",
+    "updatedAt": "Thu May 14 2026 17:12:33 GMT+0700 (Indochina Time)"
+  }
+]
