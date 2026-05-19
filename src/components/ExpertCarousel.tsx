@@ -77,7 +77,7 @@ export default function ExpertCarousel({ experts }: { experts: Expert[] }) {
                       {expert.name === "Dứa Data" ? "DUA Edu" : expert.name}
                     </h3>
 
-                    <p className="mt-1 line-clamp-2 text-sm font-bold uppercase tracking-wider text-emerald-600">
+                    <p className="mt-1 text-sm font-bold uppercase tracking-wider text-emerald-600">
                       {expert.position}
                     </p>
 
