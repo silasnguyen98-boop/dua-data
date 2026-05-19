@@ -3,9 +3,12 @@ import tls from "tls";
 
 interface SmtpMailOptions {
   to: string;
+  cc?: string;
+  bcc?: string;
   subject: string;
   text: string;
   html?: string;
+  profile?: "noreply" | "hello";
 }
 
 interface SmtpConfig {
@@ -37,12 +40,13 @@ function toBase64Body(value: string) {
   return wrapBase64(Buffer.from(value, "utf8").toString("base64"));
 }
 
-function getConfig(): SmtpConfig | null {
+function getConfig(profile: "noreply" | "hello" = "noreply"): SmtpConfig | null {
+  const isHello = profile === "hello";
   const host = process.env.SMTP_HOST?.trim() || "";
   const port = Number(process.env.SMTP_PORT || 0);
-  const user = process.env.SMTP_USER?.trim() || "";
-  const pass = process.env.SMTP_PASS || "";
-  const from = process.env.SMTP_FROM?.trim() || "";
+  const user = (isHello ? process.env.SMTP_USER_HELLO : process.env.SMTP_USER)?.trim() || "";
+  const pass = (isHello ? process.env.SMTP_PASS_HELLO : process.env.SMTP_PASS) || "";
+  const from = (isHello ? process.env.SMTP_FROM_HELLO : process.env.SMTP_FROM)?.trim() || "";
 
   if (!host || !port || !user || !pass || !from) {
     return null;
@@ -176,7 +180,8 @@ async function withSmtpStep<T>(step: string, fn: () => Promise<T>) {
   }
 }
 
-function buildMessage(config: SmtpConfig, to: string, subject: string, text: string, html?: string) {
+function buildMessage(config: SmtpConfig, options: SmtpMailOptions) {
+  const { to, cc, subject, text, html } = options;
   const boundary = `duadata_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
   const fromMatch = config.from.match(/^(.*)<([^>]+)>$/);
   const encodedFrom = fromMatch
@@ -185,9 +190,14 @@ function buildMessage(config: SmtpConfig, to: string, subject: string, text: str
   const lines = [
     `From: ${encodedFrom}`,
     `To: ${to}`,
-    `Subject: ${encodeMimeWord(subject)}`,
-    "MIME-Version: 1.0",
   ];
+  
+  if (cc) lines.push(`Cc: ${cc}`);
+  
+  lines.push(`Subject: ${encodeMimeWord(subject)}`);
+  lines.push(`Date: ${new Date().toUTCString()}`);
+  lines.push(`Message-ID: <${Date.now()}.${Math.random().toString(36).slice(2)}@${process.env.SMTP_HELO_DOMAIN || "duadata.net"}>`);
+  lines.push("MIME-Version: 1.0");
 
   if (html) {
     lines.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
@@ -216,9 +226,9 @@ function buildMessage(config: SmtpConfig, to: string, subject: string, text: str
 }
 
 export async function sendMail(options: SmtpMailOptions) {
-  const config = getConfig();
+  const config = getConfig(options.profile || "noreply");
   if (!config) {
-    throw new Error("Missing SMTP configuration");
+    throw new Error(`Missing SMTP configuration for profile: ${options.profile || "default"}`);
   }
 
   const session = await startSession(config);
@@ -233,12 +243,20 @@ export async function sendMail(options: SmtpMailOptions) {
     await withSmtpStep("MAIL FROM", () =>
       session.sendCommand(`MAIL FROM:<${config.from.match(/<([^>]+)>/)?.[1] || config.from}>`, 250)
     );
-    await withSmtpStep("RCPT TO", () =>
-      session.sendCommand(`RCPT TO:<${options.to}>`, 250)
-    );
+    
+    const recipients = [options.to];
+    if (options.cc) options.cc.split(",").forEach(r => recipients.push(r.trim()));
+    if (options.bcc) options.bcc.split(",").forEach(r => recipients.push(r.trim()));
+
+    for (const recipient of recipients.filter(Boolean)) {
+      await withSmtpStep(`RCPT TO:${recipient}`, () =>
+        session.sendCommand(`RCPT TO:<${recipient}>`, 250)
+      );
+    }
+
     await withSmtpStep("DATA", () => session.sendCommand("DATA", 354));
 
-    const message = buildMessage(config, options.to, options.subject, options.text, options.html);
+    const message = buildMessage(config, options);
     await withSmtpStep("MESSAGE BODY", async () => {
       session.write(`${message}\r\n.`);
       await session.expect(250);

@@ -11,45 +11,63 @@ interface Lead {
   resourceType?: string;
   courseName?: string;
   createdAt: string;
-  source: "course_free" | "resource";
+  source: "course_free" | "resource" | "auth_user";
+  image?: string;
 }
 
 export default function LeadsView() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"course_free" | "resource">("course_free");
+  const [activeTab, setActiveTab] = useState<"course_free" | "resource" | "auth_user">("course_free");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchLeads();
   }, []);
 
+  // Reset to page 1 when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search]);
+
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const [resFree, resRes] = await Promise.all([
+      const [resFree, resRes, resAuth] = await Promise.all([
         fetch("/api/register"),
-        fetch("/api/lead-resource")
+        fetch("/api/lead-resource"),
+        fetch("/api/admin/auth-users")
       ]);
 
-      const freeData = await resFree.json();
-      const resData = await resRes.json();
+      const freeData = await resFree.json().catch(() => []);
+      const resData = await resRes.json().catch(() => []);
+      const authData = await resAuth.json().catch(() => []);
 
       const combined: Lead[] = [
-        ...freeData
-          .filter((r: any) => r.price === 0)
+        ...(Array.isArray(freeData) ? freeData : [])
+          .filter((r: any) => Number(r.price || 0) === 0)
           .map((r: any) => ({
             id: r.id,
             fullName: r.fullName,
             email: r.email,
             phone: r.phone,
             courseName: r.courseName,
-            createdAt: r.registeredAt,
+            createdAt: r.registeredAt || r.createdAt,
             source: "course_free" as const
           })),
-        ...resData.map((r: any) => ({
+        ...(Array.isArray(resData) ? resData : []).map((r: any) => ({
           ...r,
           source: "resource" as const
+        })),
+        ...(Array.isArray(authData) ? authData : []).map((r: any) => ({
+          id: r.id,
+          fullName: r.fullName || r.name || "User",
+          email: r.email,
+          image: r.image,
+          createdAt: r.createdAt || new Date().toISOString(), // Use created_at from DB if available
+          source: "auth_user" as const
         }))
       ];
 
@@ -76,9 +94,16 @@ export default function LeadsView() {
     return data;
   }, [leads, activeTab, search]);
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
   const stats = {
     course_free: leads.filter(l => l.source === "course_free").length,
-    resource: leads.filter(l => l.source === "resource").length
+    resource: leads.filter(l => l.source === "resource").length,
+    auth_user: leads.filter(l => l.source === "auth_user").length
   };
 
   return (
@@ -86,7 +111,7 @@ export default function LeadsView() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Quản lý Tiềm năng</h2>
-          <p className="text-sm text-slate-500 font-medium">Danh sách khách hàng đăng ký tài liệu hoặc khóa học miễn phí</p>
+          <p className="text-sm text-slate-500 font-medium">Danh sách khách hàng đăng ký tài liệu, khóa học miễn phí hoặc người dùng đã đăng nhập</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
@@ -118,6 +143,7 @@ export default function LeadsView() {
         {[
           { id: "course_free", label: "Đăng ký Khóa Free", count: stats.course_free },
           { id: "resource", label: "Nhận Tài liệu", count: stats.resource },
+          { id: "auth_user", label: "Người dùng Auth", count: stats.auth_user },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -146,9 +172,9 @@ export default function LeadsView() {
               <tr>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Thông tin Tiềm năng</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {activeTab === "course_free" ? "Khóa học quan tâm" : "Tài liệu / Vai trò"}
+                  {activeTab === "course_free" ? "Khóa học quan tâm" : activeTab === "resource" ? "Tài liệu / Vai trò" : "Ghi chú"}
                 </th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày đăng ký</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày đăng ký/đăng nhập</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Thao tác</th>
               </tr>
             </thead>
@@ -162,19 +188,21 @@ export default function LeadsView() {
                     <td className="px-8 py-5 text-right"><div className="h-8 bg-slate-100 rounded-xl w-16 ml-auto"></div></td>
                   </tr>
                 ))
-              ) : filtered.length === 0 ? (
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-8 py-20 text-center text-slate-400 italic font-medium">
                     Chưa có tiềm năng nào trong danh sách này
                   </td>
                 </tr>
               ) : (
-                filtered.map((lead) => (
+                paginated.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md transition-transform group-hover:scale-110 ${
-                          activeTab === "course_free" ? "bg-gradient-to-br from-blue-500 to-indigo-600" : "bg-gradient-to-br from-orange-500 to-red-600"
+                          activeTab === "course_free" ? "bg-gradient-to-br from-blue-500 to-indigo-600" : 
+                          activeTab === "resource" ? "bg-gradient-to-br from-orange-500 to-red-600" :
+                          "bg-gradient-to-br from-green-500 to-emerald-600"
                         }`}>
                           {lead.fullName.charAt(0)}
                         </div>
@@ -190,12 +218,16 @@ export default function LeadsView() {
                         <div className="text-sm text-slate-700 font-bold leading-snug">
                           {lead.courseName}
                         </div>
-                      ) : (
+                      ) : activeTab === "resource" ? (
                         <div className="flex flex-col gap-1">
                           <div className="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-lg w-fit">
                             {lead.resourceType}
                           </div>
                           <div className="text-[10px] text-slate-500 font-medium">Vai trò: {lead.role}</div>
+                        </div>
+                      ) : (
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">
+                          Google Auth
                         </div>
                       )}
                     </td>
@@ -235,6 +267,56 @@ export default function LeadsView() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500">
+              Hiển thị <span className="text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="text-slate-900">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> trong tổng số <span className="text-slate-900">{filtered.length}</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-30 transition-all"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`h-9 w-9 rounded-xl text-xs font-black transition-all ${
+                        currentPage === pageNum
+                          ? "bg-green-600 text-white shadow-lg shadow-green-200"
+                          : "bg-white border border-slate-100 text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-30 transition-all"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

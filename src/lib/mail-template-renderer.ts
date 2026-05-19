@@ -17,6 +17,7 @@ export interface MailTemplateContext {
   registered_at: string;
   school_year?: string;
   course_category?: string;
+  logId?: string;
 }
 
 function escapeHtml(value: string) {
@@ -108,6 +109,7 @@ export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateCont
       timeStyle: "short",
     })
   );
+  const safeYear = new Date().getFullYear();
 
   return `
     <div style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
@@ -123,17 +125,50 @@ export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateCont
             <p style="margin:0 0 16px;font-size:16px;line-height:1.7;">Chào <strong>${safeName}</strong>,</p>
             <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#475569;">DUA Edu đã nhận được thông tin đăng ký khóa học <strong>${safeCourse}</strong>.</p>
 
-            <div style="border:1px solid #e5e7eb;border-radius:22px;padding:24px;background:#fbfdff;margin:24px 0;">
+            <div style="border:1px solid #e5e7eb;border-radius:22px;padding:24px;background:#fbfdff;margin:24px 0;white-space:pre-wrap;">
               ${normalizedBodyHtml}
             </div>
 
             <div style="margin-top:28px;border-top:1px solid #e5e7eb;padding-top:18px;font-size:13px;line-height:1.7;color:#64748b;">
               <p style="margin:0 0 8px;">Khóa học: <a href="${safeCourseLink}" style="color:#059669;text-decoration:none;">${safeCourseLink}</a></p>
               <p style="margin:0 0 8px;">Fanpage hỗ trợ: <a href="${safeFanpage}" style="color:#059669;text-decoration:none;">${safeFanpage}</a></p>
-              <p style="margin:0;">Thời gian đăng ký: ${safeRegisteredAt}</p>
+              <p style="margin:0;">&copy; ${safeYear} DUA Edu. All rights reserved.</p>
             </div>
           </div>
         </div>
+        ${context.logId ? `<img src="${getBaseUrl()}/api/mail/track/${context.logId}" width="1" height="1" style="display:none" />` : ""}
+      </div>
+    </div>
+  `;
+}
+
+export function wrapGenericMailHtml(bodyHtml: string, subject: string, logId?: string) {
+  const normalizedBodyHtml = normalizeEmbeddedImages(bodyHtml);
+  const safeSubject = escapeHtml(subject || "Thông báo từ DUA Edu");
+  const safeFanpage = "https://www.facebook.com/duadata";
+  const safeYear = new Date().getFullYear();
+
+  return `
+    <div style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+      <div style="max-width:720px;margin:0 auto;padding:32px 16px;">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:28px;overflow:hidden;box-shadow:0 12px 40px rgba(15,23,42,.08);">
+          <div style="background:linear-gradient(135deg,#166534,#10b981);padding:28px 32px;color:#ffffff;">
+            <div style="font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;opacity:.9;">DUA Edu</div>
+            <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2;">${safeSubject}</h1>
+          </div>
+
+          <div style="padding:32px;">
+            <div style="font-size:15px;line-height:1.7;color:#334155;white-space:pre-wrap;">
+              ${normalizedBodyHtml}
+            </div>
+
+            <div style="margin-top:28px;border-top:1px solid #e5e7eb;padding-top:18px;font-size:13px;line-height:1.7;color:#64748b;">
+              <p style="margin:0 0 8px;">Fanpage hỗ trợ: <a href="${safeFanpage}" style="color:#059669;text-decoration:none;">${safeFanpage}</a></p>
+              <p style="margin:0;">&copy; ${safeYear} DUA Edu. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+        ${logId ? `<img src="${getBaseUrl()}/api/mail/track/${logId}" width="1" height="1" style="display:none" />` : ""}
       </div>
     </div>
   `;

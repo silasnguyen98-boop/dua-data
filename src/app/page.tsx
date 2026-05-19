@@ -8,7 +8,7 @@ import RegistrationCountdown from "@/components/RegistrationCountdown";
 import ExpertCarousel, { Expert } from "@/components/ExpertCarousel";
 import { query } from "@/lib/db";
 import { normalizeCourseRows } from "@/lib/course-data";
-import { normalizeExpertRows } from "@/lib/expert-data";
+import { readExpertsByGroup } from "@/lib/expert-json";
 
 export const dynamic = "force-dynamic";
 
@@ -39,17 +39,7 @@ async function getCourses(): Promise<Course[]> {
 }
 
 async function getExperts(): Promise<Expert[]> {
-  try {
-    const { rows } = await query(
-      "SELECT id, name, position, previous_work, avatar_url, linkedin, display_order, published FROM experts"
-    );
-    return normalizeExpertRows((rows || []) as Record<string, unknown>[])
-      .filter((expert) => expert.published)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-  } catch (error) {
-    console.error("Error fetching experts:", error);
-    return [];
-  }
+  return readExpertsByGroup("home");
 }
 
 const socialProofStats = [
