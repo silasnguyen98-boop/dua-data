@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import type { Course, CurriculumItem } from "@/types/course";
+import type { Course, CurriculumItem, OnlineLesson, OnlineModule } from "@/types/course";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ssr: false });
 
@@ -29,6 +29,7 @@ const emptyCourse: Omit<Course, "id"> = {
   category: "",
   courseType: "online",
   curriculum: [],
+  onlineModules: [],
   outcomes: [],
   targetAudience: [],
   published: false,
@@ -51,6 +52,14 @@ function formatPrice(price: number) {
   if (price === 0) return "Miễn phí";
   return new Intl.NumberFormat("vi-VN").format(price) + "đ";
 }
+
+const courseTypeOptions: Array<{ value: NonNullable<Course["courseType"]>; label: string }> = [
+  { value: "online", label: "Online live" },
+  { value: "video", label: "Video" },
+  { value: "e_learning", label: "E-learning" },
+  { value: "offline", label: "Offline" },
+  { value: "self_study", label: "Tự học" },
+];
 
 export default function CoursesView() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -133,7 +142,7 @@ export default function CoursesView() {
 
   const handleNew = () => {
     setEditing(null);
-    setForm(emptyCourse);
+    setForm({ ...emptyCourse, curriculum: [], onlineModules: [] });
     setShowForm(true);
     setEditingPhaseIndex(null);
   };
@@ -141,7 +150,7 @@ export default function CoursesView() {
   const handleEdit = (course: Course) => {
     setEditing(course);
     const { id, ...rest } = JSON.parse(JSON.stringify(course));
-    setForm(rest);
+    setForm({ ...rest, onlineModules: Array.isArray(rest.onlineModules) ? rest.onlineModules : [] });
     setShowForm(true);
     setEditingPhaseIndex(null);
   };
@@ -264,6 +273,69 @@ export default function CoursesView() {
     const target = direction === 'up' ? index - 1 : index + 1;
     [updated[index], updated[target]] = [updated[target], updated[index]];
     setForm({ ...form, curriculum: updated });
+  };
+
+  const updateOnlineModules = (modules: OnlineModule[]) => {
+    setForm({ ...form, onlineModules: modules });
+  };
+
+  const addOnlineModule = () => {
+    const modules = Array.isArray(form.onlineModules) ? [...form.onlineModules] : [];
+    modules.push({
+      title: `Chương ${modules.length + 1}`,
+      description: "",
+      orderIndex: modules.length + 1,
+      lessons: [],
+    });
+    updateOnlineModules(modules);
+  };
+
+  const updateOnlineModule = (moduleIndex: number, patch: Partial<OnlineModule>) => {
+    const modules = [...(form.onlineModules || [])];
+    modules[moduleIndex] = { ...modules[moduleIndex], ...patch };
+    updateOnlineModules(modules);
+  };
+
+  const removeOnlineModule = (moduleIndex: number) => {
+    updateOnlineModules((form.onlineModules || []).filter((_, index) => index !== moduleIndex));
+  };
+
+  const addOnlineLesson = (moduleIndex: number) => {
+    const modules = [...(form.onlineModules || [])];
+    const module = modules[moduleIndex];
+    if (!module) return;
+    const lessons = Array.isArray(module.lessons) ? [...module.lessons] : [];
+    lessons.push({
+      title: `Bài ${lessons.length + 1}`,
+      description: "",
+      youtubeId: "",
+      durationMinutes: 0,
+      isPreview: false,
+      orderIndex: lessons.length + 1,
+    });
+    modules[moduleIndex] = { ...module, lessons };
+    updateOnlineModules(modules);
+  };
+
+  const updateOnlineLesson = (moduleIndex: number, lessonIndex: number, patch: Partial<OnlineLesson>) => {
+    const modules = [...(form.onlineModules || [])];
+    const module = modules[moduleIndex];
+    if (!module) return;
+    const lessons = [...(module.lessons || [])];
+    lessons[lessonIndex] = { ...lessons[lessonIndex], ...patch };
+    modules[moduleIndex] = { ...module, lessons };
+    updateOnlineModules(modules);
+  };
+
+  const removeOnlineLesson = (moduleIndex: number, lessonIndex: number) => {
+    const modules = [...(form.onlineModules || [])];
+    const module = modules[moduleIndex];
+    if (!module) return;
+    modules[moduleIndex] = {
+      ...module,
+      lessons: (module.lessons || []).filter((_, index) => index !== lessonIndex),
+    };
+    updateOnlineModules(modules);
   };
 
   return (
@@ -512,6 +584,22 @@ export default function CoursesView() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase ml-1">Hình thức khóa học</label>
+                    <select
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
+                      value={form.courseType || "online"}
+                      onChange={(e) => setForm({ ...form, courseType: e.target.value as Course["courseType"] })}
+                    >
+                      {courseTypeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase ml-1">Mô tả ngắn</label>
                   <input
@@ -649,6 +737,139 @@ export default function CoursesView() {
                   )}
                 </div>
               </section>
+
+              {form.courseType === "video" && (
+                <section className="space-y-6">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-1.5 bg-red-500 rounded-full"></div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Nội dung video cho /online</h3>
+                        <p className="text-xs font-bold text-slate-400 mt-1">Các module và bài học ở đây sẽ hiển thị trong trang học online.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={addOnlineModule}
+                      className="bg-red-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-xl shadow-red-100 hover:bg-red-700 transition-all"
+                    >
+                      + Thêm chương video
+                    </button>
+                  </div>
+
+                  <div className="space-y-5">
+                    {(form.onlineModules || []).length === 0 ? (
+                      <div className="rounded-[28px] border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
+                        <p className="text-sm font-bold text-slate-500">Chưa có nội dung video. Bấm “Thêm chương video” để bắt đầu.</p>
+                      </div>
+                    ) : (
+                      (form.onlineModules || []).map((module, moduleIndex) => (
+                        <div key={module.id || moduleIndex} className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+                          <div className="flex flex-col gap-4 md:flex-row md:items-start">
+                            <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-[1fr_120px]">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Tên chương</label>
+                                <input
+                                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-red-500/20"
+                                  value={module.title}
+                                  onChange={(e) => updateOnlineModule(moduleIndex, { title: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Thứ tự</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+                                  value={module.orderIndex || moduleIndex + 1}
+                                  onChange={(e) => updateOnlineModule(moduleIndex, { orderIndex: Number(e.target.value) })}
+                                />
+                              </div>
+                              <div className="space-y-1 md:col-span-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Mô tả chương</label>
+                                <input
+                                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+                                  value={module.description || ""}
+                                  onChange={(e) => updateOnlineModule(moduleIndex, { description: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeOnlineModule(moduleIndex)}
+                              className="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-100"
+                            >
+                              Xóa chương
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {(module.lessons || []).map((lesson, lessonIndex) => (
+                              <div key={lesson.id || lessonIndex} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 space-y-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_120px_auto]">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Tên bài học</label>
+                                    <input
+                                      className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-red-500/20"
+                                      value={lesson.title}
+                                      onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { title: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">YouTube ID hoặc link</label>
+                                    <input
+                                      className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+                                      placeholder="VD: dQw4w9WgXcQ hoặc link YouTube"
+                                      value={lesson.youtubeId || ""}
+                                      onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { youtubeId: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phút</label>
+                                    <input
+                                      type="number"
+                                      className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20"
+                                      value={lesson.durationMinutes || 0}
+                                      onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { durationMinutes: Number(e.target.value) })}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => removeOnlineLesson(moduleIndex, lessonIndex)}
+                                    className="self-end rounded-xl bg-white px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-50"
+                                  >
+                                    Xóa
+                                  </button>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Mô tả bài học</label>
+                                  <textarea
+                                    className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 text-sm outline-none h-20 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                    value={lesson.description || ""}
+                                    onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { description: e.target.value })}
+                                  />
+                                </div>
+                                <label className="flex items-center gap-2 cursor-pointer w-fit">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(lesson.isPreview)}
+                                    onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { isPreview: e.target.checked })}
+                                    className="h-4 w-4 rounded text-red-600 focus:ring-red-500 border-slate-200"
+                                  />
+                                  <span className="text-xs font-bold text-slate-500">Cho xem thử</span>
+                                </label>
+                              </div>
+                            ))}
+
+                            <button
+                              onClick={() => addOnlineLesson(moduleIndex)}
+                              className="w-full rounded-2xl border border-dashed border-red-200 bg-red-50/40 px-4 py-3 text-xs font-black text-red-600 hover:bg-red-50 transition"
+                            >
+                              + Thêm bài học video
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Modal Footer */}

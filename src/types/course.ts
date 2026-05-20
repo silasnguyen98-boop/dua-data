@@ -5,6 +5,25 @@ export interface CurriculumItem {
   topics?: string[];
 }
 
+export interface OnlineLesson {
+  id?: string;
+  title: string;
+  description?: string;
+  youtubeId?: string;
+  durationMinutes?: number;
+  isPreview?: boolean;
+  isCompleted?: boolean;
+  orderIndex?: number;
+}
+
+export interface OnlineModule {
+  id?: string;
+  title: string;
+  description?: string;
+  orderIndex?: number;
+  lessons: OnlineLesson[];
+}
+
 export interface WaitListEntry {
   id: string;
   name: string;
@@ -36,8 +55,9 @@ export interface Course {
   schedule: string;
   hours: string;
   category: string;
-  courseType?: "offline" | "online" | "e_learning" | "self_study" | "";
+  courseType?: "offline" | "online" | "e_learning" | "self_study" | "video" | "";
   curriculum: CurriculumItem[];
+  onlineModules?: OnlineModule[];
   outcomes: string[];
   targetAudience: string[];
   published?: boolean;

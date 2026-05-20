@@ -66,6 +66,43 @@ async function runMigration() {
         updated_at timestamptz DEFAULT now()
       );
 
+      -- Online Course Modules
+      CREATE TABLE IF NOT EXISTS public.course_modules (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        course_id uuid NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+        title text NOT NULL,
+        description text NOT NULL DEFAULT '',
+        order_index integer NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+
+      -- Online Course Lessons
+      CREATE TABLE IF NOT EXISTS public.course_lessons (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        module_id uuid NOT NULL REFERENCES public.course_modules(id) ON DELETE CASCADE,
+        title text NOT NULL,
+        description text NOT NULL DEFAULT '',
+        youtube_id text NOT NULL DEFAULT '',
+        duration_minutes integer NOT NULL DEFAULT 0,
+        is_preview boolean NOT NULL DEFAULT false,
+        order_index integer NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+
+      -- Learner Lesson Progress
+      CREATE TABLE IF NOT EXISTS public.user_progress (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id text NOT NULL,
+        lesson_id uuid NOT NULL REFERENCES public.course_lessons(id) ON DELETE CASCADE,
+        is_completed boolean NOT NULL DEFAULT false,
+        completed_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE(user_id, lesson_id)
+      );
+
       -- Course Registrations Table
       CREATE TABLE IF NOT EXISTS public.course_registrations (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -169,6 +206,7 @@ async function runMigration() {
         ALTER TABLE public.courses ALTER COLUMN hours DROP NOT NULL;
         ALTER TABLE public.courses ALTER COLUMN category DROP NOT NULL;
         ALTER TABLE public.courses ALTER COLUMN course_type DROP NOT NULL;
+        ALTER TABLE public.courses ALTER COLUMN course_type SET DEFAULT 'online';
 
         -- Add missing column if not exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='courses' AND column_name='registration_deadline') THEN
@@ -179,6 +217,24 @@ async function runMigration() {
           ALTER TABLE public.experts ADD COLUMN expert_group text DEFAULT 'home';
         END IF;
       END $$;
+
+      COMMENT ON COLUMN public.courses.course_type IS
+        'Course delivery type. Supported app values include online, offline, e_learning, self_study, and video.';
+
+      CREATE INDEX IF NOT EXISTS courses_course_type_idx
+        ON public.courses (course_type);
+
+      CREATE INDEX IF NOT EXISTS course_registrations_user_status_idx
+        ON public.course_registrations (user_id, status);
+
+      CREATE INDEX IF NOT EXISTS course_modules_course_order_idx
+        ON public.course_modules (course_id, order_index);
+
+      CREATE INDEX IF NOT EXISTS course_lessons_module_order_idx
+        ON public.course_lessons (module_id, order_index);
+
+      CREATE INDEX IF NOT EXISTS user_progress_user_lesson_idx
+        ON public.user_progress (user_id, lesson_id);
     `;
     await client.query(fixNullabilitySql);
     console.log("✅ Fixed column nullability and missing columns");

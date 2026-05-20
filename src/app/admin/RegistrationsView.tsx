@@ -30,7 +30,7 @@ const STATUS_OPTIONS = [
 export default function RegistrationsView() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "elearning">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "video" | "elearning">("all");
 
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
@@ -98,6 +98,7 @@ export default function RegistrationsView() {
       const isOnlineFree = courseType === "online" && Number(r.price || 0) === 0;
       if (isOnlineFree) return false;
       if (activeTab === "all") return true;
+      if (activeTab === "video") return courseType === "video";
       if (activeTab === "elearning") return courseType === "elearning";
       if (courseType !== "online") return false;
       if (activeTab === "online_paid") return Number(r.price || 0) > 0;
@@ -162,6 +163,7 @@ export default function RegistrationsView() {
       return !(courseType === "online" && Number(r.price || 0) === 0);
     }).length,
     online_paid: registrations.filter((r) => r.courseType === "online" && Number(r.price || 0) > 0).length,
+    video: registrations.filter((r) => r.courseType === "video").length,
     elearning: registrations.filter((r) => (r.courseType === "elearning" || r.courseType === "e_learning")).length,
   };
 
@@ -266,6 +268,7 @@ export default function RegistrationsView() {
           {[
             { id: "all", label: "Tất cả", count: stats.all },
             { id: "online_paid", label: "Online (Có phí)", count: stats.online_paid },
+            { id: "video", label: "Video", count: stats.video },
             { id: "elearning", label: "E-learning", count: stats.elearning },
           ].map((tab) => (
             <button

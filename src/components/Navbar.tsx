@@ -20,7 +20,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authMenuOpen, setAuthMenuOpen] = useState(false);
   const { data: session, status } = useSession();
-  const authLoading = status === "loading";
+  const authChecking = status === "loading";
 
   useEffect(() => {
     fetch("/api/courses")
@@ -149,7 +149,7 @@ export default function Navbar() {
             />
 
             {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-5 lg:gap-8">
+            <div className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -166,10 +166,8 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden md:block relative" data-auth-menu>
-                {authLoading ? (
-                  <div className="h-10 w-24 rounded-full bg-gray-100 animate-pulse" />
-                ) : session?.user ? (
+              <div className="hidden lg:block relative" data-auth-menu>
+                {session?.user ? (
                   <>
                     <button
                       type="button"
@@ -196,9 +194,9 @@ export default function Navbar() {
                     </button>
 
                     {authMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl shadow-gray-200/70">
-                        <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2">
-                          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-sm font-bold text-white">
+                      <div className="absolute right-0 mt-3 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4">
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-sm font-bold text-white">
                             {userAvatarUrl ? (
                               <img
                                 src={userAvatarUrl}
@@ -210,20 +208,48 @@ export default function Navbar() {
                             )}
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-gray-900">{userDisplayName}</p>
-                            <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
+                            <p className="truncate text-sm font-bold text-slate-950">{userDisplayName}</p>
+                            <p className="truncate text-xs font-medium text-slate-500">{session?.user?.email}</p>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleSignOut}
-                          className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 transition"
-                        >
-                          Đăng xuất
-                        </button>
+                        <div className="p-2">
+                          <Link
+                            href="/my-courses"
+                            onClick={() => setAuthMenuOpen(false)}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-green-700"
+                          >
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-green-700">
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
+                              </svg>
+                            </span>
+                            <span className="flex-1">Khóa học của tôi</span>
+                            <svg className="h-4 w-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                          <div className="my-2 h-px bg-slate-100" />
+                          <button
+                            type="button"
+                            onClick={handleSignOut}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+                          >
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50">
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                            </span>
+                            Đăng xuất
+                          </button>
+                        </div>
                       </div>
                     )}
                   </>
+                ) : authChecking ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-semibold text-green-700">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                    Đang vào...
+                  </span>
                 ) : (
                   <Link
                     href={`/login?next=${encodeURIComponent(pathname)}`}
@@ -240,9 +266,40 @@ export default function Navbar() {
                 )}
               </div>
 
+              <div className="lg:hidden">
+                {session?.user ? (
+                  <Link
+                    href="/my-courses"
+                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-xs font-bold text-white shadow-sm"
+                    aria-label="Tài khoản"
+                  >
+                    {userAvatarUrl ? (
+                      <img
+                        src={userAvatarUrl}
+                        alt={userDisplayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      userInitial
+                    )}
+                  </Link>
+                ) : authChecking ? (
+                  <span className="inline-flex h-10 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 px-3 text-xs font-bold text-green-700">
+                    Đang vào...
+                  </span>
+                ) : (
+                  <Link
+                    href={`/login?next=${encodeURIComponent(pathname)}`}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-green-700 hover:bg-green-100 transition"
+                  >
+                    Đăng nhập
+                  </Link>
+                )}
+              </div>
+
               {/* Mobile hamburger */}
               <button
-                className="md:hidden p-2 text-gray-600 hover:text-green-700"
+                className="lg:hidden p-2 text-gray-600 hover:text-green-700"
                 onClick={() => setMobileOpen(!mobileOpen)}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +315,7 @@ export default function Navbar() {
 
           {/* Mobile menu */}
           {mobileOpen && (
-            <div className="md:hidden pb-4 border-t border-gray-100">
+            <div className="lg:hidden pb-4 border-t border-gray-100">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -273,9 +330,9 @@ export default function Navbar() {
               ))}
               <div className="px-4 pt-3">
                 {session?.user ? (
-                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-green-500 to-green-400 text-sm font-bold text-white">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-sm font-bold text-white">
                         {userAvatarUrl ? (
                           <img
                             src={userAvatarUrl}
@@ -287,17 +344,40 @@ export default function Navbar() {
                         )}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">{userDisplayName}</p>
-                        <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
+                        <p className="truncate text-sm font-bold text-slate-950">{userDisplayName}</p>
+                        <p className="truncate text-xs font-medium text-slate-500">{session?.user?.email}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="mt-3 w-full rounded-xl bg-white px-3 py-2 text-sm font-semibold text-red-600 border border-red-100"
-                    >
-                      Đăng xuất
-                    </button>
+                    <div className="p-2">
+                      <Link
+                        href="/my-courses"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-green-700"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-green-700">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
+                          </svg>
+                        </span>
+                        <span className="flex-1">Khóa học của tôi</span>
+                        <svg className="h-4 w-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                      <div className="my-2 h-px bg-slate-100" />
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                        </span>
+                        Đăng xuất
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <Link

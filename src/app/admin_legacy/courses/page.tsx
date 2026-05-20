@@ -520,6 +520,7 @@ export default function AdminCoursesPage() {
                   >
                     <option value="offline">Offline</option>
                     <option value="online">Online</option>
+                    <option value="video">Video</option>
                     <option value="e_learning">E-learning</option>
                     <option value="self_study">Self-study</option>
                   </select>

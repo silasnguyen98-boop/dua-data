@@ -20,7 +20,7 @@ type TimeFilter = "all" | "today" | "week" | "custom";
 export default function StudentsView() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "online_free" | "elearning">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "online_free" | "video" | "elearning">("all");
 
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
@@ -98,6 +98,7 @@ export default function StudentsView() {
     all: baseFilteredData.length,
     online_paid: baseFilteredData.filter((s) => s.courseType === "online" && Number(s.price || 0) > 0).length,
     online_free: baseFilteredData.filter((s) => s.courseType === "online" && Number(s.price || 0) === 0).length,
+    video: baseFilteredData.filter((s) => s.courseType === "video").length,
     elearning: baseFilteredData.filter((s) => s.courseType === "elearning" || s.courseType === "e_learning").length,
   }), [baseFilteredData]);
 
@@ -106,6 +107,7 @@ export default function StudentsView() {
     return baseFilteredData.filter((s) => {
       const courseType = s.courseType === "e_learning" ? "elearning" : s.courseType;
       if (activeTab === "all") return true;
+      if (activeTab === "video") return courseType === "video";
       if (activeTab === "elearning") return courseType === "elearning";
       if (courseType !== "online") return false;
       if (activeTab === "online_paid") return Number(s.price || 0) > 0;
@@ -207,6 +209,7 @@ export default function StudentsView() {
           { id: "all", label: "Tất cả", count: stats.all },
           { id: "online_paid", label: "Online (Có phí)", count: stats.online_paid },
           { id: "online_free", label: "Online (Miễn phí)", count: stats.online_free },
+          { id: "video", label: "Video", count: stats.video },
           { id: "elearning", label: "E-learning", count: stats.elearning },
         ].map((tab) => (
           <button
