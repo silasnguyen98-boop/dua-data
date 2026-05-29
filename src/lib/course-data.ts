@@ -25,6 +25,7 @@ function getValue(row: Row, keys: string[]) {
 
 function getString(row: Row, keys: string[], fallback = ""): string {
   const value = getValue(row, keys);
+  if (value instanceof Date) return value.toISOString();
   return typeof value === "string" ? value : value == null ? fallback : String(value);
 }
 
@@ -44,6 +45,17 @@ function getBoolean(row: Row, keys: string[], fallback = false): boolean {
   if (typeof value === "string") return value === "true";
   if (typeof value === "number") return value !== 0;
   return fallback;
+}
+
+function getNullableDateString(row: Row, keys: string[]): string | null {
+  const value = getValue(row, keys);
+  if (value instanceof Date) return value.toISOString();
+
+  const text = getString(row, keys).trim();
+  if (!text) return null;
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 function toStringArray(value: unknown): string[] {
@@ -112,6 +124,7 @@ export function normalizeCourseRow(row: Row, curriculum: CurriculumItem[] = []):
     reviews: getNumber(row, ["reviews"]),
     startDate: getString(row, ["start_date", "startDate"]),
     endDate: getString(row, ["end_date", "endDate"], "") || undefined,
+    registrationDeadline: getString(row, ["registration_deadline", "registrationDeadline"], "") || undefined,
     schedule: getString(row, ["schedule"]),
     hours: getString(row, ["hours"]),
     category: getString(row, ["category"]),
@@ -171,8 +184,9 @@ export function buildCoursePayload(data: Row, includeTimestamps = true) {
     students: getNumber(data, ["students"]),
     rating: getNumber(data, ["rating"]),
     reviews: getNumber(data, ["reviews"]),
-    start_date: getString(data, ["startDate", "start_date"]),
-    end_date: getString(data, ["endDate", "end_date"], "") || null,
+    start_date: getNullableDateString(data, ["startDate", "start_date"]),
+    end_date: getNullableDateString(data, ["endDate", "end_date"]),
+    registration_deadline: getNullableDateString(data, ["registrationDeadline", "registration_deadline"]),
     schedule: getString(data, ["schedule"]),
     hours: getString(data, ["hours"]),
     category: getString(data, ["category"]),
@@ -186,7 +200,7 @@ export function buildCoursePayload(data: Row, includeTimestamps = true) {
     published: getBoolean(data, ["published"]),
     is_hidden: getBoolean(data, ["isHidden", "is_hidden"]),
     coming_soon: getBoolean(data, ["comingSoon", "coming_soon"]),
-    ...(includeTimestamps ? { created_at: getString(data, ["createdAt", "created_at"], now) || now, updated_at: now } : {}),
+    ...(includeTimestamps ? { created_at: getNullableDateString(data, ["createdAt", "created_at"]) || now, updated_at: now } : {}),
   };
 }
 

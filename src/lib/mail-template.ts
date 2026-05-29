@@ -152,7 +152,7 @@ export function buildMailTemplateContext(params: {
 
 export async function loadActiveMailTemplate(courseId: string) {
   const { rows } = await query(
-    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true LIMIT 1",
+    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1",
     [courseId]
   );
   const data = rows[0];
@@ -198,7 +198,7 @@ export async function listMailTemplates() {
   });
 }
 
-export async function upsertMailTemplate(input: {
+async function upsertOneMailTemplate(input: {
   id?: string;
   courseId: string;
   subject: string;
@@ -242,9 +242,65 @@ export async function upsertMailTemplate(input: {
   return rows[0];
 }
 
+export async function upsertMailTemplate(input: {
+  id?: string;
+  courseId?: string;
+  courseIds?: string[];
+  subject: string;
+  body: string;
+  isActive: boolean;
+}) {
+  const courseIds = Array.from(
+    new Set(
+      (Array.isArray(input.courseIds) && input.courseIds.length > 0
+        ? input.courseIds
+        : input.courseId
+          ? [input.courseId]
+          : []
+      )
+        .map((courseId) => String(courseId || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (courseIds.length === 0) {
+    throw new Error("Vui lòng chọn ít nhất một khóa học cho template");
+  }
+
+  let existingCourseId: string | null | undefined;
+  if (input.id) {
+    const { rows } = await query("SELECT course_id FROM course_mail_templates WHERE id = $1 LIMIT 1", [input.id]);
+    if (rows[0]) {
+      existingCourseId = rows[0].course_id ? String(rows[0].course_id) : "system";
+    }
+  }
+
+  const saved: Record<string, unknown>[] = [];
+  const remainingCourseIds = [...courseIds];
+
+  if (input.id && existingCourseId && courseIds.includes(existingCourseId)) {
+    saved.push(await upsertOneMailTemplate({ ...input, id: input.id, courseId: existingCourseId }));
+    remainingCourseIds.splice(remainingCourseIds.indexOf(existingCourseId), 1);
+  } else if (input.id) {
+    await query("DELETE FROM course_mail_templates WHERE id = $1", [input.id]);
+  }
+
+  for (const courseId of remainingCourseIds) {
+    const savedTemplate = await upsertOneMailTemplate({
+      courseId,
+      subject: input.subject,
+      body: input.body,
+      isActive: input.isActive,
+    });
+    if (savedTemplate) saved.push(savedTemplate);
+  }
+
+  return saved.length === 1 ? saved[0] : saved;
+}
+
 export async function findMailTemplateForCourse(courseId: string) {
   const { rows } = await query(
-    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true LIMIT 1",
+    "SELECT * FROM course_mail_templates WHERE course_id = $1 AND is_active = true ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1",
     [courseId]
   );
   return rows[0] as Record<string, unknown> | null;

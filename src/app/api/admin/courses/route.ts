@@ -5,7 +5,7 @@ import type { OnlineModule } from "@/types/course";
 
 export const dynamic = "force-dynamic";
 
-const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
+const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, registration_deadline, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
 
 async function loadOnlineModules(courseIds: string[]) {
   const modulesByCourseId = new Map<string, OnlineModule[]>();
@@ -69,7 +69,13 @@ async function loadOnlineModules(courseIds: string[]) {
 }
 
 async function saveOnlineModules(courseId: string, modules: OnlineModule[]) {
-  await query("DELETE FROM course_modules WHERE course_id = $1::uuid", [courseId]);
+  try {
+    await query("DELETE FROM course_modules WHERE course_id = $1::uuid", [courseId]);
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === "42P01") return;
+    throw err;
+  }
 
   for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex += 1) {
     const module = modules[moduleIndex];
@@ -292,7 +298,12 @@ export async function DELETE(req: NextRequest) {
     }
 
     await query("DELETE FROM course_curriculum WHERE course_id = $1", [id]);
-    await query("DELETE FROM course_modules WHERE course_id = $1::uuid", [id]);
+    try {
+      await query("DELETE FROM course_modules WHERE course_id = $1::uuid", [id]);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== "42P01") throw err;
+    }
     await query("DELETE FROM courses WHERE id = $1", [id]);
 
     return NextResponse.json({ success: true });

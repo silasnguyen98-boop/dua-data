@@ -83,7 +83,7 @@ export default function MailView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TemplateRow | null>(null);
   const [form, setForm] = useState({
-    courseId: "",
+    courseIds: [] as string[],
     subject: "",
     body: "",
     isActive: true,
@@ -167,8 +167,8 @@ export default function MailView() {
       setLogs(mailData.logs || []);
       setLogStats(mailData.stats || { total: 0, sent: 0, failed: 0 });
 
-      if (tplData.courses?.length > 0 && !form.courseId) {
-        setForm(prev => ({ ...prev, courseId: tplData.courses[0].id }));
+      if (tplData.courses?.length > 0 && form.courseIds.length === 0) {
+        setForm(prev => ({ ...prev, courseIds: [tplData.courses[0].id] }));
       }
     } catch (err) {
       console.error("Failed to fetch mail data", err);
@@ -177,13 +177,22 @@ export default function MailView() {
     }
   };
 
-  const selectedCourse = useMemo(() => courses.find(c => c.id === form.courseId), [courses, form.courseId]);
+  const selectedCourse = useMemo(() => courses.find(c => c.id === form.courseIds[0]), [courses, form.courseIds]);
   const previewContext = useMemo(() => getPreviewContext(selectedCourse), [selectedCourse]);
 
   const previewHtml = useMemo(() =>
     renderMailTemplateHtml(form.body || "<p>Nội dung mẫu...</p>", previewContext),
     [form.body, previewContext]
   );
+
+  const toggleTemplateCourse = (courseId: string) => {
+    setForm(prev => ({
+      ...prev,
+      courseIds: prev.courseIds.includes(courseId)
+        ? prev.courseIds.filter(id => id !== courseId)
+        : [...prev.courseIds, courseId],
+    }));
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +210,9 @@ export default function MailView() {
         setIsModalOpen(false);
         setEditingTemplate(null);
         fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Không thể lưu template");
       }
     } catch (err) {
       console.error("Save failed", err);
@@ -599,7 +611,7 @@ export default function MailView() {
             <button
               onClick={() => {
                 setEditingTemplate(null);
-                setForm({ courseId: courses[0]?.id || "", subject: "", body: "", isActive: true });
+                setForm({ courseIds: courses[0]?.id ? [courses[0].id] : [], subject: "", body: "", isActive: true });
                 setIsModalOpen(true);
               }}
               className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-2xl font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-200 active:scale-95"
@@ -650,7 +662,7 @@ export default function MailView() {
                               onClick={() => {
                                 setEditingTemplate(template);
                                 setForm({
-                                  courseId: template.courseId,
+                                  courseIds: template.courseId ? [template.courseId] : [],
                                   subject: template.subject,
                                   body: template.body,
                                   isActive: template.isActive
@@ -706,16 +718,41 @@ export default function MailView() {
             <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 xl:grid-cols-2 gap-12 scrollbar-hide">
               {/* Form Side */}
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Khóa học áp dụng</label>
-                  <select
-                    value={form.courseId}
-                    onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[22px] text-sm font-bold focus:outline-none focus:ring-4 focus:ring-green-500/10 transition-all appearance-none"
-                  >
-                    <option value="system">Hệ thống / Chung (Dùng cho gửi mail lẻ)</option>
-                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                  </select>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Khóa học áp dụng</label>
+                    <span className="text-[10px] font-bold text-slate-400">{form.courseIds.length} khóa đã chọn</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto rounded-[22px] border border-slate-200 bg-slate-50 p-3 space-y-2">
+                    <label className="flex items-start gap-3 rounded-2xl bg-white px-4 py-3 border border-slate-100 cursor-pointer hover:border-green-200 hover:bg-green-50/30 transition-all">
+                      <input
+                        type="checkbox"
+                        checked={form.courseIds.includes("system")}
+                        onChange={() => toggleTemplateCourse("system")}
+                        className="mt-0.5 h-5 w-5 rounded-lg text-green-600 focus:ring-green-500 border-slate-200"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-black text-slate-800 leading-snug">Hệ thống / Chung</span>
+                        <span className="block text-[10px] font-bold text-slate-400 mt-0.5">Dùng cho gửi mail thủ công</span>
+                      </span>
+                    </label>
+                    {courses.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-xs font-bold text-slate-400">Chưa có khóa học</div>
+                    ) : courses.map(c => (
+                      <label key={c.id} className="flex items-start gap-3 rounded-2xl bg-white px-4 py-3 border border-slate-100 cursor-pointer hover:border-green-200 hover:bg-green-50/30 transition-all">
+                        <input
+                          type="checkbox"
+                          checked={form.courseIds.includes(c.id)}
+                          onChange={() => toggleTemplateCourse(c.id)}
+                          className="mt-0.5 h-5 w-5 rounded-lg text-green-600 focus:ring-green-500 border-slate-200"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-black text-slate-800 leading-snug">{c.title}</span>
+                          <span className="block text-[10px] font-bold text-slate-400 mt-0.5">/{c.slug || c.id}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">

@@ -57,18 +57,22 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
+    const courseIds = Array.isArray(body.courseIds)
+      ? body.courseIds.map((courseId: unknown) => normalizeText(courseId)).filter(Boolean)
+      : [];
     const courseId = normalizeText(body.courseId);
+    const selectedCourseIds = courseIds.length > 0 ? courseIds : courseId ? [courseId] : [];
     const subject = normalizeText(body.subject);
     const templateBody = normalizeText(body.body);
     const isActive = body.isActive === undefined ? true : Boolean(body.isActive);
 
-    if (!courseId || !subject || !templateBody) {
+    if (selectedCourseIds.length === 0 || !subject || !templateBody) {
       return NextResponse.json({ error: "Vui lòng nhập đủ thông tin template" }, { status: 400 });
     }
 
     const saved = await upsertMailTemplate({
       id: normalizeText(body.id) || undefined,
-      courseId,
+      courseIds: selectedCourseIds,
       subject,
       body: templateBody,
       isActive,
