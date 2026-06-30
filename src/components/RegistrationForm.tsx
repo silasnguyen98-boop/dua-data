@@ -10,9 +10,15 @@ interface Props {
   courseTitle: string;
   coursePath: string;
   onClose: () => void;
+  onSuccess?: (registration: { status?: string } | null) => void;
 }
 
-export default function RegistrationForm({ courseId, courseTitle, coursePath, onClose }: Props) {
+function withRegisterParam(path: string) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}register=1`;
+}
+
+export default function RegistrationForm({ courseId, courseTitle, coursePath, onClose, onSuccess }: Props) {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
   const [form, setForm] = useState({
@@ -50,7 +56,7 @@ export default function RegistrationForm({ courseId, courseTitle, coursePath, on
     }
 
     if (authStatus !== "authenticated") {
-      router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
+      router.push(`/login?next=${encodeURIComponent(withRegisterParam(coursePath))}`);
       return;
     }
 
@@ -78,13 +84,14 @@ export default function RegistrationForm({ courseId, courseTitle, coursePath, on
         setSuccess(true);
         setEmailSent(Boolean(data.emailSent));
         setEmailError(data.emailError || "");
+        onSuccess?.(data.registration || null);
       } else {
         if (res.status === 401 && data.loginUrl) {
           router.push(data.loginUrl);
           return;
         }
         if (res.status === 401) {
-          router.push(`/login?next=${encodeURIComponent(`${coursePath}?register=1`)}`);
+          router.push(`/login?next=${encodeURIComponent(withRegisterParam(coursePath))}`);
           return;
         }
         setError(data.error || "Đăng ký thất bại");

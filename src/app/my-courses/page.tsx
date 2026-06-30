@@ -88,7 +88,7 @@ function formatCurrency(value: number, hidePrice: boolean) {
 }
 
 function canLearnOnline(course: RegisteredCourse) {
-  return course.status === "onboarded" && ["online", "video", "e_learning", "elearning"].includes(course.courseType);
+  return course.status === "onboarded" && ["e_learning", "elearning"].includes(course.courseType);
 }
 
 async function getRegisteredCourses(userId: string): Promise<RegisteredCourse[]> {
@@ -180,7 +180,7 @@ export default async function MyCoursesPage() {
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-green-600">Tài khoản học viên</p>
             <h1 className="text-4xl font-black tracking-tight text-slate-950">Khóa học của tôi</h1>
             <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-              Theo dõi các khóa bạn đã đăng ký, trạng thái xử lý và đường vào học online khi được xác nhận.
+              Theo dõi các khóa bạn đã đăng ký, trạng thái xử lý và đường vào học e-learning khi được xác nhận.
             </p>
           </div>
           <Link href="/courses" className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-5 py-2.5 text-sm font-bold text-green-700 transition hover:bg-emerald-50">
@@ -261,8 +261,8 @@ export default async function MyCoursesPage() {
                           Chi tiết khóa học
                         </Link>
                         {canLearnOnline(course) && (
-                          <Link href={`/online?course=${course.courseId}`} className="inline-flex items-center justify-center rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-green-700">
-                            Vào học online
+                          <Link href={`/elearning?course=${course.courseId}`} className="inline-flex items-center justify-center rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-green-700">
+                            Vào học e-learning
                           </Link>
                         )}
                       </div>

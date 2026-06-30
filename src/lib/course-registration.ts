@@ -92,6 +92,15 @@ function formatCurrencyVn(amount: number) {
   return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
 }
 
+function formatDateTimeVn(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return date.toLocaleString("vi-VN", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 function buildPaymentNote(payload: RegistrationEmailPayload) {
   const emailPart = payload.participantEmail.trim();
   const brandPart = "DUA Edu";
@@ -185,12 +194,7 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
   const safeEmail = escapeHtml(payload.participantEmail);
   const safeNeeds = escapeHtml(payload.learningNeeds || "Không có");
   const safeFacebook = escapeHtml(payload.facebook || "Không cung cấp");
-  const safeRegisteredAt = escapeHtml(
-    new Date(payload.registeredAt).toLocaleString("vi-VN", {
-      dateStyle: "long",
-      timeStyle: "short",
-    })
-  );
+  const safeRegisteredAt = escapeHtml(formatDateTimeVn(payload.registeredAt));
 
   if (isHiddenPriceCourse) {
     const subject = `Xác nhận thông tin đăng ký khóa học ${payload.courseTitle}`;
@@ -319,7 +323,7 @@ export function buildConfirmationEmail(payload: RegistrationEmailPayload) {
     `Nhóm người học: ${payload.learnerGroup}`,
     `Facebook: ${payload.facebook || "Không cung cấp"}`,
     `Nhu cầu học: ${payload.learningNeeds || "Không có"}`,
-    `Thời gian đăng ký: ${new Date(payload.registeredAt).toLocaleString("vi-VN")}`,
+    `Thời gian đăng ký: ${formatDateTimeVn(payload.registeredAt)}`,
     "",
     "Đội ngũ DUA Edu sẽ sớm liên hệ với bạn qua Zalo/Facebook để xác nhận.",
     "",

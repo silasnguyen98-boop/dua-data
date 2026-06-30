@@ -9,7 +9,10 @@ export interface OnlineLesson {
   id?: string;
   title: string;
   description?: string;
+  lessonType?: "text" | "video";
+  textContent?: string;
   youtubeId?: string;
+  resources?: LearningResource[];
   durationMinutes?: number;
   isPreview?: boolean;
   isCompleted?: boolean;
@@ -31,6 +34,14 @@ export interface WaitListEntry {
   email?: string;
   registeredAt: string;
   status: "pending" | "contacted" | "converted";
+}
+
+export interface LearningResource {
+  id?: string;
+  title: string;
+  description?: string;
+  url: string;
+  type?: "document" | "spreadsheet" | "slide" | "dataset" | "link" | "other";
 }
 
 export interface Course {
@@ -57,6 +68,7 @@ export interface Course {
   category: string;
   courseType?: "offline" | "online" | "e_learning" | "self_study" | "video" | "";
   curriculum: CurriculumItem[];
+  classMaterials?: LearningResource[];
   onlineModules?: OnlineModule[];
   outcomes: string[];
   targetAudience: string[];

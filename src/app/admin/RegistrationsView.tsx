@@ -27,10 +27,43 @@ const STATUS_OPTIONS = [
   { id: "cancelled", label: "Hủy", color: "bg-gray-50 text-gray-400 border-gray-100" },
 ];
 
+function getValidDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value: string) {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatTime(value: string) {
+  const date = getValidDate(value);
+  if (!date) return "";
+  return date.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDateTime(value: string) {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  return date.toLocaleString("vi-VN", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 export default function RegistrationsView() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "online_paid" | "video" | "elearning">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "online_paid">("all");
 
   // Filtering states
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
@@ -98,8 +131,6 @@ export default function RegistrationsView() {
       const isOnlineFree = courseType === "online" && Number(r.price || 0) === 0;
       if (isOnlineFree) return false;
       if (activeTab === "all") return true;
-      if (activeTab === "video") return courseType === "video";
-      if (activeTab === "elearning") return courseType === "elearning";
       if (courseType !== "online") return false;
       if (activeTab === "online_paid") return Number(r.price || 0) > 0;
       return true;
@@ -163,8 +194,6 @@ export default function RegistrationsView() {
       return !(courseType === "online" && Number(r.price || 0) === 0);
     }).length,
     online_paid: registrations.filter((r) => r.courseType === "online" && Number(r.price || 0) > 0).length,
-    video: registrations.filter((r) => r.courseType === "video").length,
-    elearning: registrations.filter((r) => (r.courseType === "elearning" || r.courseType === "e_learning")).length,
   };
 
   return (
@@ -268,12 +297,10 @@ export default function RegistrationsView() {
           {[
             { id: "all", label: "Tất cả", count: stats.all },
             { id: "online_paid", label: "Online (Có phí)", count: stats.online_paid },
-            { id: "video", label: "Video", count: stats.video },
-            { id: "elearning", label: "E-learning", count: stats.elearning },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as "all" | "online_paid")}
               className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-3 ${
                 activeTab === tab.id
                   ? "bg-white text-green-700 shadow-lg shadow-slate-200/50"
@@ -353,17 +380,10 @@ export default function RegistrationsView() {
                     </td>
                     <td className="px-8 py-5">
                       <div className="text-xs font-bold text-slate-500">
-                        {new Date(reg.registeredAt).toLocaleDateString("vi-VN", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric"
-                        })}
+                        {formatDate(reg.registeredAt)}
                       </div>
                       <div className="text-[10px] text-slate-400 font-medium">
-                        {new Date(reg.registeredAt).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
+                        {formatTime(reg.registeredAt)}
                       </div>
                     </td>
                     <td className="px-8 py-5" onClick={(e) => e.stopPropagation()}>
@@ -496,10 +516,7 @@ export default function RegistrationsView() {
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian đăng ký</p>
                   <p className="text-sm font-bold text-slate-700">
-                    {new Date(selectedReg.registeredAt).toLocaleString("vi-VN", {
-                      dateStyle: "long",
-                      timeStyle: "short"
-                    })}
+                    {formatDateTime(selectedReg.registeredAt)}
                   </p>
                 </div>
               </div>

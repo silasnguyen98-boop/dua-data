@@ -67,17 +67,21 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function formatDateTimeVn(value?: string) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return date.toLocaleString("vi-VN", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateContext) {
   const safeName = escapeHtml(context.full_name || "Bạn");
   const safeCourse = escapeHtml(context.course_title || "");
   const safeCourseLink = escapeHtml(context.course_link || getBaseUrl());
   const safeFanpage = escapeHtml(context.fanpage_link || "https://www.facebook.com/duadata");
-  const safeRegisteredAt = escapeHtml(
-    new Date(context.registered_at || new Date().toISOString()).toLocaleString("vi-VN", {
-      dateStyle: "long",
-      timeStyle: "short",
-    })
-  );
+  const safeRegisteredAt = escapeHtml(formatDateTimeVn(context.registered_at));
 
   return `
     <div style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">

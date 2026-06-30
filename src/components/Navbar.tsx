@@ -77,10 +77,10 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Trang chủ" },
     { href: "/courses", label: "Khóa học" },
+    { href: "/elearning", label: "E-learning" },
     { href: "/roadmap", label: "Lộ trình" },
     { href: "/resource", label: "Tài nguyên" },
-    { href: "/community", label: "Cộng đồng" },
-    { href: "/genzlamdata", label: "GenZ làm Data" }
+    { href: "/community", label: "Cộng đồng" }
   ];
 
   const isActive = (href: string) => {

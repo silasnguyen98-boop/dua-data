@@ -5,7 +5,77 @@ import type { OnlineModule } from "@/types/course";
 
 export const dynamic = "force-dynamic";
 
-const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, registration_deadline, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, created_at, updated_at";
+const adminCourseColumns = "id, slug, title, short_description, image, image_url, instructor, price, original_price, discount, total_lessons, students, rating, reviews, start_date, end_date, registration_deadline, schedule, hours, category, course_type, published, coming_soon, is_hidden, hide_price, class_materials, created_at, updated_at";
+
+async function ensureElearningSchema() {
+  await query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS course_modules (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      course_id uuid NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      description text NOT NULL DEFAULT '',
+      order_index integer NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS course_lessons (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      module_id uuid NOT NULL REFERENCES course_modules(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      description text NOT NULL DEFAULT '',
+      youtube_id text NOT NULL DEFAULT '',
+      duration_minutes integer NOT NULL DEFAULT 0,
+      is_preview boolean NOT NULL DEFAULT false,
+      order_index integer NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS user_progress (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id text NOT NULL,
+      lesson_id uuid NOT NULL REFERENCES course_lessons(id) ON DELETE CASCADE,
+      is_completed boolean NOT NULL DEFAULT false,
+      completed_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(user_id, lesson_id)
+    )`
+  );
+
+  await query("CREATE INDEX IF NOT EXISTS course_modules_course_order_idx ON course_modules (course_id, order_index)");
+  await query("CREATE INDEX IF NOT EXISTS course_lessons_module_order_idx ON course_lessons (module_id, order_index)");
+  await query("CREATE INDEX IF NOT EXISTS user_progress_user_lesson_idx ON user_progress (user_id, lesson_id)");
+
+  try {
+    await query(
+      `ALTER TABLE courses
+       ADD COLUMN IF NOT EXISTS class_materials jsonb NOT NULL DEFAULT '[]'::jsonb`
+    );
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code !== "42P01") throw err;
+  }
+
+  try {
+    await query(
+      `ALTER TABLE course_lessons
+       ADD COLUMN IF NOT EXISTS lesson_type text NOT NULL DEFAULT 'video',
+       ADD COLUMN IF NOT EXISTS text_content text NOT NULL DEFAULT '',
+       ADD COLUMN IF NOT EXISTS resources jsonb NOT NULL DEFAULT '[]'::jsonb`
+    );
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code !== "42P01") throw err;
+  }
+}
 
 async function loadOnlineModules(courseIds: string[]) {
   const modulesByCourseId = new Map<string, OnlineModule[]>();
@@ -21,7 +91,7 @@ async function loadOnlineModules(courseIds: string[]) {
         [courseIds],
       ),
       query(
-        `SELECT l.id, l.module_id, l.title, l.description, l.youtube_id, l.duration_minutes, l.is_preview, l.order_index
+        `SELECT l.id, l.module_id, l.title, l.description, l.youtube_id, l.duration_minutes, l.is_preview, l.order_index, l.lesson_type, l.text_content, l.resources
          FROM course_lessons l
          INNER JOIN course_modules m ON m.id = l.module_id
          WHERE m.course_id = ANY($1::uuid[])
@@ -38,7 +108,10 @@ async function loadOnlineModules(courseIds: string[]) {
         id: String(row.id || ""),
         title: String(row.title || ""),
         description: String(row.description || ""),
+        lessonType: (String(row.lesson_type || "").trim() || (String(row.youtube_id || "").trim() ? "video" : "text")) as OnlineModule["lessons"][number]["lessonType"],
+        textContent: String(row.text_content || ""),
         youtubeId: String(row.youtube_id || ""),
+        resources: Array.isArray(row.resources) ? row.resources as OnlineModule["lessons"][number]["resources"] : [],
         durationMinutes: Number(row.duration_minutes || 0),
         isPreview: Boolean(row.is_preview),
         orderIndex: Number(row.order_index || 0),
@@ -62,6 +135,59 @@ async function loadOnlineModules(courseIds: string[]) {
   } catch (err) {
     const code = (err as { code?: string })?.code;
     if (code === "42P01") return modulesByCourseId;
+    if (code === "42703") {
+      const [{ rows: moduleRows }, { rows: lessonRows }] = await Promise.all([
+        query(
+          `SELECT id, course_id, title, description, order_index
+           FROM course_modules
+           WHERE course_id = ANY($1::uuid[])
+           ORDER BY course_id ASC, order_index ASC, created_at ASC`,
+          [courseIds],
+        ),
+        query(
+          `SELECT l.id, l.module_id, l.title, l.description, l.youtube_id, l.duration_minutes, l.is_preview, l.order_index
+           FROM course_lessons l
+           INNER JOIN course_modules m ON m.id = l.module_id
+           WHERE m.course_id = ANY($1::uuid[])
+           ORDER BY m.course_id ASC, m.order_index ASC, l.order_index ASC, l.created_at ASC`,
+          [courseIds],
+        ),
+      ]);
+
+      const lessonsByModuleId = new Map<string, OnlineModule["lessons"]>();
+      for (const row of (lessonRows || []) as Record<string, unknown>[]) {
+        const moduleId = String(row.module_id || "");
+        const lessons = lessonsByModuleId.get(moduleId) || [];
+        lessons.push({
+          id: String(row.id || ""),
+          title: String(row.title || ""),
+          description: String(row.description || ""),
+          lessonType: String(row.youtube_id || "").trim() ? "video" : "text",
+          textContent: "",
+          youtubeId: String(row.youtube_id || ""),
+          resources: [],
+          durationMinutes: Number(row.duration_minutes || 0),
+          isPreview: Boolean(row.is_preview),
+          orderIndex: Number(row.order_index || 0),
+        });
+        lessonsByModuleId.set(moduleId, lessons);
+      }
+
+      for (const row of (moduleRows || []) as Record<string, unknown>[]) {
+        const courseId = String(row.course_id || "");
+        const moduleId = String(row.id || "");
+        const modules = modulesByCourseId.get(courseId) || [];
+        modules.push({
+          id: moduleId,
+          title: String(row.title || ""),
+          description: String(row.description || ""),
+          orderIndex: Number(row.order_index || 0),
+          lessons: lessonsByModuleId.get(moduleId) || [],
+        });
+        modulesByCourseId.set(courseId, modules);
+      }
+      return modulesByCourseId;
+    }
     throw err;
   }
 
@@ -103,32 +229,61 @@ async function saveOnlineModules(courseId: string, modules: OnlineModule[]) {
       const lessonTitle = String(lesson.title || "").trim();
       if (!lessonTitle) continue;
 
-      await query(
-        `INSERT INTO course_lessons (module_id, title, description, youtube_id, duration_minutes, is_preview, order_index)
-         VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)`,
-        [
-          moduleId,
-          lessonTitle,
-          String(lesson.description || "").trim(),
-          String(lesson.youtubeId || "").trim(),
-          Number(lesson.durationMinutes || 0),
-          Boolean(lesson.isPreview),
-          Number.isFinite(Number(lesson.orderIndex)) ? Number(lesson.orderIndex) : lessonIndex + 1,
-        ],
-      );
+      const values = [
+        moduleId,
+        lessonTitle,
+        String(lesson.description || "").trim(),
+        String(lesson.youtubeId || "").trim(),
+        Number(lesson.durationMinutes || 0),
+        Boolean(lesson.isPreview),
+        Number.isFinite(Number(lesson.orderIndex)) ? Number(lesson.orderIndex) : lessonIndex + 1,
+        lesson.lessonType === "text" ? "text" : "video",
+        String(lesson.textContent || "").trim(),
+        JSON.stringify(Array.isArray(lesson.resources) ? lesson.resources : []),
+      ];
+
+      try {
+        await query(
+          `INSERT INTO course_lessons (module_id, title, description, youtube_id, duration_minutes, is_preview, order_index, lesson_type, text_content, resources)
+           VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
+          values,
+        );
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        if (code !== "42703") throw err;
+        await query(
+          `INSERT INTO course_lessons (module_id, title, description, youtube_id, duration_minutes, is_preview, order_index)
+           VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)`,
+          values.slice(0, 7),
+        );
+      }
     }
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
+    await ensureElearningSchema();
+
     const { searchParams } = new URL(req.url);
     const includeCurriculum = searchParams.get("includeCurriculum") === "1";
 
     if (!includeCurriculum) {
-      const { rows } = await query(
-        `SELECT ${adminCourseColumns} FROM courses ORDER BY start_date DESC`
-      );
+      let rows: unknown[] = [];
+      try {
+        const result = await query(
+          `SELECT ${adminCourseColumns} FROM courses ORDER BY start_date DESC`
+        );
+        rows = result.rows || [];
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        if (code !== "42703") throw err;
+        const fallbackColumns = adminCourseColumns.replace(", class_materials", "");
+        const result = await query(
+          `SELECT ${fallbackColumns} FROM courses ORDER BY start_date DESC`
+        );
+        rows = result.rows || [];
+      }
       return NextResponse.json(normalizeCourseRows((rows || []) as Record<string, unknown>[]));
     }
 
@@ -160,6 +315,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureElearningSchema();
+
     const body = await req.json();
     const curriculum = Array.isArray(body.curriculum) ? body.curriculum : [];
     const onlineModules = Array.isArray(body.onlineModules) ? body.onlineModules : [];
@@ -208,6 +365,8 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    await ensureElearningSchema();
+
     const body = await req.json();
     const { id, ...data } = body;
 

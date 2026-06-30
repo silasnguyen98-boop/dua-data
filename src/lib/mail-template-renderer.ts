@@ -97,18 +97,21 @@ function getBaseUrl() {
   return process.env.NODE_ENV === "production" ? "https://duadata.net" : "http://localhost:3000";
 }
 
+function formatDateTimeVn(value?: string) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return date.toLocaleString("vi-VN", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateContext) {
   const normalizedBodyHtml = normalizeEmbeddedImages(bodyHtml);
   const safeName = escapeHtml(context.full_name || "Bạn");
   const safeCourse = escapeHtml(context.course_title || "");
   const safeCourseLink = escapeHtml(context.course_link || getBaseUrl());
   const safeFanpage = escapeHtml(context.fanpage_link || "https://www.facebook.com/duadata");
-  const safeRegisteredAt = escapeHtml(
-    new Date(context.registered_at || new Date().toISOString()).toLocaleString("vi-VN", {
-      dateStyle: "long",
-      timeStyle: "short",
-    })
-  );
   const safeYear = new Date().getFullYear();
 
   return `
@@ -132,6 +135,7 @@ export function wrapMailTemplateHtml(bodyHtml: string, context: MailTemplateCont
             <div style="margin-top:28px;border-top:1px solid #e5e7eb;padding-top:18px;font-size:13px;line-height:1.7;color:#64748b;">
               <p style="margin:0 0 8px;">Khóa học: <a href="${safeCourseLink}" style="color:#059669;text-decoration:none;">${safeCourseLink}</a></p>
               <p style="margin:0 0 8px;">Fanpage hỗ trợ: <a href="${safeFanpage}" style="color:#059669;text-decoration:none;">${safeFanpage}</a></p>
+              <p style="margin:0 0 8px;">Thời gian đăng ký: ${escapeHtml(formatDateTimeVn(context.registered_at))}</p>
               <p style="margin:0;">&copy; ${safeYear} DUA Edu. All rights reserved.</p>
             </div>
           </div>

@@ -17,6 +17,29 @@ interface Student {
 
 type TimeFilter = "all" | "today" | "week" | "custom";
 
+function getValidDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value: string) {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatLongDate(value: string) {
+  const date = getValidDate(value);
+  if (!date) return "—";
+  return date.toLocaleString("vi-VN", {
+    dateStyle: "long",
+  });
+}
+
 export default function StudentsView() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,11 +302,7 @@ export default function StudentsView() {
                     </td>
                     <td className="px-8 py-5">
                       <div className="text-xs font-bold text-slate-600">
-                        {new Date(st.registeredAt).toLocaleDateString("vi-VN", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric"
-                        })}
+                        {formatDate(st.registeredAt)}
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
@@ -404,9 +423,7 @@ export default function StudentsView() {
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày nhập học</p>
                   <p className="text-sm font-bold text-slate-700">
-                    {new Date(selectedStudent.registeredAt).toLocaleString("vi-VN", {
-                      dateStyle: "long"
-                    })}
+                    {formatLongDate(selectedStudent.registeredAt)}
                   </p>
                 </div>
               </div>

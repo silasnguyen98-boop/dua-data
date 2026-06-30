@@ -29,11 +29,16 @@ function getCourseSortTime(course: Course) {
   return 0;
 }
 
+function isElearningCourse(course: Course) {
+  const courseType = String(course.courseType || "").trim().toLowerCase();
+  return courseType === "e_learning" || courseType === "elearning" || courseType === "e-learning";
+}
+
 function sortCourses(courses: Course[]): Course[] {
   if (!courses || courses.length === 0) return [];
   const statusOrder: Record<string, number> = { upcoming: 0, ongoing: 1, expired: 2, ended: 2 };
   return courses
-    .filter((c) => c && c.published !== false && !c.isHidden && !c.comingSoon)
+    .filter((c) => c && c.published !== false && !c.isHidden && !c.comingSoon && !isElearningCourse(c))
     .sort((a, b) => {
       const sa = statusOrder[getCourseStatus(a.startDate, a.endDate, a.registrationDeadline)] ?? 3;
       const sb = statusOrder[getCourseStatus(b.startDate, b.endDate, b.registrationDeadline)] ?? 3;

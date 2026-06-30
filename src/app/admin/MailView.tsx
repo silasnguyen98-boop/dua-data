@@ -43,6 +43,13 @@ function buildAuthHeader(): Record<string, string> {
   return { Authorization: `Bearer ${decodeStoredRole(stored) || stored.trim()}` };
 }
 
+function formatDateTime(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+}
+
 function getPreviewContext(course?: CourseOption | null) {
   const title = course?.title || "Khóa học mẫu";
   const slug = course?.slug || "khoa-hoc-mau";
@@ -364,7 +371,7 @@ export default function MailView() {
                     logs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((log) => (
                       <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-8 py-5 text-xs font-medium text-slate-500 whitespace-nowrap">
-                          {new Date(log.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                          {formatDateTime(log.createdAt)}
                         </td>
                         <td className="px-8 py-5 font-bold text-slate-900">{log.recipientEmail}</td>
                         <td className="px-8 py-5 font-medium text-slate-600 truncate max-w-xs">{log.subject}</td>

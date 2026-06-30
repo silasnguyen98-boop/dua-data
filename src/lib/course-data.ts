@@ -1,4 +1,4 @@
-import { Course, CurriculumItem } from "@/types/course";
+import { Course, CurriculumItem, LearningResource } from "@/types/course";
 
 type Row = Record<string, unknown>;
 
@@ -62,6 +62,28 @@ function toStringArray(value: unknown): string[] {
   const parsed = parseJsonValue<unknown[]>(value, []);
   if (!Array.isArray(parsed)) return [];
   return parsed.filter((item): item is string => typeof item === "string");
+}
+
+function toLearningResources(value: unknown): LearningResource[] {
+  const parsed = parseJsonValue<unknown[]>(value, []);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((item): LearningResource | null => {
+      if (!item || typeof item !== "object") return null;
+      const resource = item as Row;
+      const title = getString(resource, ["title"]).trim();
+      const url = getString(resource, ["url"]).trim();
+      if (!title || !url) return null;
+      return {
+        id: getString(resource, ["id"], "") || undefined,
+        title,
+        description: getString(resource, ["description"], "") || undefined,
+        url,
+        type: getString(resource, ["type"], "link") as LearningResource["type"],
+      };
+    })
+    .filter((item): item is LearningResource => Boolean(item));
 }
 
 function toCurriculumItems(value: unknown): CurriculumItem[] {
@@ -130,6 +152,7 @@ export function normalizeCourseRow(row: Row, curriculum: CurriculumItem[] = []):
     category: getString(row, ["category"]),
     courseType: getString(row, ["course_type", "courseType"], "online") as Course["courseType"],
     curriculum,
+    classMaterials: toLearningResources(getValue(row, ["class_materials", "classMaterials"])),
     outcomes: toStringArray(getValue(row, ["outcomes"])),
     targetAudience: toStringArray(getValue(row, ["target_audience", "targetAudience"])),
     published: getBoolean(row, ["published"]),
@@ -191,6 +214,11 @@ export function buildCoursePayload(data: Row, includeTimestamps = true) {
     hours: getString(data, ["hours"]),
     category: getString(data, ["category"]),
     course_type: getString(data, ["courseType", "course_type"], "online"),
+    class_materials: JSON.stringify(Array.isArray(data.classMaterials)
+      ? data.classMaterials
+      : Array.isArray(data.class_materials)
+        ? data.class_materials
+        : []),
     target_audience: JSON.stringify(Array.isArray(data.targetAudience)
       ? data.targetAudience
       : Array.isArray(data.target_audience)

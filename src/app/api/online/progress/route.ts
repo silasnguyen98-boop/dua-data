@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
          AND r.status = 'onboarded'
          AND c.course_type = ANY($3::text[])
        LIMIT 1`,
-      [lessonId, session.user.id, ["video", "online", "e_learning"]],
+      [lessonId, session.user.id, ["e_learning"]],
     );
 
     if (!accessRows[0]) {

@@ -29,6 +29,7 @@ const emptyCourse: Omit<Course, "id"> = {
   category: "",
   courseType: "online",
   curriculum: [],
+  classMaterials: [],
   onlineModules: [],
   outcomes: [],
   targetAudience: [],
@@ -61,7 +62,23 @@ const courseTypeOptions: Array<{ value: NonNullable<Course["courseType"]>; label
   { value: "self_study", label: "Tự học" },
 ];
 
-export default function CoursesView() {
+type CourseAdminTab = "all" | "regular";
+
+function normalizeCourseType(value: unknown) {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (raw === "e-learning") return "e_learning";
+  return raw || "online";
+}
+
+function isElearningCourse(course: Course) {
+  return ["e_learning", "elearning"].includes(normalizeCourseType(course.courseType));
+}
+
+function canEditLearningContent(courseType: Course["courseType"]) {
+  return ["video", "e_learning", "elearning"].includes(normalizeCourseType(courseType));
+}
+
+export default function CoursesView({ initialTab = "all" }: { initialTab?: CourseAdminTab }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,7 +87,12 @@ export default function CoursesView() {
   const [editing, setEditing] = useState<Course | null>(null);
   const [form, setForm] = useState<Omit<Course, "id">>(emptyCourse);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<CourseAdminTab>(initialTab);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     if (toast) {
@@ -142,7 +164,12 @@ export default function CoursesView() {
 
   const handleNew = () => {
     setEditing(null);
-    setForm({ ...emptyCourse, curriculum: [], onlineModules: [] });
+    setForm({
+      ...emptyCourse,
+      curriculum: [],
+      classMaterials: [],
+      onlineModules: [],
+    });
     setShowForm(true);
     setEditingPhaseIndex(null);
   };
@@ -279,6 +306,31 @@ export default function CoursesView() {
     setForm({ ...form, onlineModules: modules });
   };
 
+  const updateClassMaterials = (materials: NonNullable<Course["classMaterials"]>) => {
+    setForm({ ...form, classMaterials: materials });
+  };
+
+  const addClassMaterial = () => {
+    const materials = Array.isArray(form.classMaterials) ? [...form.classMaterials] : [];
+    materials.push({
+      title: `Tài liệu ${materials.length + 1}`,
+      description: "",
+      url: "",
+      type: "document",
+    });
+    updateClassMaterials(materials);
+  };
+
+  const updateClassMaterial = (index: number, patch: Partial<NonNullable<Course["classMaterials"]>[number]>) => {
+    const materials = [...(form.classMaterials || [])];
+    materials[index] = { ...materials[index], ...patch };
+    updateClassMaterials(materials);
+  };
+
+  const removeClassMaterial = (index: number) => {
+    updateClassMaterials((form.classMaterials || []).filter((_, itemIndex) => itemIndex !== index));
+  };
+
   const addOnlineModule = () => {
     const modules = Array.isArray(form.onlineModules) ? [...form.onlineModules] : [];
     modules.push({
@@ -308,7 +360,10 @@ export default function CoursesView() {
     lessons.push({
       title: `Bài ${lessons.length + 1}`,
       description: "",
+      lessonType: "video",
+      textContent: "",
       youtubeId: "",
+      resources: [],
       durationMinutes: 0,
       isPreview: false,
       orderIndex: lessons.length + 1,
@@ -338,6 +393,16 @@ export default function CoursesView() {
     updateOnlineModules(modules);
   };
 
+  const tabStats = {
+    all: courses.length,
+    regular: courses.filter((course) => !isElearningCourse(course)).length,
+  };
+
+  const displayedCourses = courses.filter((course) => {
+    if (activeTab === "regular") return !isElearningCourse(course);
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
@@ -361,8 +426,12 @@ export default function CoursesView() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Quản lý Khóa học</h2>
-          <p className="text-slate-500 font-medium mt-1">Sắp xếp, biên tập nội dung và lộ trình đào tạo</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            Quản lý Khóa học
+          </h2>
+          <p className="text-slate-500 font-medium mt-1">
+            Sắp xếp, biên tập nội dung và lộ trình đào tạo
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -393,6 +462,30 @@ export default function CoursesView() {
             Thêm khóa học
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 rounded-[28px] border border-slate-200 bg-white p-2 shadow-sm">
+        {[
+          { id: "all", label: "Tất cả", count: tabStats.all },
+          { id: "regular", label: "Khóa học thường", count: tabStats.regular },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as CourseAdminTab)}
+            className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition-all ${
+              activeTab === tab.id
+                ? "bg-green-600 text-white shadow-lg shadow-green-100"
+                : "text-slate-500 hover:bg-slate-50 hover:text-green-700"
+            }`}
+          >
+            {tab.label}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+              activeTab === tab.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Course List Table */}
@@ -427,18 +520,18 @@ export default function CoursesView() {
                     <td colSpan={5} className="px-6 py-6"><div className="h-6 bg-slate-50 rounded-full w-full"></div></td>
                   </tr>
                 ))
-              ) : courses.length === 0 ? (
+              ) : displayedCourses.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center">
                         <svg className="h-8 w-8 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                       </div>
-                      <p className="text-slate-400 font-bold">Chưa có khóa học nào được tạo.</p>
+                      <p className="text-slate-400 font-bold">Chưa có khóa học nào trong tab này.</p>
                     </div>
                   </td>
                 </tr>
-              ) : courses.map((course) => (
+              ) : displayedCourses.map((course) => (
                 <tr key={course.id} className="group hover:bg-slate-50/50 transition-all duration-300">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -738,13 +831,13 @@ export default function CoursesView() {
                 </div>
               </section>
 
-              {form.courseType === "video" && (
+              {canEditLearningContent(form.courseType) && (
                 <section className="space-y-6">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-1.5 bg-red-500 rounded-full"></div>
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Nội dung video cho /online</h3>
+                        <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Nội dung học cho khóa online</h3>
                         <p className="text-xs font-bold text-slate-400 mt-1">Các module và bài học ở đây sẽ hiển thị trong trang học online.</p>
                       </div>
                     </div>
@@ -752,14 +845,78 @@ export default function CoursesView() {
                       onClick={addOnlineModule}
                       className="bg-red-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-xl shadow-red-100 hover:bg-red-700 transition-all"
                     >
-                      + Thêm chương video
+                      + Thêm chương học
                     </button>
+                  </div>
+
+                  <div className="rounded-[32px] border border-emerald-100 bg-emerald-50/30 p-6 space-y-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <h4 className="text-sm font-black uppercase tracking-wider text-slate-900">Tài liệu lớp học</h4>
+                        <p className="mt-1 text-xs font-bold text-slate-400">Link tài liệu, dataset, slide hoặc file dùng chung cho khóa e-learning.</p>
+                      </div>
+                      <button
+                        onClick={addClassMaterial}
+                        className="rounded-2xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-xl shadow-emerald-100 hover:bg-emerald-700"
+                      >
+                        + Thêm tài liệu
+                      </button>
+                    </div>
+
+                    {(form.classMaterials || []).length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-emerald-200 bg-white/70 p-5 text-center">
+                        <p className="text-sm font-bold text-slate-500">Chưa có tài liệu lớp học.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(form.classMaterials || []).map((material, materialIndex) => (
+                          <div key={material.id || materialIndex} className="grid grid-cols-1 gap-3 rounded-2xl border border-emerald-100 bg-white p-4 md:grid-cols-[1fr_1fr_140px_auto]">
+                            <input
+                              className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              placeholder="Tên tài liệu"
+                              value={material.title}
+                              onChange={(e) => updateClassMaterial(materialIndex, { title: e.target.value })}
+                            />
+                            <input
+                              className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              placeholder="https://..."
+                              value={material.url}
+                              onChange={(e) => updateClassMaterial(materialIndex, { url: e.target.value })}
+                            />
+                            <select
+                              className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              value={material.type || "document"}
+                              onChange={(e) => updateClassMaterial(materialIndex, { type: e.target.value as NonNullable<Course["classMaterials"]>[number]["type"] })}
+                            >
+                              <option value="document">Document</option>
+                              <option value="dataset">Dataset</option>
+                              <option value="slide">Slide</option>
+                              <option value="spreadsheet">Spreadsheet</option>
+                              <option value="link">Link</option>
+                              <option value="other">Other</option>
+                            </select>
+                            <button
+                              onClick={() => removeClassMaterial(materialIndex)}
+                              className="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-100"
+                            >
+                              Xóa
+                            </button>
+                            <input
+                              className="md:col-span-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              placeholder="Mô tả ngắn"
+                              value={material.description || ""}
+                              onChange={(e) => updateClassMaterial(materialIndex, { description: e.target.value })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-5">
                     {(form.onlineModules || []).length === 0 ? (
                       <div className="rounded-[28px] border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-                        <p className="text-sm font-bold text-slate-500">Chưa có nội dung video. Bấm “Thêm chương video” để bắt đầu.</p>
+                        <p className="text-sm font-bold text-slate-500">Chưa có nội dung học. Bấm “Thêm chương học” để bắt đầu.</p>
                       </div>
                     ) : (
                       (form.onlineModules || []).map((module, moduleIndex) => (
@@ -803,7 +960,7 @@ export default function CoursesView() {
                           <div className="space-y-3">
                             {(module.lessons || []).map((lesson, lessonIndex) => (
                               <div key={lesson.id || lessonIndex} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 space-y-4">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_120px_auto]">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_150px_1fr_120px_auto]">
                                   <div className="space-y-1">
                                     <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Tên bài học</label>
                                     <input
@@ -813,11 +970,23 @@ export default function CoursesView() {
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">YouTube ID hoặc link</label>
-                                    <input
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Loại bài giảng</label>
+                                    <select
                                       className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20"
-                                      placeholder="VD: dQw4w9WgXcQ hoặc link YouTube"
+                                      value={lesson.lessonType || (lesson.youtubeId ? "video" : "text")}
+                                      onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { lessonType: e.target.value as OnlineLesson["lessonType"] })}
+                                    >
+                                      <option value="video">Video</option>
+                                      <option value="text">Text</option>
+                                    </select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nguồn video (ID hoặc link)</label>
+                                    <input
+                                      className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/20 disabled:bg-slate-100 disabled:text-slate-400"
+                                      placeholder="VD: dQw4w9WgXcQ hoặc link nguồn video"
                                       value={lesson.youtubeId || ""}
+                                      disabled={(lesson.lessonType || "video") === "text"}
                                       onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { youtubeId: e.target.value })}
                                     />
                                   </div>
@@ -845,6 +1014,17 @@ export default function CoursesView() {
                                     onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { description: e.target.value })}
                                   />
                                 </div>
+                                {(lesson.lessonType || (lesson.youtubeId ? "video" : "text")) === "text" && (
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nội dung bài giảng text</label>
+                                    <textarea
+                                      className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 text-sm outline-none h-36 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                      placeholder="Nhập nội dung bài học, hướng dẫn thực hành, checklist..."
+                                      value={lesson.textContent || ""}
+                                      onChange={(e) => updateOnlineLesson(moduleIndex, lessonIndex, { textContent: e.target.value })}
+                                    />
+                                  </div>
+                                )}
                                 <label className="flex items-center gap-2 cursor-pointer w-fit">
                                   <input
                                     type="checkbox"
@@ -861,7 +1041,7 @@ export default function CoursesView() {
                               onClick={() => addOnlineLesson(moduleIndex)}
                               className="w-full rounded-2xl border border-dashed border-red-200 bg-red-50/40 px-4 py-3 text-xs font-black text-red-600 hover:bg-red-50 transition"
                             >
-                              + Thêm bài học video
+                              + Thêm bài học
                             </button>
                           </div>
                         </div>

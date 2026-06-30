@@ -1,5 +1,143 @@
 [
   {
+    "id": "280064da-bf82-46f3-8c6b-1389e7d7ed9e",
+    "slug": "test-1234",
+    "title": "Test 1234",
+    "shortDescription": "dâd",
+    "description": "jnjnjn",
+    "image": "",
+    "instructor": "Đội Ngũ DUA Edu",
+    "price": 0,
+    "originalPrice": 0,
+    "discount": 0,
+    "totalLessons": 0,
+    "students": 0,
+    "rating": 0,
+    "reviews": 0,
+    "startDate": "",
+    "schedule": "",
+    "hours": "",
+    "category": "",
+    "courseType": "e_learning",
+    "curriculum": [],
+    "classMaterials": [
+      {
+        "title": "Hướng dẫn cài đặt SQL",
+        "description": "đá",
+        "url": "http://localhost:3000/admin?view=elearning",
+        "type": "document"
+      },
+      {
+        "title": "Link Dataset",
+        "description": "fadsfasf",
+        "url": "http://localhost:3000/admin?view=elearning",
+        "type": "dataset"
+      },
+      {
+        "title": "Tài liệu 3",
+        "description": "Link slide",
+        "url": "http://localhost:3000/admin?view=elearning",
+        "type": "slide"
+      }
+    ],
+    "outcomes": [],
+    "targetAudience": [],
+    "published": true,
+    "comingSoon": false,
+    "isHidden": false,
+    "hidePrice": false,
+    "createdAt": "2026-06-30T02:02:28.563Z",
+    "updatedAt": "2026-06-30T02:28:18.632Z",
+    "onlineModules": [
+      {
+        "id": "fbbe66c9-b0f5-4e8e-85ec-ae28ccd28a6d",
+        "title": "Chương 1: Làm quen với e-learning",
+        "description": "Nội dung mock để kiểm tra lưu chương và bài học.",
+        "orderIndex": 1,
+        "lessons": [
+          {
+            "id": "bf1a4091-d5c5-4b20-af3f-bf916aa296d9",
+            "title": "Bài 1: Tổng quan khóa học",
+            "description": "Mục tiêu và cách học online.",
+            "lessonType": "text",
+            "textContent": "Đây là bài học text mẫu. Admin có thể sửa nội dung này trong tab E-learning.",
+            "youtubeId": "",
+            "resources": [],
+            "durationMinutes": 8,
+            "isPreview": true,
+            "orderIndex": 1
+          },
+          {
+            "id": "121724d2-d434-4c97-abff-0947923dc397",
+            "title": "Bài 2: Video thực hành mẫu",
+            "description": "Video mẫu nhúng trực tiếp.",
+            "lessonType": "video",
+            "textContent": "",
+            "youtubeId": "dQw4w9WgXcQ",
+            "resources": [],
+            "durationMinutes": 12,
+            "isPreview": false,
+            "orderIndex": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "575189a9-9358-45a4-8625-d64841544a4d",
+    "slug": "tu-hoc-thang-6-hoc-sql-qua-chung-chi-quoc-te-tren-hackerrank",
+    "title": "Tự học tháng 6: Học SQL qua chứng chỉ quốc tế trên HackerRank",
+    "shortDescription": " Tháng 6 này, Dứa đồng hành cùng admin genZ làm Data mở lớp tự học SQL dành cho các bạn muốn bắt đầu rèn luyện tư duy dữ liệu một cách bài bản hơn thông qua chứng chỉ quốc tế trên HackerRank.",
+    "description": "<p><br></p><p>Tháng 6 này, Dứa đồng hành cùng admin genZ làm Data mở lớp tự học SQL dành cho các bạn muốn bắt đầu rèn luyện tư duy dữ liệu một cách bài bản hơn thông qua chứng chỉ quốc tế trên HackerRank.</p><p>Thay vì chỉ học lý thuyết, bạn sẽ được làm quen với các dạng bài SQL thực hành, luyện tập theo từng chủ đề và có mục tiêu rõ ràng: hoàn thành chứng chỉ SQL trên HackerRank.</p><p>Khi tham gia chương trình, bạn sẽ nhận được:</p><ul><li><p>Học bổng 500.000 VNĐ cho các lớp học \"Bình dân học Data\" từ Dứa khi hoàn thành chứng chỉ</p></li><li><p>Tham gia nhóm Zalo tự học SQL trong tháng 6 để cùng học, nhắc tiến độ và trao đổi bài tập</p></li></ul><p>Chương trình phù hợp với các bạn mới bắt đầu học Data, sinh viên, người đi làm muốn bổ sung kỹ năng SQL hoặc những bạn đang cần một mục tiêu cụ thể để tự học nghiêm túc hơn trong tháng 6.</p><p><br></p><p><span style=\"font-size: 0.875rem;\">Ngoài ra, nếu bạn muốn học theo lộ trình bài bản hơn, có hướng dẫn thực tế từ mentor và được thực hành qua các bài toán dữ liệu gần với công việc, bạn có thể tham khảo lớp “Bình Dân học Data” sẽ khai giảng trong tháng 6 tại đây</span>:&nbsp;<a href=\"https://duadata.net/courses/binh-dan-hoc-data\"><b>https://duadata.net/courses/binh-dan-hoc-data&nbsp;</b></a></p>",
+    "image": "SQL",
+    "imageUrl": "https://i.ibb.co/n8D9ptzC/Chat-GPT-Image-May-30-2026-05-44-03-PM.png",
+    "instructor": "GenZ",
+    "price": 0,
+    "originalPrice": 0,
+    "discount": 30,
+    "totalLessons": 50,
+    "students": 2302,
+    "rating": 14,
+    "reviews": 0,
+    "startDate": "2026-06-20T00:00:00.000Z",
+    "schedule": "20:00 - 22:00",
+    "hours": "-",
+    "category": "Data Analytics",
+    "courseType": "self_study",
+    "curriculum": [
+      {
+        "phase": "Giai đoạn 1",
+        "title": "Cơ bản SQL",
+        "lessons": 0,
+        "topics": []
+      },
+      {
+        "phase": "Giai đoạn 2",
+        "title": "SQL nâng cao",
+        "lessons": 0,
+        "topics": []
+      }
+    ],
+    "classMaterials": [],
+    "outcomes": [
+      "Chứng chỉ SQL quốc tế trên Hackerrank",
+      "Tham gia nhóm Zalo tự học SQL trong tháng 6 để cùng học, nhắc tiến độ và trao đổi bài tập",
+      "Học bổng 500.000 VNĐ cho lớp \"Bình dân học Data\" khai giảng tháng 6 từ Dứa khi hoàn thành chứng chỉ"
+    ],
+    "targetAudience": [
+      "Người mới bắt đầu, chưa có nền tảng về Data nhưng muốn học từ cơ bản.",
+      "Người đang định hướng chuyển sang các công việc liên quan đến Data Analyst, Business Analyst hoặc phân tích báo cáo.",
+      "Thêm chứng chỉ để build CV"
+    ],
+    "published": true,
+    "comingSoon": false,
+    "isHidden": false,
+    "hidePrice": false,
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-06-30T01:15:32.130Z",
+    "onlineModules": []
+  },
+  {
     "id": "d58995c5-d509-4646-99b9-d354943eb880",
     "slug": "binh-dan-hoc-data",
     "title": "Bình dân học Data",
@@ -9,13 +147,13 @@
     "imageUrl": "https://i.ibb.co/mVZspVwx/e188dcb6-ac1e-441d-b9f0-d2996367c1c0.png",
     "instructor": "Việt Nguyễn",
     "price": 3900000,
-    "originalPrice": 10000000,
+    "originalPrice": 4500000,
     "discount": 30,
     "totalLessons": 50,
-    "students": 18,
+    "students": 86,
     "rating": 0,
     "reviews": 0,
-    "startDate": "2026-06-20",
+    "startDate": "2026-06-20T00:00:00.000Z",
     "schedule": "20:00 - 22:00",
     "hours": "-",
     "category": "Data Analytics",
@@ -172,6 +310,7 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [
       "Hiểu tư duy phân tích dữ liệu và biết cách ứng dụng Data vào công việc thực tế.",
       "Biết sử dụng các công cụ cơ bản như Excel, SQL và Power BI để xử lý, phân tích và trực quan hóa dữ liệu.",
@@ -188,9 +327,10 @@
     "published": true,
     "comingSoon": false,
     "isHidden": false,
-    "hidePrice": true,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Sun May 17 2026 04:38:22 GMT+0700 (Indochina Time)"
+    "hidePrice": false,
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-06-14T22:44:03.769Z",
+    "onlineModules": []
   },
   {
     "id": "9ead0008-f0e1-4ac6-b4dd-7f6f3e09d25d",
@@ -202,15 +342,15 @@
     "imageUrl": "https://i.ibb.co/Q2qyP4D/157c8ca9-5fac-4108-9fb5-d5a9672c2e0a-1.png",
     "instructor": "Việt Nguyễn",
     "price": 3900000,
-    "originalPrice": 10000000,
+    "originalPrice": 4500000,
     "discount": 30,
     "totalLessons": 48,
-    "students": 33,
+    "students": 43,
     "rating": 0,
     "reviews": 0,
-    "startDate": "2026-06-20",
+    "startDate": "2026-06-20T00:00:00.000Z",
     "schedule": "20:00 - 22:00",
-    "hours": "Thứ 3, 5",
+    "hours": "_",
     "category": "Data Analytics",
     "courseType": "online",
     "curriculum": [
@@ -365,6 +505,7 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [
       "Hiểu tư duy phân tích dữ liệu và biết cách ứng dụng Data vào công việc thực tế.",
       "Biết sử dụng các công cụ cơ bản như Excel, SQL và Power BI để xử lý, phân tích và trực quan hóa dữ liệu.",
@@ -381,9 +522,10 @@
     "published": true,
     "comingSoon": false,
     "isHidden": false,
-    "hidePrice": true,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Tue May 19 2026 01:02:39 GMT+0700 (Indochina Time)"
+    "hidePrice": false,
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-06-19T03:49:10.295Z",
+    "onlineModules": []
   },
   {
     "id": "41994308-2491-4201-a7f7-dde260ddd059",
@@ -542,6 +684,7 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [
       "Hiểu Data Analyst là gì và dữ liệu giúp ích thế nào trong công việc",
       "Biết cách đặt câu hỏi phân tích dữ liệu cơ bản",
@@ -559,8 +702,9 @@
     "comingSoon": false,
     "isHidden": true,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 13:57:43 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 17:09:49 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T06:57:43.546Z",
+    "updatedAt": "2026-05-14T10:09:49.850Z",
+    "onlineModules": []
   },
   {
     "id": "8b58ea56-082f-4957-a942-e9338b644617",
@@ -704,14 +848,16 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": false,
     "isHidden": false,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Fri May 15 2026 15:18:03 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-05-15T08:18:03.019Z",
+    "onlineModules": []
   },
   {
     "id": "71e9a74a-8968-437b-9edb-8ea69ac583e9",
@@ -946,14 +1092,16 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": false,
     "isHidden": false,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Fri May 15 2026 15:15:42 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-05-15T08:15:42.656Z",
+    "onlineModules": []
   },
   {
     "id": "1f196051-8636-4855-9886-38f00924da58",
@@ -1187,14 +1335,16 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": true,
     "isHidden": true,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 19:36:24 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-05-14T12:36:24.541Z",
+    "onlineModules": []
   },
   {
     "id": "999078f6-387d-42c2-a5bf-4e550686f348",
@@ -1428,14 +1578,16 @@
         ]
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": true,
     "isHidden": true,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 19:36:15 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-05-14T12:36:15.042Z",
+    "onlineModules": []
   },
   {
     "id": "fbcc3e63-c7d6-45c8-9e41-fda6ac3907da",
@@ -1485,71 +1637,16 @@
         "topics": []
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": false,
     "isHidden": true,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 19:36:28 GMT+0700 (Indochina Time)"
-  },
-  {
-    "id": "bc77eaf0-2495-43be-b902-8692a53531d3",
-    "slug": "lop-tu-hoc-python-thang-5-cho-dua-va-cong-dong-genz-lam-data",
-    "title": "Lớp tự học python Tháng 5 cho Dứa & cộng đồng GenZ làm Data",
-    "shortDescription": "",
-    "description": "",
-    "image": "python",
-    "imageUrl": "https://i.ibb.co/SwtKxmsH/Chat-GPT-Image-Apr-24-2026-12-50-09-PM.png",
-    "instructor": "Dứa Data Team",
-    "price": 0,
-    "originalPrice": 0,
-    "discount": 0,
-    "totalLessons": 45,
-    "students": 430,
-    "rating": 0,
-    "reviews": 0,
-    "startDate": "2026-03-27",
-    "endDate": "2026-05-31",
-    "schedule": "8:00 - 22:00",
-    "hours": "Hàng ngày",
-    "category": "Data Analytics",
-    "courseType": "online",
-    "curriculum": [
-      {
-        "phase": "Tuần 1",
-        "title": "Cơ bản về python",
-        "lessons": 10,
-        "topics": []
-      },
-      {
-        "phase": "Tuần 2",
-        "title": "Python nâng cao",
-        "lessons": 10,
-        "topics": []
-      },
-      {
-        "phase": "Tuần 3",
-        "title": "Ứng dụng python vào phân tích dữ liệu",
-        "lessons": 5,
-        "topics": []
-      },
-      {
-        "phase": "Tuần 4",
-        "title": "Bài tập tổng kết",
-        "lessons": 5,
-        "topics": []
-      }
-    ],
-    "outcomes": [],
-    "targetAudience": [],
-    "published": true,
-    "comingSoon": false,
-    "isHidden": false,
-    "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Tue May 19 2026 15:19:17 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-05-14T12:36:28.231Z",
+    "onlineModules": []
   },
   {
     "id": "a171c624-86e4-4cb1-a15a-b6b5a10bed9f",
@@ -1564,14 +1661,14 @@
     "originalPrice": 799000,
     "discount": 50,
     "totalLessons": 28,
-    "students": 614,
+    "students": 617,
     "rating": 0,
     "reviews": 0,
-    "startDate": "2026-03-26",
+    "startDate": "2026-03-26T00:00:00.000Z",
     "schedule": "20:00 - 22:00",
     "hours": "00:00 - 23:59",
     "category": "Data Analytics",
-    "courseType": "e_learning",
+    "courseType": "online",
     "curriculum": [
       {
         "phase": "Lession 1",
@@ -1717,13 +1814,15 @@
         "topics": []
       }
     ],
+    "classMaterials": [],
     "outcomes": [],
     "targetAudience": [],
     "published": true,
     "comingSoon": false,
     "isHidden": false,
     "hidePrice": false,
-    "createdAt": "Fri May 08 2026 12:48:57 GMT+0700 (Indochina Time)",
-    "updatedAt": "Thu May 14 2026 17:10:32 GMT+0700 (Indochina Time)"
+    "createdAt": "2026-05-08T05:48:57.631Z",
+    "updatedAt": "2026-06-30T01:31:37.440Z",
+    "onlineModules": []
   }
 ]

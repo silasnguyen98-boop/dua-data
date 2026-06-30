@@ -43,7 +43,7 @@ async function getExperts(): Promise<Expert[]> {
 }
 
 const socialProofStats = [
-  { number: "300+", label: "Học viên đã tham gia" },
+  { number: "3000+", label: "Học viên đã tham gia" },
   { number: "12", label: "Lớp đào tạo thực chiến" },
   { number: "70.000+", label: "Thành viên cộng đồng" },
 ];
