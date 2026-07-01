@@ -27,7 +27,8 @@ docker compose run --rm certbot certonly \
   --agree-tos \
   --no-eff-email \
   -d duadata.net \
-  -d www.duadata.net
+  -d www.duadata.net \
+  -d student.duadata.net
 
 # 5. Reload nginx with SSL config
 echo "Reloading nginx with SSL..."
@@ -40,6 +41,7 @@ docker compose up -d
 echo ""
 echo "=== Done! ==="
 echo "App available at: https://duadata.net"
+echo "Student app available at: https://student.duadata.net"
 echo "To stop:   docker compose down"
 echo "To logs:    docker compose logs -f"
 echo "To restart: docker compose restart"
