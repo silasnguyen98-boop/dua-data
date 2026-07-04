@@ -11,7 +11,9 @@ import {
   ChevronUp,
   FileText,
   Lock,
+  Maximize2,
   Menu,
+  Minimize2,
   PauseCircle,
   PlayCircle,
   X,
@@ -137,12 +139,15 @@ function formatVideoTime(seconds: number) {
 
 function LessonVideoPlayer({ videoId, title, onEnded, autoPlay = false }: { videoId: string; title: string; onEnded?: () => void; autoPlay?: boolean }) {
   const containerId = useMemo(() => `lesson-video-${videoId}-${Math.random().toString(36).slice(2)}`, [videoId]);
+  const videoShellRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const endedRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +158,8 @@ loadVideoApi().then(() => {
       playerRef.current = new window.YT.Player(containerId, {
         videoId,
         host: "https://www.youtube-nocookie.com",
+        width: "100%",
+        height: "100%",
         playerVars: {
           autoplay: autoPlay ? 1 : 0,
           controls: 0,
@@ -170,6 +177,7 @@ loadVideoApi().then(() => {
             setDuration(Number(event.target.getDuration?.() || 0));
             if (autoPlay) {
               event.target.playVideo?.();
+              setHasStarted(true);
               setPlaying(true);
             }
           },
@@ -178,6 +186,7 @@ loadVideoApi().then(() => {
             setDuration(Number(event.target.getDuration?.() || 0));
             if (event.data === window.YT?.PlayerState?.PLAYING) {
               endedRef.current = false;
+              setHasStarted(true);
             }
             if (event.data === window.YT?.PlayerState?.ENDED && !endedRef.current) {
               endedRef.current = true;
@@ -206,6 +215,15 @@ loadVideoApi().then(() => {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    function syncFullscreenState() {
+      setFullscreen(document.fullscreenElement === videoShellRef.current);
+    }
+
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
+  }, []);
+
   function togglePlay() {
     const player = playerRef.current;
     if (!player || !ready) return;
@@ -214,6 +232,7 @@ loadVideoApi().then(() => {
       setPlaying(false);
     } else {
       player.playVideo?.();
+      setHasStarted(true);
       setPlaying(true);
     }
   }
@@ -225,17 +244,40 @@ loadVideoApi().then(() => {
     setCurrentTime(value);
   }
 
+  async function toggleFullscreen() {
+    const shell = videoShellRef.current;
+    if (!shell) return;
+
+    try {
+      if (document.fullscreenElement === shell) {
+        await document.exitFullscreen?.();
+      } else {
+        await shell.requestFullscreen?.();
+      }
+    } catch {}
+  }
+
   const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const showStartOverlay = !ready || !hasStarted;
+  const hideYoutubeChrome = ready && hasStarted && !playing;
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+    <div
+      ref={videoShellRef}
+      onContextMenu={(event) => event.preventDefault()}
+      className={"relative w-full overflow-hidden bg-slate-950 " + (fullscreen ? "h-screen" : "aspect-video")}
+    >
       <div
-        id={containerId}
-        className={`absolute inset-0 h-full w-full transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
-        title={title}
-      />
+        className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+      >
+        <div id={containerId} title={title} className="h-full w-full" />
+      </div>
 
-      {!playing && (
+      {hideYoutubeChrome && (
+        <div className="pointer-events-none absolute left-0 top-0 z-10 h-24 w-80 max-w-[75%] bg-gradient-to-br from-slate-950 via-slate-950/95 to-transparent" />
+      )}
+
+      {showStartOverlay && (
         <button
           type="button"
           onClick={togglePlay}
@@ -280,6 +322,14 @@ loadVideoApi().then(() => {
             aria-label="Thanh thời gian video"
           />
           <span className="w-12 text-right text-xs font-bold tabular-nums text-slate-200">{formatVideoTime(duration)}</span>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-green-600"
+            aria-label={fullscreen ? "Thoát toàn màn hình" : "Mở toàn màn hình"}
+          >
+            {fullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </button>
         </div>
       </div>
     </div>
@@ -386,6 +436,7 @@ function OnlineCourseContent() {
   const [hasCourseAccess, setHasCourseAccess] = useState(false);
   const [registration, setRegistration] = useState<RegistrationSnapshot | null>(null);
   const [registrationLoaded, setRegistrationLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
   const [autoAdvance, setAutoAdvance] = useState<{ lessonId: string; nextLessonId: string; seconds: number } | null>(null);
@@ -422,6 +473,7 @@ function OnlineCourseContent() {
             .then((statusData) => {
               setRegistration(statusData?.registration || null);
               setRegistrationLoaded(true);
+              setIsAuthenticated(Boolean(statusData?.authenticated));
               if (statusData?.canLearn) setHasCourseAccess(true);
             })
             .catch(() => setRegistrationLoaded(true));
@@ -620,7 +672,7 @@ function OnlineCourseContent() {
             <div className="max-w-3xl">
               <p className="mb-5 text-[10px] font-black uppercase tracking-[0.3em] text-green-600">DUA Edu Online</p>
               <h1 className="text-5xl font-black leading-[1.08] tracking-tight text-slate-950 md:text-7xl">
-                Học kỹ năng phân tích dữ liệu ngay trên <span className="text-emerald-500">DUA Edu</span>.
+                Học kỹ năng phân tích dữ liệu ngay trên <span className="text-emerald-500">DUA Edu</span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg font-medium leading-relaxed text-slate-500">
                 Đăng kí học ngay - bắt đầu nâng trình chuyên môn của bạn.
@@ -690,6 +742,21 @@ function OnlineCourseContent() {
                       </div>
                     </div>
 
+                    <div className="mb-4">
+                      {!course.hidePrice && (course.originalPrice || 0) > (course.price || 0) && (
+                        <div className="mb-0.5 text-[11px] font-bold text-slate-400 line-through">
+                          {new Intl.NumberFormat("vi-VN").format(course.originalPrice)}đ
+                        </div>
+                      )}
+                      <div className="text-lg font-black text-green-700">
+                        {course.hidePrice
+                          ? "Liên hệ tư vấn"
+                          : !course.price
+                          ? "Miễn phí"
+                          : new Intl.NumberFormat("vi-VN").format(course.price) + "đ"}
+                      </div>
+                    </div>
+
                     <button
                       onClick={() => openCourse(course)}
                       className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-green-600"
@@ -756,6 +823,26 @@ function OnlineCourseContent() {
         <button disabled className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-100 px-5 py-4 text-sm font-black text-amber-800">
           Đã đăng ký - chờ xác nhận thanh toán
         </button>
+      );
+    }
+
+    if (!isAuthenticated) {
+      return (
+        <div className="mt-6 space-y-2">
+          <button
+            onClick={() => router.push(`/login?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 text-sm font-black text-white transition hover:bg-green-700"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Đăng nhập để vào học
+          </button>
+          <p className="text-center text-xs font-medium text-slate-500">
+            Đã đăng ký rồi? Đăng nhập để hệ thống tự nhận diện. Chưa đăng ký?{" "}
+            <button type="button" onClick={() => setShowRegistrationForm(true)} className="font-bold text-green-600 underline-offset-2 hover:underline">
+              Đăng ký ngay
+            </button>
+          </p>
+        </div>
       );
     }
 
@@ -867,8 +954,8 @@ function OnlineCourseContent() {
     return (
       <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-500 selection:text-white">
         <Navbar />
-        <main className="mx-auto grid max-w-7xl gap-8 px-6 pb-24 pt-28 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <section className="space-y-8">
+        <main className="mx-auto grid max-w-7xl gap-6 px-4 pb-16 pt-24 sm:px-6 sm:pb-24 sm:pt-28 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-8">
+          <section className="space-y-6 sm:space-y-8">
             <button
               onClick={() => router.push("/elearning")}
               className="inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-green-700"
@@ -877,8 +964,8 @@ function OnlineCourseContent() {
               Tất cả khóa e-learning
             </button>
 
-            <div className="overflow-hidden rounded-[36px] border border-slate-200 bg-white shadow-sm">
-              <div className="relative aspect-[16/8] bg-slate-200">
+            <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm sm:rounded-[36px]">
+              <div className="relative aspect-[16/10] bg-slate-200 sm:aspect-[16/8]">
                 {selectedCourse.imageUrl ? (
                   <img src={selectedCourse.imageUrl} alt={selectedCourse.title} className="h-full w-full object-cover" />
                 ) : (
@@ -887,34 +974,34 @@ function OnlineCourseContent() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/15 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-green-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white">
+                <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
+                  <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
+                    <span className="rounded-full bg-green-500 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-white sm:px-3 sm:py-1.5 sm:text-[10px]">
                       {getCourseTypeLabel(selectedCourse.courseType)}
                     </span>
-                    <span className="rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-700 backdrop-blur">
+                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-700 backdrop-blur sm:px-3 sm:py-1.5 sm:text-[10px]">
                       Xem trước
                     </span>
                   </div>
-                  <h1 className="max-w-4xl text-3xl font-black tracking-tight text-white md:text-5xl">{selectedCourse.title}</h1>
+                  <h1 className="max-w-4xl text-[26px] font-black leading-[1.05] tracking-tight text-white sm:text-3xl md:text-5xl">{selectedCourse.title}</h1>
                 </div>
               </div>
 
-              <div className="p-6 md:p-8">
+              <div className="p-4 sm:p-6 md:p-8">
                 {selectedCourse.shortDescription && (
                   <p className="max-w-4xl text-base font-medium leading-7 text-slate-600">{selectedCourse.shortDescription}</p>
                 )}
-                <div className="mt-6 flex flex-wrap gap-3 text-xs font-black text-slate-600">
-                  <span className="rounded-full bg-slate-100 px-4 py-2">{totalLessons} bài học</span>
-                  <span className="rounded-full bg-slate-100 px-4 py-2">{modules.length} phần</span>
-                  <span className="rounded-full bg-slate-100 px-4 py-2">{classMaterials.length} tài liệu</span>
-                  {selectedCourse.hours && <span className="rounded-full bg-slate-100 px-4 py-2">{selectedCourse.hours}</span>}
+                <div className="mt-5 flex flex-wrap gap-2 text-xs font-black text-slate-600 sm:mt-6 sm:gap-3">
+                  <span className="rounded-full bg-slate-100 px-3 py-2 sm:px-4">{totalLessons} bài học</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-2 sm:px-4">{modules.length} phần</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-2 sm:px-4">{classMaterials.length} tài liệu</span>
+                  {selectedCourse.hours && <span className="rounded-full bg-slate-100 px-3 py-2 sm:px-4">{selectedCourse.hours}</span>}
                 </div>
               </div>
             </div>
 
             {(selectedCourse.description || selectedCourse.shortDescription) && (
-              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+              <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
                 <h2 className="mb-3 text-xl font-black text-slate-950">Thông tin khóa học</h2>
                 <p className="whitespace-pre-line text-sm font-medium leading-7 text-slate-600">
                   {selectedCourse.description || selectedCourse.shortDescription}
@@ -922,17 +1009,17 @@ function OnlineCourseContent() {
               </section>
             )}
 
-            <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-              <h2 className="mb-5 text-xl font-black text-slate-950">Nội dung khóa học</h2>
+            <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+              <h2 className="mb-5 text-lg font-black text-slate-950 sm:text-xl">Nội dung khóa học</h2>
               <div className="space-y-3">
                 {modules.map((mod) => (
-                  <div key={mod.id} className="overflow-hidden rounded-2xl border border-slate-200">
-                    <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
-                      <div>
+                  <div key={mod.id} className="overflow-hidden rounded-xl border border-slate-200 sm:rounded-2xl">
+                    <div className="flex items-start justify-between gap-3 bg-slate-50 px-3 py-3 sm:px-4">
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-widest text-green-600">{mod.phase}</p>
                         <h3 className="text-sm font-black text-slate-900">{mod.title}</h3>
                       </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-500">{mod.lessons.length} bài</span>
+                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-slate-500 sm:px-3">{mod.lessons.length} bài</span>
                     </div>
                     <div className="divide-y divide-slate-100">
                       {mod.lessons.map((lesson) => {
@@ -944,7 +1031,7 @@ function OnlineCourseContent() {
                             type="button"
                             onClick={() => unlocked && setPreviewLesson(lesson)}
                             disabled={!unlocked}
-                            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition ${
+                            className={`flex w-full items-start gap-2.5 px-3 py-3 text-left transition sm:gap-3 sm:px-4 ${
                               unlocked ? "hover:bg-green-50/70" : "cursor-not-allowed bg-slate-50/40"
                             }`}
                           >
@@ -956,7 +1043,7 @@ function OnlineCourseContent() {
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-bold text-slate-800">{lesson.title}</p>
+                              <p className="text-[13px] font-bold leading-5 text-slate-800 sm:text-sm">{lesson.title}</p>
                               <p className="mt-1 text-xs font-medium text-slate-500">
                                 {lessonType === "video" ? "Video bài học" : "Bài giảng text"}
                                 {lesson.durationMinutes > 0 ? ` · ${lesson.durationMinutes} phút` : ""}

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { BookOpen, Users, ArrowRight } from "lucide-react";
 import CourseImage from "./CourseImage";
 
@@ -130,11 +129,10 @@ export default function CourseCard({
     >
       <div className="relative aspect-[16/10] overflow-hidden">
         {course.imageUrl ? (
-          <Image
+          <img
             src={course.imageUrl}
             alt={course.title}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
         ) : (
           <CourseImage type={course.image || "python"} size="lg" />

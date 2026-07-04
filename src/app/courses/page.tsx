@@ -116,7 +116,7 @@ export default async function CoursesPage() {
         <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-10 leading-[1.1] tracking-tighter mx-auto">
             Nếu bạn chưa biết chọn khóa nào phù hợp, <br />
-            <span className="text-emerald-500">nhắn Dứa, dứa chỉ cho</span>
+            <span className="text-emerald-500">nhắn DỨA, DỨA chỉ cho</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
             Hành trình chinh phục dữ liệu sẽ dễ dàng hơn khi có người đồng hành cùng bạn.
