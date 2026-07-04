@@ -68,6 +68,7 @@ function getPreviewContext(course?: CourseOption | null) {
     facebook: "https://facebook.com/nguyenthai",
     learner_group: "2",
     payment_amount: price ? new Intl.NumberFormat("vi-VN").format(price) + "đ" : "Miễn phí",
+    amount_due: price ? new Intl.NumberFormat("vi-VN").format(price) + "đ" : "Miễn phí",
     payment_note: "nguyenthai@gmail.com - DUA Edu",
     payment_qr: "https://i.ibb.co/WWpB9mvS/Screenshot-2026-05-09-at-08-36-45.png",
     registered_at: "09/05/2026 08:00",
@@ -835,7 +836,7 @@ export default function MailView() {
                 <div className="p-6 bg-green-50 rounded-[32px] border border-green-100">
                   <h5 className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-3">Tham số hỗ trợ</h5>
                   <div className="grid grid-cols-2 gap-2">
-                    {["{{full_name}}", "{{email}}", "{{phone}}", "{{course_title}}", "{{course_link}}", "{{payment_qr}}"].map(p => (
+                    {["{{full_name}}", "{{email}}", "{{phone}}", "{{course_title}}", "{{course_price}}", "{{payment_amount}}", "{{amount_due}}", "{{payment_note}}", "{{course_link}}", "{{payment_qr}}"].map(p => (
                       <div key={p} className="px-3 py-1.5 bg-white rounded-lg border border-green-200 text-[10px] font-mono text-green-700 text-center font-bold">{p}</div>
                     ))}
                   </div>

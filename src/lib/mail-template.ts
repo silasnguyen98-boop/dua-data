@@ -16,6 +16,7 @@ export interface MailTemplateContext {
   facebook: string;
   learner_group: string;
   payment_amount: string;
+  amount_due: string;
   payment_note: string;
   payment_qr: string;
   registered_at: string;
@@ -144,6 +145,7 @@ export function buildMailTemplateContext(params: {
     facebook: params.facebook || "",
     learner_group: String(params.learnerGroup || 0),
     payment_amount: formatCurrencyVn(priceValue),
+    amount_due: formatCurrencyVn(priceValue),
     payment_note: `${params.email} - DUA Edu`,
     payment_qr:
       process.env.NEXT_PUBLIC_PAYMENT_QR_CODE_URL ||

@@ -12,6 +12,7 @@ export interface MailTemplateContext {
   facebook: string;
   learner_group: string;
   payment_amount: string;
+  amount_due: string;
   payment_note: string;
   payment_qr: string;
   registered_at: string;
