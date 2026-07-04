@@ -259,7 +259,6 @@ loadVideoApi().then(() => {
 
   const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const showStartOverlay = !ready || !hasStarted;
-  const hideYoutubeChrome = ready && hasStarted && !playing;
 
   return (
     <div
@@ -273,9 +272,6 @@ loadVideoApi().then(() => {
         <div id={containerId} title={title} className="h-full w-full" />
       </div>
 
-      {hideYoutubeChrome && (
-        <div className="pointer-events-none absolute left-0 top-0 z-10 h-24 w-80 max-w-[75%] bg-gradient-to-br from-slate-950 via-slate-950/95 to-transparent" />
-      )}
 
       {showStartOverlay && (
         <button
@@ -292,6 +288,21 @@ loadVideoApi().then(() => {
           <span className="relative mt-5 max-w-[80%] truncate text-sm font-black text-slate-100">
             {ready ? title : "Đang tải video..."}
           </span>
+        </button>
+      )}
+
+      {!showStartOverlay && (
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="absolute inset-0 z-10 flex items-center justify-center text-white focus:outline-none"
+          aria-label={playing ? "Tạm dừng" : "Phát tiếp"}
+        >
+          {!playing && (
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-950/65 shadow-2xl backdrop-blur-sm transition hover:scale-105 hover:bg-green-600 sm:h-20 sm:w-20">
+              <PlayCircle className="h-9 w-9 sm:h-11 sm:w-11" />
+            </span>
+          )}
         </button>
       )}
 
