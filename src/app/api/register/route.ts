@@ -256,7 +256,7 @@ export async function POST(req: NextRequest) {
         emailError,
         mailLogId,
         message: emailSent
-          ? `Chúc mừng bạn đã đăng ký thành công khóa học ${course.title || ""}!`
+          ? "Đã đăng ký thành công - Kiểm tra email để xác nhận!"
           : `Đã lưu đăng ký khóa học ${course.title || ""}, nhưng chưa gửi được email xác nhận.`,
       },
       { status: 201 },

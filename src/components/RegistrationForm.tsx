@@ -116,7 +116,7 @@ export default function RegistrationForm({ courseId, courseTitle, coursePath, on
                 </svg>
               </div>
               <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-700">Đăng ký thành công</p>
-              <h3 className="text-2xl font-black tracking-tight text-slate-900">DUA đã nhận thông tin</h3>
+              <h3 className="text-2xl font-black tracking-tight text-slate-900">Kiểm tra email để xác nhận!</h3>
             </div>
           </div>
           <div className="p-8 text-center">

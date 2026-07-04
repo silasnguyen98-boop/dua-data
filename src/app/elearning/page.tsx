@@ -137,6 +137,11 @@ function formatVideoTime(seconds: number) {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
+function formatCoursePrice(value: number) {
+  if (!value) return "Miễn phí";
+  return new Intl.NumberFormat("vi-VN").format(value) + "đ";
+}
+
 function LessonVideoPlayer({ videoId, title, onEnded, autoPlay = false }: { videoId: string; title: string; onEnded?: () => void; autoPlay?: boolean }) {
   const containerId = useMemo(() => `lesson-video-${videoId}-${Math.random().toString(36).slice(2)}`, [videoId]);
   const videoShellRef = useRef<HTMLDivElement | null>(null);
@@ -794,9 +799,11 @@ function OnlineCourseContent() {
   const canTrackProgress = hasCourseAccess && Boolean(selectedCourse.onlineModules?.length);
   const classMaterials = Array.isArray(selectedCourse.classMaterials) ? selectedCourse.classMaterials : [];
   const lessonResources = Array.isArray(activeLesson?.resources) ? activeLesson.resources : [];
-  const registrationStatus = registration?.status || "";
   const isPendingRegistration = Boolean(registration && !hasCourseAccess);
   const nextAutoLesson = autoAdvance ? allLessons.find((lesson) => lesson.id === autoAdvance.nextLessonId) || null : null;
+  const selectedCoursePrice = Number(selectedCourse.price || 0);
+  const selectedCourseOriginalPrice = Number(selectedCourse.originalPrice || 0);
+  const showOriginalCoursePrice = !selectedCourse.hidePrice && selectedCourseOriginalPrice > selectedCoursePrice;
 
   function handleActiveVideoEnded() {
     if (!selectedCourse || !activeLesson || activeLessonType !== "video" || !activeLessonUnlocked) return;
@@ -831,8 +838,8 @@ function OnlineCourseContent() {
 
     if (isPendingRegistration) {
       return (
-        <button disabled className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-100 px-5 py-4 text-sm font-black text-amber-800">
-          Đã đăng ký - chờ xác nhận thanh toán
+        <button disabled className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-100 px-5 py-4 text-center text-sm font-black leading-6 text-amber-800">
+          Đã đăng kí lớp học - kiểm tra email để xác nhận tham gia
         </button>
       );
     }
@@ -1092,11 +1099,20 @@ function OnlineCourseContent() {
                   <div className="flex items-center gap-3"><FileText className="h-4 w-4 text-green-600" /> {classMaterials.length} tài liệu lớp học</div>
                   <div className="flex items-center gap-3"><PlayCircle className="h-4 w-4 text-green-600" /> Video và bài giảng text</div>
                 </div>
-                {!hasCourseAccess && (
-                  <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-800">
-                    {isPendingRegistration
-                      ? `Bạn đã đăng ký khóa học${registrationStatus ? `, trạng thái hiện tại: ${registrationStatus}` : ""}. Admin cần cập nhật đã đóng tiền để mở lớp.`
-                      : "Một số bài đang khóa. Đăng ký và được xác nhận đã đóng tiền để vào học."}
+                <div className="mt-5 rounded-2xl border border-green-100 bg-green-50/70 p-4">
+                  {showOriginalCoursePrice && (
+                    <div className="mb-1 text-sm font-bold text-slate-400 line-through">
+                      {formatCoursePrice(selectedCourseOriginalPrice)}
+                    </div>
+                  )}
+                  <div className="text-2xl font-black text-green-700">
+                    {selectedCourse.hidePrice ? "Liên hệ tư vấn" : formatCoursePrice(selectedCoursePrice)}
+                  </div>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-green-700/70">Giá sau khuyến mãi</p>
+                </div>
+                {isPendingRegistration && (
+                  <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-800">
+                    Bạn đã đăng kí lớp học, vui lòng kiểm tra email để xác nhận tham gia.
                   </div>
                 )}
                 {renderPreviewAction()}
