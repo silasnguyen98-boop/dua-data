@@ -5,7 +5,7 @@ import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const PAID_ACCESS_STATUSES = new Set(["paid", "onboarded"]);
+const PAID_ACCESS_STATUSES = new Set(["paid", "gifted", "onboarded"]);
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,18 +15,20 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const courseId = searchParams.get("courseId") || "";
-    if (!courseId) {
+    const courseKey = searchParams.get("courseId") || "";
+    if (!courseKey) {
       return NextResponse.json({ error: "Missing courseId" }, { status: 400 });
     }
 
     const { rows } = await query(
-      `SELECT id, status, created_at, updated_at
-       FROM course_registrations
-       WHERE course_id::text = $1 AND user_id = $2
-       ORDER BY created_at DESC
+      `SELECT r.id, r.status, r.created_at, r.updated_at
+       FROM course_registrations r
+       INNER JOIN courses c ON r.course_id::text = c.id::text
+       WHERE (r.course_id::text = $1 OR c.slug = $1)
+         AND r.user_id = $2
+       ORDER BY r.created_at DESC
        LIMIT 1`,
-      [courseId, session.user.id],
+      [courseKey, session.user.id],
     );
     const row = rows[0] as Record<string, unknown> | undefined;
     const status = String(row?.status || "");

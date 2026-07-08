@@ -1,4 +1,4 @@
-export type SaleRegistrationStatus = "new" | "contacted" | "consulting" | "paid" | "onboarded" | "cancelled";
+export type SaleRegistrationStatus = "new" | "contacted" | "consulting" | "paid" | "gifted" | "onboarded" | "cancelled";
 
 export interface SaleRegistrationEntry {
   id: string;

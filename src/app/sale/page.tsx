@@ -11,6 +11,7 @@ const STATUS_LABELS: Record<SaleRegistrationStatus, string> = {
   contacted: "📞 Đã liên hệ",
   consulting: "💬 Đang tư vấn",
   paid: "✅ Đã thanh toán",
+  gifted: "🎁 Đã tặng",
   onboarded: "🚀 Đã onboard",
   cancelled: "❌ Đã hủy",
 };
@@ -27,6 +28,7 @@ const STATUS_STYLES: Record<SaleRegistrationStatus, string> = {
   contacted: "bg-sky-50 text-sky-700 border-sky-200",
   consulting: "bg-indigo-50 text-indigo-700 border-indigo-200",
   paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  gifted: "bg-violet-50 text-violet-700 border-violet-200",
   onboarded: "bg-green-50 text-green-700 border-green-200",
   cancelled: "bg-red-50 text-red-700 border-red-200",
 };

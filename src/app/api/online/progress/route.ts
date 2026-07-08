@@ -5,6 +5,8 @@ import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+const STUDENT_ACCESS_STATUSES = ["paid", "gifted", "onboarded"];
+
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -32,10 +34,10 @@ export async function PATCH(req: NextRequest) {
        INNER JOIN course_registrations r ON r.course_id::text = c.id::text
        WHERE l.id = $1
          AND r.user_id = $2
-         AND r.status = 'onboarded'
-         AND c.course_type = ANY($3::text[])
+         AND r.status = ANY($3::text[])
+         AND c.course_type = ANY($4::text[])
        LIMIT 1`,
-      [lessonId, session.user.id, ["e_learning"]],
+      [lessonId, session.user.id, STUDENT_ACCESS_STATUSES, ["e_learning"]],
     );
 
     if (!accessRows[0]) {

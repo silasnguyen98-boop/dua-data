@@ -4,7 +4,7 @@ import type { SaleRegistrationEntry, SaleRegistrationStatus } from "@/types/sale
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES: SaleRegistrationStatus[] = ["new", "contacted", "consulting", "paid", "onboarded", "cancelled"];
+const VALID_STATUSES: SaleRegistrationStatus[] = ["new", "contacted", "consulting", "paid", "gifted", "onboarded", "cancelled"];
 const ALLOWED_ROLES = new Set(["system_admin", "sales_executive"]);
 
 function normalizeText(value: unknown) {

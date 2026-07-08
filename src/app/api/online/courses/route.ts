@@ -8,7 +8,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const STUDENT_ACCESS_STATUSES = ["paid", "onboarded"];
+const STUDENT_ACCESS_STATUSES = ["paid", "gifted", "onboarded"];
 const ONLINE_COURSE_TYPES = ["e_learning"];
 
 async function ensureElearningSchema() {

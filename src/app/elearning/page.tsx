@@ -83,6 +83,14 @@ function sortOnlineCourses(courses: OnlineCourse[]) {
     });
 }
 
+function getCourseUrlKey(course: Pick<Course, "id" | "slug">) {
+  return course.slug || course.id;
+}
+
+function isSameCourse(a: Pick<Course, "id" | "slug">, b: Pick<Course, "id" | "slug">) {
+  return a.id === b.id || Boolean(a.slug && a.slug === b.slug);
+}
+
 function getVideoEmbedId(value: string) {
   const raw = value.trim();
   if (!raw) return "";
@@ -499,6 +507,18 @@ function OnlineCourseContent() {
             .then((accessData) => {
               if (!Array.isArray(accessData)) return;
               setHasCourseAccess(accessData.some((course) => course.id === selectedCourseId || course.slug === selectedCourseId));
+              setCourses((currentCourses) =>
+                currentCourses.map((course) => {
+                  const accessCourse = accessData.find((item) => isSameCourse(course, item));
+                  return accessCourse
+                    ? {
+                        ...course,
+                        ...accessCourse,
+                        onlineModules: accessCourse.onlineModules || course.onlineModules,
+                      }
+                    : course;
+                }),
+              );
             })
             .catch(() => {});
         }
@@ -542,7 +562,7 @@ function OnlineCourseContent() {
   }, [hasCourseAccess, registration, selectedCourse, shouldAutoOpenRegister]);
 
   function openCourse(course: Course) {
-    router.push(`/elearning?course=${course.id}`);
+    router.push(`/elearning?course=${getCourseUrlKey(course)}`);
   }
 
   function startLearning() {
@@ -552,7 +572,7 @@ function OnlineCourseContent() {
       return;
     }
     const firstLesson = allLessons.find((lesson) => isLessonUnlocked(lesson)) || allLessons[0];
-    const params = new URLSearchParams({ course: selectedCourse.id, mode: "learn" });
+    const params = new URLSearchParams({ course: getCourseUrlKey(selectedCourse), mode: "learn" });
     if (firstLesson) params.set("lesson", firstLesson.id);
     router.push(`/elearning?${params.toString()}`);
   }
@@ -560,7 +580,7 @@ function OnlineCourseContent() {
   function selectLesson(lesson: Lesson) {
     if (!selectedCourse) return;
     if (!isLessonUnlocked(lesson)) return;
-    router.push(`/elearning?course=${selectedCourse.id}&mode=learn&lesson=${lesson.id}`, { scroll: false });
+    router.push(`/elearning?course=${getCourseUrlKey(selectedCourse)}&mode=learn&lesson=${lesson.id}`, { scroll: false });
     if (window.innerWidth < 1024) setSidebarOpen(false);
   }
 
@@ -793,6 +813,8 @@ function OnlineCourseContent() {
   }
 
   const totalLessons = modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
+  const completedLessons = allLessons.filter((lesson) => lesson.isCompleted).length;
+  const completionPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const activeLessonUnlocked = isLessonUnlocked(activeLesson);
   const activeLessonType = activeLesson?.lessonType || (activeLesson?.youtubeId ? "video" : "text");
   const activeVideoId = activeLessonUnlocked && activeLessonType === "video" ? getVideoEmbedId(activeLesson?.youtubeId || "") : "";
@@ -1125,7 +1147,7 @@ function OnlineCourseContent() {
           <RegistrationForm
             courseId={selectedCourse.id}
             courseTitle={selectedCourse.title}
-            coursePath={`/elearning?course=${selectedCourse.id}`}
+            coursePath={`/elearning?course=${getCourseUrlKey(selectedCourse)}`}
             onClose={() => setShowRegistrationForm(false)}
             onSuccess={(nextRegistration) => {
               setRegistration({
@@ -1134,7 +1156,7 @@ function OnlineCourseContent() {
                 registeredAt: new Date().toISOString(),
               });
               setRegistrationLoaded(true);
-              router.replace(`/elearning?course=${selectedCourse.id}`, { scroll: false });
+              router.replace(`/elearning?course=${getCourseUrlKey(selectedCourse)}`, { scroll: false });
             }}
           />
         )}
@@ -1221,6 +1243,12 @@ function OnlineCourseContent() {
                 </div>
               </div>
             )}
+            {activeLesson?.isCompleted && !autoAdvance && (
+              <div className="absolute right-5 top-5 z-30 inline-flex items-center gap-2 rounded-full border border-green-400/20 bg-green-500 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-2xl shadow-green-950/20">
+                <CheckCircle className="h-4 w-4" />
+                Đã hoàn thành
+              </div>
+            )}
           </section>
 
           <section className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-8">
@@ -1303,11 +1331,20 @@ function OnlineCourseContent() {
           <div className="flex items-center justify-between border-b border-slate-200 bg-white p-4">
             <div>
               <h3 className="font-black text-slate-900">Nội dung khóa học</h3>
-              <p className="text-xs font-bold text-slate-400">{totalLessons} bài học</p>
+              <p className="text-xs font-bold text-slate-400">{completedLessons}/{totalLessons} bài đã hoàn thành</p>
             </div>
             <button className="text-slate-500 lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
+          </div>
+          <div className="border-b border-slate-100 bg-white px-4 py-3">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <span>Tiến độ học</span>
+              <span className="text-green-600">{completionPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-green-500 transition-all duration-500" style={{ width: `${completionPercent}%` }} />
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -1340,7 +1377,13 @@ function OnlineCourseContent() {
                             isActive ? "bg-green-50/60" : unlocked ? "hover:bg-slate-50" : "cursor-not-allowed bg-slate-50/40 opacity-75"
                           }`}
                         >
-                          <div className={`mt-0.5 shrink-0 ${lesson.isCompleted ? "text-green-500" : unlocked ? "text-slate-300" : "text-amber-500"}`}>
+                          <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                            lesson.isCompleted
+                              ? "bg-green-500 text-white"
+                              : unlocked
+                                ? "bg-slate-100 text-slate-300"
+                                : "bg-amber-50 text-amber-500"
+                          }`}>
                             {!unlocked ? (
                               <Lock className="h-4 w-4" />
                             ) : lesson.isCompleted ? (
@@ -1353,11 +1396,12 @@ function OnlineCourseContent() {
                             <div className="mb-1 flex items-start justify-between gap-3">
                               <p className={`flex min-w-0 items-start gap-2 text-sm ${isActive ? "font-bold text-green-700" : unlocked ? "text-slate-700" : "text-slate-400"}`}>
                                 <span className="min-w-0">{lesson.title}</span>
-                                {lesson.isCompleted && (
-                                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                                )}
                               </p>
-                              {!unlocked && (
+                              {lesson.isCompleted ? (
+                                <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-green-700">
+                                  Xong
+                                </span>
+                              ) : !unlocked && (
                                 <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700">
                                   Khóa
                                 </span>

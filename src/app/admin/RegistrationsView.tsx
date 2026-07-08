@@ -23,6 +23,7 @@ const STATUS_OPTIONS = [
   { id: "responded", label: "Đã phản hồi", color: "bg-cyan-50 text-cyan-600 border-cyan-100" },
   { id: "contacted", label: "Đã liên hệ", color: "bg-orange-50 text-orange-600 border-orange-100" },
   { id: "paid", label: "Đã đóng tiền", color: "bg-green-50 text-green-600 border-green-100" },
+  { id: "gifted", label: "Đã tặng", color: "bg-violet-50 text-violet-600 border-violet-100" },
   { id: "onboarded", label: "Đã onboard", color: "bg-purple-50 text-purple-600 border-purple-100" },
   { id: "cancelled", label: "Hủy", color: "bg-gray-50 text-gray-400 border-gray-100" },
 ];

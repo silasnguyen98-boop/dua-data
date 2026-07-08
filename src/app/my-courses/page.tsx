@@ -44,6 +44,11 @@ const STATUS_LABELS: Record<string, { label: string; className: string; descript
     className: "border-emerald-100 bg-emerald-50 text-emerald-700",
     description: "Thanh toán đã được ghi nhận.",
   },
+  gifted: {
+    label: "Đã tặng",
+    className: "border-violet-100 bg-violet-50 text-violet-700",
+    description: "Bạn đã được tặng quyền học khóa này.",
+  },
   onboarded: {
     label: "Đã là học viên",
     className: "border-purple-100 bg-purple-50 text-purple-700",
@@ -71,6 +76,22 @@ function normalizeCourseType(value: unknown) {
   return raw || "online";
 }
 
+function isElearningCourse(course: RegisteredCourse) {
+  return ["e_learning", "elearning"].includes(normalizeCourseType(course.courseType));
+}
+
+function canEnterCourse(course: RegisteredCourse) {
+  return ["paid", "gifted", "onboarded"].includes(course.status);
+}
+
+function shouldShowLearnButton(course: RegisteredCourse) {
+  return isElearningCourse(course) && canEnterCourse(course) && Boolean(course.courseId);
+}
+
+function getCourseUrlKey(course: RegisteredCourse) {
+  return course.slug || course.courseId;
+}
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
@@ -79,16 +100,6 @@ function formatDate(value: string) {
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function formatCurrency(value: number, hidePrice: boolean) {
-  if (hidePrice) return "Liên hệ tư vấn";
-  if (!Number.isFinite(value) || value <= 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN").format(value) + "đ";
-}
-
-function canLearnOnline(course: RegisteredCourse) {
-  return course.status === "onboarded" && ["e_learning", "elearning"].includes(course.courseType);
 }
 
 async function getRegisteredCourses(userId: string): Promise<RegisteredCourse[]> {
@@ -179,9 +190,6 @@ export default async function MyCoursesPage() {
           <div>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-green-600">Tài khoản học viên</p>
             <h1 className="text-4xl font-black tracking-tight text-slate-950">Khóa học của tôi</h1>
-            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-              Theo dõi các khóa bạn đã đăng ký, trạng thái xử lý và đường vào học e-learning khi được xác nhận.
-            </p>
           </div>
           <Link href="/courses" className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-5 py-2.5 text-sm font-bold text-green-700 transition hover:bg-emerald-50">
             Xem thêm khóa học
@@ -205,65 +213,44 @@ export default async function MyCoursesPage() {
           <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {courses.map((course) => {
               const status = STATUS_LABELS[course.status] || STATUS_LABELS.new;
-              const courseHref = course.slug ? `/courses/${course.slug}` : "/courses";
+              const courseHref = `/elearning?course=${getCourseUrlKey(course)}`;
+              const showLearnButton = shouldShowLearnButton(course);
               return (
-                <article key={course.registrationId} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+                <article key={course.registrationId} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-950/5">
                   <div className="flex h-full flex-col">
-                    <div className="aspect-video bg-slate-100">
+                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
                       {course.imageUrl ? (
-                        <img src={course.imageUrl} alt={course.title} className="h-full w-full object-cover" />
+                        <img src={course.imageUrl} alt={course.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                       ) : (
                         <div className="flex h-full items-center justify-center bg-emerald-50 text-3xl font-black text-green-700">
                           DUA
                         </div>
                       )}
+                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/45 to-transparent" />
+                      <span className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-xs font-black shadow-sm backdrop-blur-md ${status.className}`}>
+                        {status.label}
+                      </span>
                     </div>
                     <div className="flex flex-1 flex-col p-5">
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${status.className}`}>
-                          {status.label}
-                        </span>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
+                      <h2 className="line-clamp-2 min-h-[3.5rem] text-xl font-black leading-tight text-slate-950">{course.title}</h2>
+
+                      <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ngày đăng ký</p>
+                          <p className="mt-1 text-sm font-black text-slate-700">{formatDate(course.registeredAt)}</p>
+                        </div>
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black text-slate-500">
                           {COURSE_TYPE_LABELS[course.courseType] || course.courseType || "Khóa học"}
                         </span>
                       </div>
 
-                      <h2 className="text-xl font-black leading-tight text-slate-950">{course.title}</h2>
-                      {course.shortDescription && (
-                        <p className="mt-2 line-clamp-2 text-sm font-medium leading-6 text-slate-500">{course.shortDescription}</p>
-                      )}
-
-                      <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs font-bold uppercase text-slate-400">Ngày đăng ký</p>
-                          <p className="font-semibold">{formatDate(course.registeredAt)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase text-slate-400">Khai giảng</p>
-                          <p className="font-semibold">{formatDate(course.startDate)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase text-slate-400">Học phí</p>
-                          <p className="font-semibold">{formatCurrency(course.price, course.hidePrice)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold uppercase text-slate-400">Thời lượng</p>
-                          <p className="font-semibold">{course.hours || "Chưa cập nhật"}</p>
-                        </div>
-                      </div>
-
-                      <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-500">
-                        {status.description}
-                      </p>
-
-                      <div className="mt-auto flex flex-wrap gap-3 pt-5">
-                        <Link href={courseHref} className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-                          Chi tiết khóa học
-                        </Link>
-                        {canLearnOnline(course) && (
-                          <Link href={`/elearning?course=${course.courseId}`} className="inline-flex items-center justify-center rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-green-700">
-                            Vào học e-learning
+                      <div className="mt-auto pt-5">
+                        {showLearnButton ? (
+                          <Link href={courseHref} className="inline-flex w-full items-center justify-center rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-green-200 transition hover:bg-green-700 hover:shadow-green-300">
+                            Vào học
                           </Link>
+                        ) : (
+                          <div className="h-12" aria-hidden="true" />
                         )}
                       </div>
                     </div>
